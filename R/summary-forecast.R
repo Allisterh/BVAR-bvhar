@@ -300,7 +300,7 @@ forecast_roll.ldltmod <- function(object, n_ahead, y_test, num_thread = 1, level
       }
       roll_bvarldlt(
         y, object$p, num_chains, object$iter, object$burn, object$thin,
-        sparse, ci_lev, fit_ls,
+        sparse, ci_lev, fit_ls, TRUE,
         object$sv[c("shape", "scale")], param_prior, object$intercept, object$init, prior_type, object$ggl,
         grp_id, own_id, cross_id, grp_mat,
         include_mean, stable, n_ahead, y_test,
@@ -349,7 +349,7 @@ forecast_roll.ldltmod <- function(object, n_ahead, y_test, num_thread = 1, level
       }
       roll_bvharldlt(
         y, object$week, object$month, num_chains, object$iter, object$burn, object$thin,
-        sparse, ci_lev, fit_ls,
+        sparse, ci_lev, fit_ls, TRUE,
         object$sv[c("shape", "scale")], param_prior, object$intercept, object$init, prior_type, object$ggl,
         grp_id, own_id, cross_id, grp_mat,
         include_mean, stable, n_ahead, y_test,
@@ -488,7 +488,7 @@ forecast_roll.svmod <- function(object, n_ahead, y_test, num_thread = 1, level =
       }
       roll_bvarsv(
         y, object$p, num_chains, object$iter, object$burn, object$thin,
-        use_sv, sparse, ci_lev, fit_ls,
+        use_sv, sparse, ci_lev, fit_ls, TRUE,
         object$sv[c("shape", "scale", "initial_mean", "initial_prec")], param_prior, object$intercept, object$init, prior_type, object$ggl,
         grp_id, own_id, cross_id, grp_mat,
         include_mean, stable, n_ahead, y_test,
@@ -537,7 +537,7 @@ forecast_roll.svmod <- function(object, n_ahead, y_test, num_thread = 1, level =
       }
       roll_bvharsv(
         y, object$week, object$month, num_chains, object$iter, object$burn, object$thin,
-        use_sv, sparse, ci_lev, fit_ls,
+        use_sv, sparse, ci_lev, fit_ls, TRUE,
         object$sv[c("shape", "scale", "initial_mean", "initial_prec")], param_prior, object$intercept, object$init, prior_type, object$ggl,
         grp_id, own_id, cross_id, grp_mat,
         include_mean, stable, n_ahead, y_test,
@@ -831,7 +831,7 @@ forecast_expand.ldltmod <- function(object, n_ahead, y_test, num_thread = 1, lev
       }
       expand_bvarldlt(
         y, object$p, num_chains, object$iter, object$burn, object$thin,
-        sparse, ci_lev, fit_ls,
+        sparse, ci_lev, fit_ls, TRUE,
         object$sv[c("shape", "scale")], param_prior, object$intercept, object$init, prior_type, object$ggl,
         grp_id, own_id, cross_id, grp_mat,
         include_mean, stable, n_ahead, y_test,
@@ -880,7 +880,7 @@ forecast_expand.ldltmod <- function(object, n_ahead, y_test, num_thread = 1, lev
       }
       expand_bvharldlt(
         y, object$week, object$month, num_chains, object$iter, object$burn, object$thin,
-        sparse, ci_lev, fit_ls,
+        sparse, ci_lev, fit_ls, TRUE,
         object$sv[c("shape", "scale")], param_prior, object$intercept, object$init, prior_type, object$ggl,
         grp_id, own_id, cross_id, grp_mat,
         include_mean, stable, n_ahead, y_test,
@@ -1013,7 +1013,7 @@ forecast_expand.svmod <- function(object, n_ahead, y_test, num_thread = 1, level
       }
       expand_bvarsv(
         y, object$p, num_chains, object$iter, object$burn, object$thin,
-        use_sv, sparse, ci_lev, fit_ls,
+        use_sv, sparse, ci_lev, fit_ls, TRUE,
         object$sv[c("shape", "scale", "initial_mean", "initial_prec")], param_prior, object$intercept, object$init, prior_type, object$ggl,
         grp_id, own_id, cross_id, grp_mat,
         include_mean, stable, n_ahead, y_test,
@@ -1062,7 +1062,7 @@ forecast_expand.svmod <- function(object, n_ahead, y_test, num_thread = 1, level
       }
       expand_bvharsv(
         y, object$week, object$month, num_chains, object$iter, object$burn, object$thin,
-        use_sv, sparse, ci_lev, fit_ls,
+        use_sv, sparse, ci_lev, fit_ls, TRUE,
         object$sv[c("shape", "scale", "initial_mean", "initial_prec")], param_prior, object$intercept, object$init, prior_type, object$ggl,
         grp_id, own_id, cross_id, grp_mat,
         include_mean, stable, n_ahead, y_test,

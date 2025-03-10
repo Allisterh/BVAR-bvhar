@@ -757,10 +757,13 @@ protected:
 	) {
 		initData(y);
 		initForecaster(fit_record);
-		initMcmc(
-			param_reg, param_prior, param_intercept, param_init, prior_type,
-			grp_id, own_id, cross_id, grp_mat, seed_chain
-		);
+		using is_mcmc = std::integral_constant<bool, isUpdate>;
+		if (is_mcmc::value) {
+			initMcmc(
+				param_reg, param_prior, param_intercept, param_init, prior_type,
+				grp_id, own_id, cross_id, grp_mat, seed_chain
+			);
+		}
 	}
 
 	/**
@@ -1033,11 +1036,22 @@ protected:
 	using BaseOutForecast<BaseForecaster, isGroup, isUpdate>::lpl_record;
 	using BaseOutForecast<BaseForecaster, isGroup, isUpdate>::initialize;
 	void initForecaster(LIST& fit_record) override {
-		forecaster[0] = initialize_forecaster<BaseForecaster>(
-			num_chains, lag, step, roll_y0[0], sparse, level,
-			fit_record, seed_forecast, include_mean,
-			stable_filter, nthreads, sv
-		);
+		using is_mcmc = std::integral_constant<bool, isUpdate>;
+		if (is_mcmc::value) {
+			forecaster[0] = initialize_forecaster<BaseForecaster>(
+				num_chains, lag, step, roll_y0[0], sparse, level,
+				fit_record, seed_forecast, include_mean,
+				stable_filter, nthreads, sv
+			);
+		} else {
+			for (int i = 0; i < num_horizon; ++i) {
+				forecaster[i] = initialize_forecaster<BaseForecaster>(
+					num_chains, lag, step, roll_y0[i], sparse, level,
+					fit_record, seed_forecast, include_mean,
+					stable_filter, nthreads, sv
+				);
+			}
+		}
 	}
 	Eigen::MatrixXd buildDesign(int window) override {
 		return build_x0(roll_mat[window], lag, include_mean);
@@ -1117,12 +1131,24 @@ protected:
 	using BaseOutForecast<BaseForecaster, isGroup, isUpdate>::initialize;
 	Eigen::MatrixXd har_trans;
 	void initForecaster(LIST& fit_record) override {
-		forecaster[0] = initialize_forecaster<BaseForecaster>(
-			num_chains, lag, step, roll_y0[0], sparse, level,
-			fit_record, seed_forecast, include_mean,
-			stable_filter, nthreads, sv,
-			har_trans
-		);
+		using is_mcmc = std::integral_constant<bool, isUpdate>;
+		if (is_mcmc::value) {
+			forecaster[0] = initialize_forecaster<BaseForecaster>(
+				num_chains, lag, step, roll_y0[0], sparse, level,
+				fit_record, seed_forecast, include_mean,
+				stable_filter, nthreads, sv,
+				har_trans
+			);
+		} else {
+			for (int i = 0; i < num_horizon; ++i) {
+				forecaster[i] = initialize_forecaster<BaseForecaster>(
+					num_chains, lag, step, roll_y0[i], sparse, level,
+					fit_record, seed_forecast, include_mean,
+					stable_filter, nthreads, sv,
+					har_trans
+				);
+			}
+		}
 	}
 	Eigen::MatrixXd buildDesign(int window) override {
 		return build_x0(roll_mat[window], lag, include_mean) * har_trans.transpose();

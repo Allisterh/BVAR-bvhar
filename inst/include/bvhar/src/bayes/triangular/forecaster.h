@@ -1168,6 +1168,94 @@ protected:
 	}
 };
 
+template <template <typename, bool, bool> class BaseOutForecast = McmcRollforecastRun, typename BaseForecaster = RegForecaster>
+inline std::unique_ptr<McmcOutforecastInterface<BaseForecaster>> initialize_outforecaster(
+	const Eigen::MatrixXd& y, int lag, int num_chains, int num_iter, int num_burn, int thinning,
+	bool sparse, double level, LIST& fit_record, bool run_mcmc,
+	LIST& param_reg, LIST& param_prior, LIST& param_intercept, LIST_OF_LIST& param_init, int prior_type, bool ggl,
+	const Eigen::VectorXi& grp_id, const Eigen::VectorXi& own_id, const Eigen::VectorXi& cross_id, const Eigen::MatrixXi& grp_mat,
+	bool include_mean, bool stable, int step, const Eigen::MatrixXd& y_test,
+	bool get_lpl, const Eigen::MatrixXi& seed_chain, const Eigen::VectorXi& seed_forecast, bool display_progress, int nthreads,
+	const bool sv
+) {
+	if (ggl && run_mcmc) {
+		return std::make_unique<McmcVarforecastRun<BaseOutForecast, BaseForecaster, true, true>>(
+			y, lag, num_chains, num_iter, num_burn, thinning,
+			sparse, level, fit_record,
+			param_reg, param_prior, param_intercept, param_init, prior_type,
+			grp_id, own_id, cross_id, grp_mat, include_mean, stable, step, y_test,
+			get_lpl, seed_chain, seed_forecast, display_progress, nthreads, sv
+		);
+	} else if (ggl && !run_mcmc) {
+		return std::make_unique<McmcVarforecastRun<BaseOutForecast, BaseForecaster, true, false>>(
+			y, lag, num_chains, num_iter, num_burn, thinning,
+			sparse, level, fit_record,
+			param_reg, param_prior, param_intercept, param_init, prior_type,
+			grp_id, own_id, cross_id, grp_mat, include_mean, stable, step, y_test,
+			get_lpl, seed_chain, seed_forecast, display_progress, nthreads, sv
+		);
+	} else if (!ggl && run_mcmc) {
+		return std::make_unique<McmcVarforecastRun<BaseOutForecast, BaseForecaster, false, true>>(
+			y, lag, num_chains, num_iter, num_burn, thinning,
+			sparse, level, fit_record,
+			param_reg, param_prior, param_intercept, param_init, prior_type,
+			grp_id, own_id, cross_id, grp_mat, include_mean, stable, step, y_test,
+			get_lpl, seed_chain, seed_forecast, display_progress, nthreads, sv
+		);
+	}
+	return std::make_unique<McmcVarforecastRun<BaseOutForecast, BaseForecaster, false, false>>(
+		y, lag, num_chains, num_iter, num_burn, thinning,
+		sparse, level, fit_record,
+		param_reg, param_prior, param_intercept, param_init, prior_type,
+		grp_id, own_id, cross_id, grp_mat, include_mean, stable, step, y_test,
+		get_lpl, seed_chain, seed_forecast, display_progress, nthreads, sv
+	);
+}
+
+template <template <typename, bool, bool> class BaseOutForecast = McmcRollforecastRun, typename BaseForecaster = RegForecaster>
+inline std::unique_ptr<McmcOutforecastInterface<BaseForecaster>> initialize_outforecaster(
+	const Eigen::MatrixXd& y, int week, int month, int num_chains, int num_iter, int num_burn, int thinning,
+	bool sparse, double level, LIST& fit_record, bool run_mcmc,
+	LIST& param_reg, LIST& param_prior, LIST& param_intercept, LIST_OF_LIST& param_init, int prior_type, bool ggl,
+	const Eigen::VectorXi& grp_id, const Eigen::VectorXi& own_id, const Eigen::VectorXi& cross_id, const Eigen::MatrixXi& grp_mat,
+	bool include_mean, bool stable, int step, const Eigen::MatrixXd& y_test,
+	bool get_lpl, const Eigen::MatrixXi& seed_chain, const Eigen::VectorXi& seed_forecast, bool display_progress, int nthreads,
+	const bool sv
+) {
+	if (ggl && run_mcmc) {
+		return std::make_unique<McmcVharforecastRun<BaseOutForecast, BaseForecaster, true, true>>(
+			y, week, month, num_chains, num_iter, num_burn, thinning,
+			sparse, level, fit_record,
+			param_reg, param_prior, param_intercept, param_init, prior_type,
+			grp_id, own_id, cross_id, grp_mat, include_mean, stable, step, y_test,
+			get_lpl, seed_chain, seed_forecast, display_progress, nthreads, sv
+		);
+	} else if (ggl && !run_mcmc) {
+		return std::make_unique<McmcVharforecastRun<BaseOutForecast, BaseForecaster, true, false>>(
+			y, week, month, num_chains, num_iter, num_burn, thinning,
+			sparse, level, fit_record,
+			param_reg, param_prior, param_intercept, param_init, prior_type,
+			grp_id, own_id, cross_id, grp_mat, include_mean, stable, step, y_test,
+			get_lpl, seed_chain, seed_forecast, display_progress, nthreads, sv
+		);
+	} else if (!ggl && run_mcmc) {
+		return std::make_unique<McmcVharforecastRun<BaseOutForecast, BaseForecaster, false, true>>(
+			y, week, month, num_chains, num_iter, num_burn, thinning,
+			sparse, level, fit_record,
+			param_reg, param_prior, param_intercept, param_init, prior_type,
+			grp_id, own_id, cross_id, grp_mat, include_mean, stable, step, y_test,
+			get_lpl, seed_chain, seed_forecast, display_progress, nthreads, sv
+		);
+	}
+	return std::make_unique<McmcVharforecastRun<BaseOutForecast, BaseForecaster, false, false>>(
+		y, week, month, num_chains, num_iter, num_burn, thinning,
+		sparse, level, fit_record,
+		param_reg, param_prior, param_intercept, param_init, prior_type,
+		grp_id, own_id, cross_id, grp_mat, include_mean, stable, step, y_test,
+		get_lpl, seed_chain, seed_forecast, display_progress, nthreads, sv
+	);
+}
+
 } // namespace bvhar
 
 #endif // BVHAR_BAYES_TRIANGULAR_FORECASTER_H

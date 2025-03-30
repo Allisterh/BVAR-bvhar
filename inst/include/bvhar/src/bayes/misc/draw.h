@@ -458,13 +458,10 @@ inline void varsv_ht(Eigen::Ref<Eigen::VectorXd> sv_vec, double init_sv,
   // 7-component normal mixutre
 	using Vector7d = Eigen::Matrix<double, 7, 1>;
 	using Matrix7d = Eigen::Matrix<double, Eigen::Dynamic, 7>;
-	Vector7d pj; // p_t
-  pj << 0.0073, 0.10556, 0.00002, 0.04395, 0.34001, 0.24566, 0.2575;
-	Vector7d muj; // mu_t
-  muj << -10.12999, -3.97281, -8.56686, 2.77786, 0.61942, 1.79518, -1.08819;
+	Vector7d pj(0.0073, 0.10556, 0.00002, 0.04395, 0.34001, 0.24566, 0.2575); // p_t
+	Vector7d muj(-10.12999, -3.97281, -8.56686, 2.77786, 0.61942, 1.79518, -1.08819); // mu_t
   muj.array() -= 1.2704;
-	Vector7d sigj; // sig_t^2
-  sigj << 5.79596, 2.61369, 5.17950, 0.16735, 0.64009, 0.34023, 1.26261;
+	Vector7d sigj(5.79596, 2.61369, 5.17950, 0.16735, 0.64009, 0.34023, 1.26261); // sig_t^2
 	Vector7d sdj = sigj.cwiseSqrt();
   Eigen::VectorXi binom_latent(num_design);
   Eigen::VectorXd ds(num_design); // (mu_st - 1.2704)

@@ -456,20 +456,19 @@ inline void varsv_ht(Eigen::Ref<Eigen::VectorXd> sv_vec, double init_sv,
 										 double sv_sig, Eigen::Ref<Eigen::VectorXd> latent_vec, BHRNG& rng) {
   int num_design = sv_vec.size(); // h_i1, ..., h_in for i = 1, .., k
   // 7-component normal mixutre
-  Eigen::VectorXd pj(7); // p_t
-  pj << 0.0073, 0.10556, 0.00002, 0.04395, 0.34001, 0.24566, 0.2575;
-  Eigen::VectorXd muj(7); // mu_t
-  muj << -10.12999, -3.97281, -8.56686, 2.77786, 0.61942, 1.79518, -1.08819;
+	using Vector7d = Eigen::Matrix<double, 7, 1>;
+	using Matrix7d = Eigen::Matrix<double, Eigen::Dynamic, 7>;
+	Vector7d pj(0.0073, 0.10556, 0.00002, 0.04395, 0.34001, 0.24566, 0.2575); // p_t
+	Vector7d muj(-10.12999, -3.97281, -8.56686, 2.77786, 0.61942, 1.79518, -1.08819); // mu_t
   muj.array() -= 1.2704;
-  Eigen::VectorXd sigj(7); // sig_t^2
-  sigj << 5.79596, 2.61369, 5.17950, 0.16735, 0.64009, 0.34023, 1.26261;
-  Eigen::VectorXd sdj = sigj.cwiseSqrt();
+	Vector7d sigj(5.79596, 2.61369, 5.17950, 0.16735, 0.64009, 0.34023, 1.26261); // sig_t^2
+	Vector7d sdj = sigj.cwiseSqrt();
   Eigen::VectorXi binom_latent(num_design);
   Eigen::VectorXd ds(num_design); // (mu_st - 1.2704)
   Eigen::MatrixXd inv_sig_s = Eigen::MatrixXd::Zero(num_design, num_design); // diag(1 / sig_st^2)
   Eigen::VectorXd inv_method(num_design); // inverse transform method
-  Eigen::MatrixXd mixture_pdf(num_design, 7);
-  Eigen::MatrixXd mixture_cumsum = Eigen::MatrixXd::Zero(num_design, 7);
+	Matrix7d mixture_pdf(num_design, 7);
+	Matrix7d mixture_cumsum = Matrix7d::Zero(num_design, 7);
   for (int i = 0; i < num_design; i++) {
 		inv_method[i] = unif_rand(0, 1, rng);
   }

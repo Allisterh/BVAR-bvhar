@@ -1,41 +1,41 @@
 #include <bvhar/triangular>
 
 PYBIND11_MODULE(_cta, m) {
-	py::class_<bvhar::McmcRun<bvhar::McmcReg>>(m, "McmcLdlt")
+	py::class_<bvhar::CtaRun<bvhar::McmcReg>>(m, "McmcLdlt")
 		.def(
 			py::init<int, int, int, int, const Eigen::MatrixXd&, const Eigen::MatrixXd&,
 			py::dict&, py::dict&, py::dict&,
 			std::vector<py::dict>&, int, const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::VectorXi&,
 			const Eigen::MatrixXi&, bool, const Eigen::VectorXi&, bool, int>()
 		)
-		.def("returnRecords", &bvhar::McmcRun<bvhar::McmcReg>::returnRecords);
+		.def("returnRecords", &bvhar::CtaRun<bvhar::McmcReg>::returnRecords);
 	
-	py::class_<bvhar::McmcRun<bvhar::McmcReg, false>>(m, "McmcLdltGrp")
+	py::class_<bvhar::CtaRun<bvhar::McmcReg, false>>(m, "McmcLdltGrp")
 		.def(
 			py::init<int, int, int, int, const Eigen::MatrixXd&, const Eigen::MatrixXd&,
 			py::dict&, py::dict&, py::dict&,
 			std::vector<py::dict>&, int, const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::VectorXi&,
 			const Eigen::MatrixXi&, bool, const Eigen::VectorXi&, bool, int>()
 		)
-		.def("returnRecords", &bvhar::McmcRun<bvhar::McmcReg, false>::returnRecords);
+		.def("returnRecords", &bvhar::CtaRun<bvhar::McmcReg, false>::returnRecords);
 	
-	py::class_<bvhar::McmcRun<bvhar::McmcSv>>(m, "SvMcmc")
+	py::class_<bvhar::CtaRun<bvhar::McmcSv>>(m, "SvMcmc")
 		.def(
 			py::init<int, int, int, int, const Eigen::MatrixXd&, const Eigen::MatrixXd&,
 			py::dict&, py::dict&, py::dict&,
 			std::vector<py::dict>&, int, const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::VectorXi&,
 			const Eigen::MatrixXi&, bool, const Eigen::VectorXi&, bool, int>()
 		)
-		.def("returnRecords", &bvhar::McmcRun<bvhar::McmcSv>::returnRecords);
+		.def("returnRecords", &bvhar::CtaRun<bvhar::McmcSv>::returnRecords);
 	
-	py::class_<bvhar::McmcRun<bvhar::McmcSv, false>>(m, "SvGrpMcmc")
+	py::class_<bvhar::CtaRun<bvhar::McmcSv, false>>(m, "SvGrpMcmc")
 		.def(
 			py::init<int, int, int, int, const Eigen::MatrixXd&, const Eigen::MatrixXd&,
 			py::dict&, py::dict&, py::dict&,
 			std::vector<py::dict>&, int, const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::VectorXi&,
 			const Eigen::MatrixXi&, bool, const Eigen::VectorXi&, bool, int>()
 		)
-		.def("returnRecords", &bvhar::McmcRun<bvhar::McmcSv, false>::returnRecords);
+		.def("returnRecords", &bvhar::CtaRun<bvhar::McmcSv, false>::returnRecords);
 	
 	py::class_<bvhar::McmcForecastRun<bvhar::RegForecaster>>(m, "LdltForecast")
 		.def(py::init<int, int, int, const Eigen::MatrixXd&, bool, double, py::dict&, const Eigen::VectorXi&, bool, bool, int, bool>())

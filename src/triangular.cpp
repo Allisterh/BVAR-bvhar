@@ -29,10 +29,10 @@ Rcpp::List estimate_sur(int num_chains, int num_iter, int num_burn, int thin,
 												Rcpp::List param_init, int prior_type, bool ggl,
                         Eigen::VectorXi grp_id, Eigen::VectorXi own_id, Eigen::VectorXi cross_id, Eigen::MatrixXi grp_mat,
                         bool include_mean, Eigen::VectorXi seed_chain, bool display_progress, int nthreads) {
-	auto mcmc_run = [&]() -> std::unique_ptr<bvhar::McmcInterface> {
+	auto mcmc_run = [&]() -> std::unique_ptr<bvhar::McmcRun> {
 		if (param_reg.containsElementNamed("initial_mean")) {
 			if (ggl) {
-				return std::make_unique<bvhar::McmcRun<bvhar::McmcSv, true>>(
+				return std::make_unique<bvhar::CtaRun<bvhar::McmcSv, true>>(
 					num_chains, num_iter, num_burn, thin, x, y,
 					param_reg, param_prior, param_intercept, param_init, prior_type,
 					grp_id, own_id, cross_id, grp_mat,
@@ -40,7 +40,7 @@ Rcpp::List estimate_sur(int num_chains, int num_iter, int num_burn, int thin,
 					display_progress, nthreads
 				);
 			}
-			return std::make_unique<bvhar::McmcRun<bvhar::McmcSv, false>>(
+			return std::make_unique<bvhar::CtaRun<bvhar::McmcSv, false>>(
 				num_chains, num_iter, num_burn, thin, x, y,
 				param_reg, param_prior, param_intercept, param_init, prior_type,
 				grp_id, own_id, cross_id, grp_mat,
@@ -49,7 +49,7 @@ Rcpp::List estimate_sur(int num_chains, int num_iter, int num_burn, int thin,
 			);
 		}
 		if (ggl) {
-			return std::make_unique<bvhar::McmcRun<bvhar::McmcReg, true>>(
+			return std::make_unique<bvhar::CtaRun<bvhar::McmcReg, true>>(
 				num_chains, num_iter, num_burn, thin, x, y,
 				param_reg, param_prior, param_intercept, param_init, prior_type,
 				grp_id, own_id, cross_id, grp_mat,
@@ -57,7 +57,7 @@ Rcpp::List estimate_sur(int num_chains, int num_iter, int num_burn, int thin,
 				display_progress, nthreads
 			);
 		}
-		return std::make_unique<bvhar::McmcRun<bvhar::McmcReg, false>>(
+		return std::make_unique<bvhar::CtaRun<bvhar::McmcReg, false>>(
 			num_chains, num_iter, num_burn, thin, x, y,
 			param_reg, param_prior, param_intercept, param_init, prior_type,
 			grp_id, own_id, cross_id, grp_mat,

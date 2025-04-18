@@ -7,8 +7,6 @@
 #define BVHAR_BAYES_TRIANGULAR_TRIANGULAR_H
 
 #include "./config.h"
-#include "../../core/progress.h"
-#include "../../core/interrupt.h"
 #include <type_traits>
 
 namespace bvhar {
@@ -26,8 +24,7 @@ template <typename BaseMcmc, bool isGroup> class McmcNg;
 template <typename BaseMcmc, bool isGroup> class McmcDl;
 template <typename BaseMcmc> class McmcGdp;
 // Running MCMC
-class McmcInterface;
-template <typename BaseMcmc, bool isGroup> class McmcRun;
+template <typename BaseMcmc, bool isGroup> class CtaRun;
 
 /**
  * @brief Corrected Triangular Algorithm (CTA)
@@ -35,16 +32,13 @@ template <typename BaseMcmc, bool isGroup> class McmcRun;
  * This class is a base class to conduct corrected triangular algorithm.
  * 
  */
-class McmcTriangular {
+class McmcTriangular : public McmcAlgo {
 public:
 	McmcTriangular(const RegParams& params, const RegInits& inits, unsigned int seed)
-	: include_mean(params._mean), x(params._x), y(params._y),
+	: McmcAlgo(params, seed),
 		own_id(params._own_id), grp_id(params._grp_id), grp_vec(params._grp_mat.reshaped()), num_grp(grp_id.size()),
-		num_iter(params._iter), dim(params._dim), dim_design(params._dim_design), num_design(params._num_design),
-		num_lowerchol(params._num_lowerchol), num_coef(params._num_coef), num_alpha(params._num_alpha), nrow_coef(params._nrow),
 		// reg_record(std::make_unique<RegRecords>(num_iter, dim, num_design, num_coef, num_lowerchol)),
 		sparse_record(num_iter, dim, num_design, num_coef, num_lowerchol),
-		mcmc_step(0), rng(seed),
 		coef_vec(Eigen::VectorXd::Zero(num_coef)), contem_coef(inits._contem),
 		prior_alpha_mean(Eigen::VectorXd::Zero(num_coef)),
 		prior_alpha_prec(Eigen::VectorXd::Zero(num_coef)),
@@ -78,11 +72,7 @@ public:
 	 */
 	virtual void appendRecords(LIST& list) = 0;
 
-	/**
-	 * @brief MCMC warmup step
-	 * 
-	 */
-	void doWarmUp() {
+	void doWarmUp() override {
 		std::lock_guard<std::mutex> lock(mtx);
 		updateCoefPrec();
 		updatePenalty();
@@ -95,11 +85,7 @@ public:
 		updateState();
 	}
 
-	/**
-	 * @brief MCMC posterior sampling step
-	 * 
-	 */
-	void doPosteriorDraws() {
+	void doPosteriorDraws() override {
 		std::lock_guard<std::mutex> lock(mtx);
 		addStep();
 		updateCoefPrec();
@@ -114,26 +100,7 @@ public:
 		updateRecords();
 	}
 
-	/**
-	 * @brief Gather MCMC records
-	 * 
-	 * @return LIST 
-	 */
-	LIST gatherRecords() {
-		LIST res = reg_record->returnListRecords(dim, num_alpha, include_mean);
-		reg_record->appendRecords(res);
-		sparse_record.appendRecords(res, dim, num_alpha, include_mean);
-		return res;
-	}
-
-	/**
-	 * @brief Return posterior sampling records
-	 * 
-	 * @param num_burn Number of burn-in
-	 * @param thin Thinning
-	 * @return LIST `LIST` containing every MCMC draws
-	 */
-	LIST returnRecords(int num_burn, int thin) {
+	LIST returnRecords(int num_burn, int thin) override {
 		LIST res = gatherRecords();
 		appendRecords(res);
 		for (auto& record : res) {
@@ -185,26 +152,12 @@ public:
 	}
 
 protected:
-	bool include_mean;
-	Eigen::MatrixXd x;
-	Eigen::MatrixXd y;
-	std::mutex mtx;
 	std::set<int> own_id;
 	Eigen::VectorXi grp_id;
 	Eigen::VectorXi grp_vec;
 	int num_grp;
-	int num_iter;
-	int dim; // k
-  int dim_design; // kp(+1)
-  int num_design; // n = T - p
-  int num_lowerchol;
-  int num_coef;
-	int num_alpha;
-	int nrow_coef;
 	std::unique_ptr<RegRecords> reg_record;
 	SparseRecords sparse_record;
-	std::atomic<int> mcmc_step; // MCMC step
-	BHRNG rng; // RNG instance for multi-chain
 	Eigen::VectorXd coef_vec;
 	Eigen::VectorXd contem_coef;
 	Eigen::VectorXd prior_alpha_mean; // prior mean vector of alpha
@@ -348,10 +301,16 @@ protected:
 	void updateChol() { chol_lower = build_inv_lower(dim, contem_coef); }
 
 	/**
-	 * @brief Increment the MCMC step
+	 * @brief Gather MCMC records
 	 * 
+	 * @return LIST 
 	 */
-	void addStep() { mcmc_step++; }
+	LIST gatherRecords() {
+		LIST res = reg_record->returnListRecords(dim, num_alpha, include_mean);
+		reg_record->appendRecords(res);
+		sparse_record.appendRecords(res, dim, num_alpha, include_mean);
+		return res;
+	}
 };
 
 /**
@@ -1167,31 +1126,15 @@ inline std::vector<std::unique_ptr<BaseMcmc>> initialize_mcmc(
 }
 
 /**
- * @brief Interface class for MCMC
- * 
- */
-class McmcInterface {
-public:
-	virtual ~McmcInterface() = default;
-
-	/**
-	 * @brief Conduct multi-chain MCMC and return MCMC records of every chain
-	 * 
-	 * @return LIST_OF_LIST `LIST_OF_LIST`
-	 */
-	virtual LIST_OF_LIST returnRecords() = 0;
-};
-
-/**
- * @brief Class that conducts MCMC
+ * @brief Class that conducts MCMC using CTA
  * 
  * @tparam BaseMcmc `McmcReg` or `McmcSv`
  * @tparam isGroup If `true`, use group shrinkage parameter
  */
 template <typename BaseMcmc = McmcReg, bool isGroup = true>
-class McmcRun : public McmcInterface {
+class CtaRun : public McmcRun {
 public:
-	McmcRun(
+	CtaRun(
 		int num_chains, int num_iter, int num_burn, int thin,
     const Eigen::MatrixXd& x, const Eigen::MatrixXd& y,
 		LIST& param_cov, LIST& param_prior, LIST& param_intercept,
@@ -1199,99 +1142,18 @@ public:
     const Eigen::VectorXi& grp_id, const Eigen::VectorXi& own_id, const Eigen::VectorXi& cross_id, const Eigen::MatrixXi& grp_mat,
     bool include_mean, const Eigen::VectorXi& seed_chain, bool display_progress, int nthreads
 	)
-	: num_chains(num_chains), num_iter(num_iter), num_burn(num_burn), thin(thin), nthreads(nthreads),
-		display_progress(display_progress), mcmc_ptr(num_chains), res(num_chains) {
-		mcmc_ptr = initialize_mcmc<BaseMcmc, isGroup>(
+	: McmcRun(num_chains, num_iter, num_burn, thin, display_progress, nthreads) {
+		auto temp_mcmc = initialize_mcmc<BaseMcmc, isGroup>(
 			num_chains, num_iter - num_burn, x, y,
 			param_cov, param_prior, param_intercept, param_init, prior_type,
 			grp_id, own_id, cross_id, grp_mat,
 			include_mean, seed_chain
 		);
-	}
-	virtual ~McmcRun() = default;
-
-	/**
-	 * @brief Conduct multi-chain MCMC
-	 * 
-	 */
-	void fit() {
-		if (num_chains == 1) {
-			runGibbs(0);
-		} else {
-		#ifdef _OPENMP
-			#pragma omp parallel for num_threads(nthreads)
-		#endif
-			for (int chain = 0; chain < num_chains; chain++) {
-				runGibbs(chain);
-			}
+		for (int i = 0; i < num_chains; ++i) {
+			mcmc_ptr[i] = std::move(temp_mcmc[i]);
 		}
 	}
-
-	LIST_OF_LIST returnRecords() override {
-		fit();
-		return WRAP(res);
-	}
-
-protected:
-	/**
-	 * @brief Single chain MCMC
-	 * 
-	 * @param chain Chain id
-	 */
-	void runGibbs(int chain) {
-		std::string log_name = fmt::format("Chain {}", chain + 1);
-		auto logger = spdlog::get(log_name);
-		if (logger == nullptr) {
-			logger = SPDLOG_SINK_MT(log_name);
-		}
-		logger->set_pattern("[%n] [Thread " + std::to_string(omp_get_thread_num()) + "] %v");
-		int logging_freq = num_iter / 20; // 5 percent
-		if (logging_freq == 0) {
-			logging_freq = 1;
-		}
-		bvharinterrupt();
-		for (int i = 0; i < num_burn; ++i) {
-			mcmc_ptr[chain]->doWarmUp();
-			if (display_progress && (i + 1) % logging_freq == 0) {
-				logger->info("{} / {} (Warmup)", i + 1, num_iter);
-			}
-		}
-		logger->flush();
-		for (int i = num_burn; i < num_iter; ++i) {
-			if (bvharinterrupt::is_interrupted()) {
-				logger->warn("User interrupt in {} / {}", i + 1, num_iter);
-			#ifdef _OPENMP
-				#pragma omp critical
-			#endif
-				{
-					res[chain] = mcmc_ptr[chain]->returnRecords(0, 1);
-				}
-				break;
-			}
-			mcmc_ptr[chain]->doPosteriorDraws();
-			if (display_progress && (i + 1) % logging_freq == 0) {
-				logger->info("{} / {} (Sampling)", i + 1, num_iter);
-			}
-		}
-	#ifdef _OPENMP
-		#pragma omp critical
-	#endif
-		{
-			res[chain] = mcmc_ptr[chain]->returnRecords(0, thin);
-		}
-		logger->flush();
-		spdlog::drop(log_name);
-	}
-
-private:
-	int num_chains;
-	int num_iter;
-	int num_burn;
-	int thin;
-	int nthreads;
-	bool display_progress;
-	std::vector<std::unique_ptr<BaseMcmc>> mcmc_ptr;
-	std::vector<LIST> res;
+	virtual ~CtaRun() = default;
 };
 
 } // namespace bvhar

@@ -49,13 +49,8 @@ struct NgRecords;
  * 
  */
 struct RegParams : McmcParams {
-	// int _iter;
-	// Eigen::MatrixXd _x, _y;
-	// Eigen::VectorXd _sig_shp, _sig_scl, _mean_non;
-	Eigen::VectorXd _sig_shp, _sig_scl;
-	// double _sd_non;
-	// bool _mean;
-	// int _dim, _dim_design, _num_design, _num_lowerchol, _num_coef, _num_alpha, _nrow;
+	Eigen::VectorXd _sig_shp, _sig_scl, _mean_non;
+	double _sd_non;
 	std::set<int> _own_id;
 	std::set<int> _cross_id;
 	Eigen::VectorXi _grp_id;
@@ -69,15 +64,11 @@ struct RegParams : McmcParams {
 		LIST& intercept,
 		bool include_mean
 	)
-	: McmcParams(num_iter, x, y, intercept, include_mean),
-	// : _iter(num_iter), _x(x), _y(y),
+	: McmcParams(num_iter, x, y, include_mean),
 		_sig_shp(CAST<Eigen::VectorXd>(spec["shape"])),
 		_sig_scl(CAST<Eigen::VectorXd>(spec["scale"])),
-		// _mean_non(CAST<Eigen::VectorXd>(intercept["mean_non"])),
-		// _sd_non(CAST_DOUBLE(intercept["sd_non"])), _mean(include_mean),
-		// _dim(y.cols()), _dim_design(x.cols()), _num_design(y.rows()),
-		// _num_lowerchol(_dim * (_dim - 1) / 2), _num_coef(_dim * _dim_design),
-		// _num_alpha(_mean ? _num_coef - _dim : _num_coef), _nrow(_num_alpha / _dim),
+		_mean_non(CAST<Eigen::VectorXd>(intercept["mean_non"])),
+		_sd_non(CAST_DOUBLE(intercept["sd_non"])),
 		_grp_id(grp_id), _grp_mat(grp_mat) {
 		set_grp_id(_own_id, _cross_id, own_id, cross_id);
 	}

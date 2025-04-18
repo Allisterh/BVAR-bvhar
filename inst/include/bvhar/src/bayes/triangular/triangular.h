@@ -35,13 +35,10 @@ template <typename BaseMcmc, bool isGroup> class CtaRun;
 class McmcTriangular : public McmcAlgo {
 public:
 	McmcTriangular(const RegParams& params, const RegInits& inits, unsigned int seed)
-	: McmcAlgo(seed), include_mean(params._mean), x(params._x), y(params._y),
+	: McmcAlgo(params, seed),
 		own_id(params._own_id), grp_id(params._grp_id), grp_vec(params._grp_mat.reshaped()), num_grp(grp_id.size()),
-		num_iter(params._iter), dim(params._dim), dim_design(params._dim_design), num_design(params._num_design),
-		num_lowerchol(params._num_lowerchol), num_coef(params._num_coef), num_alpha(params._num_alpha), nrow_coef(params._nrow),
 		// reg_record(std::make_unique<RegRecords>(num_iter, dim, num_design, num_coef, num_lowerchol)),
 		sparse_record(num_iter, dim, num_design, num_coef, num_lowerchol),
-		// mcmc_step(0), rng(seed),
 		coef_vec(Eigen::VectorXd::Zero(num_coef)), contem_coef(inits._contem),
 		prior_alpha_mean(Eigen::VectorXd::Zero(num_coef)),
 		prior_alpha_prec(Eigen::VectorXd::Zero(num_coef)),
@@ -155,21 +152,10 @@ public:
 	}
 
 protected:
-	bool include_mean;
-	Eigen::MatrixXd x;
-	Eigen::MatrixXd y;
 	std::set<int> own_id;
 	Eigen::VectorXi grp_id;
 	Eigen::VectorXi grp_vec;
 	int num_grp;
-	int num_iter;
-	int dim; // k
-  int dim_design; // kp(+1)
-  int num_design; // n = T - p
-  int num_lowerchol;
-  int num_coef;
-	int num_alpha;
-	int nrow_coef;
 	std::unique_ptr<RegRecords> reg_record;
 	SparseRecords sparse_record;
 	Eigen::VectorXd coef_vec;

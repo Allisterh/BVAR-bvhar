@@ -6,6 +6,7 @@
 #ifndef BVHAR_BAYES_TRIANGULAR_TRIANGULAR_H
 #define BVHAR_BAYES_TRIANGULAR_TRIANGULAR_H
 
+#include "../bayes.h"
 #include "./config.h"
 #include "../../core/progress.h"
 #include "../../core/interrupt.h"
@@ -35,16 +36,16 @@ template <typename BaseMcmc, bool isGroup> class McmcRun;
  * This class is a base class to conduct corrected triangular algorithm.
  * 
  */
-class McmcTriangular {
+class McmcTriangular : public McmcAlgo {
 public:
 	McmcTriangular(const RegParams& params, const RegInits& inits, unsigned int seed)
-	: include_mean(params._mean), x(params._x), y(params._y),
+	: McmcAlgo(seed), include_mean(params._mean), x(params._x), y(params._y),
 		own_id(params._own_id), grp_id(params._grp_id), grp_vec(params._grp_mat.reshaped()), num_grp(grp_id.size()),
 		num_iter(params._iter), dim(params._dim), dim_design(params._dim_design), num_design(params._num_design),
 		num_lowerchol(params._num_lowerchol), num_coef(params._num_coef), num_alpha(params._num_alpha), nrow_coef(params._nrow),
 		// reg_record(std::make_unique<RegRecords>(num_iter, dim, num_design, num_coef, num_lowerchol)),
 		sparse_record(num_iter, dim, num_design, num_coef, num_lowerchol),
-		mcmc_step(0), rng(seed),
+		// mcmc_step(0), rng(seed),
 		coef_vec(Eigen::VectorXd::Zero(num_coef)), contem_coef(inits._contem),
 		prior_alpha_mean(Eigen::VectorXd::Zero(num_coef)),
 		prior_alpha_prec(Eigen::VectorXd::Zero(num_coef)),
@@ -78,11 +79,7 @@ public:
 	 */
 	virtual void appendRecords(LIST& list) = 0;
 
-	/**
-	 * @brief MCMC warmup step
-	 * 
-	 */
-	void doWarmUp() {
+	void doWarmUp() override {
 		std::lock_guard<std::mutex> lock(mtx);
 		updateCoefPrec();
 		updatePenalty();
@@ -95,11 +92,7 @@ public:
 		updateState();
 	}
 
-	/**
-	 * @brief MCMC posterior sampling step
-	 * 
-	 */
-	void doPosteriorDraws() {
+	void doPosteriorDraws() override {
 		std::lock_guard<std::mutex> lock(mtx);
 		addStep();
 		updateCoefPrec();
@@ -114,26 +107,7 @@ public:
 		updateRecords();
 	}
 
-	/**
-	 * @brief Gather MCMC records
-	 * 
-	 * @return LIST 
-	 */
-	LIST gatherRecords() {
-		LIST res = reg_record->returnListRecords(dim, num_alpha, include_mean);
-		reg_record->appendRecords(res);
-		sparse_record.appendRecords(res, dim, num_alpha, include_mean);
-		return res;
-	}
-
-	/**
-	 * @brief Return posterior sampling records
-	 * 
-	 * @param num_burn Number of burn-in
-	 * @param thin Thinning
-	 * @return LIST `LIST` containing every MCMC draws
-	 */
-	LIST returnRecords(int num_burn, int thin) {
+	LIST returnRecords(int num_burn, int thin) override {
 		LIST res = gatherRecords();
 		appendRecords(res);
 		for (auto& record : res) {
@@ -188,7 +162,6 @@ protected:
 	bool include_mean;
 	Eigen::MatrixXd x;
 	Eigen::MatrixXd y;
-	std::mutex mtx;
 	std::set<int> own_id;
 	Eigen::VectorXi grp_id;
 	Eigen::VectorXi grp_vec;
@@ -203,8 +176,6 @@ protected:
 	int nrow_coef;
 	std::unique_ptr<RegRecords> reg_record;
 	SparseRecords sparse_record;
-	std::atomic<int> mcmc_step; // MCMC step
-	BHRNG rng; // RNG instance for multi-chain
 	Eigen::VectorXd coef_vec;
 	Eigen::VectorXd contem_coef;
 	Eigen::VectorXd prior_alpha_mean; // prior mean vector of alpha
@@ -348,10 +319,16 @@ protected:
 	void updateChol() { chol_lower = build_inv_lower(dim, contem_coef); }
 
 	/**
-	 * @brief Increment the MCMC step
+	 * @brief Gather MCMC records
 	 * 
+	 * @return LIST 
 	 */
-	void addStep() { mcmc_step++; }
+	LIST gatherRecords() {
+		LIST res = reg_record->returnListRecords(dim, num_alpha, include_mean);
+		reg_record->appendRecords(res);
+		sparse_record.appendRecords(res, dim, num_alpha, include_mean);
+		return res;
+	}
 };
 
 /**

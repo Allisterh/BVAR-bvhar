@@ -1,7 +1,7 @@
 /**
  * @file bayes.h
  * @author your name (you@domain.com)
- * @brief MCMC
+ * @brief MCMC base class
  * 
  * @copyright Copyright (c) 2025
  * 
@@ -10,8 +10,34 @@
 #define BVHAR_BAYES_BAYES_H
 
 #include "../core/common.h"
+#include "../core/progress.h"
+#include "../core/interrupt.h"
 
 namespace bvhar {
+
+struct McmcParams;
+class McmcAlgo;
+class McmcRun;
+
+struct McmcParams {
+	int _iter;
+	Eigen::MatrixXd _x, _y;
+	Eigen::VectorXd _mean_non;
+	double _sd_non;
+	bool _mean;
+	int _dim, _dim_design, _num_design, _num_lowerchol, _num_coef, _num_alpha, _nrow;
+
+	McmcParams(
+		int num_iter, const Eigen::MatrixXd& x, const Eigen::MatrixXd& y,
+		LIST& intercept, bool include_mean
+	)
+	: _iter(num_iter), _x(x), _y(y),
+		_mean_non(CAST<Eigen::VectorXd>(intercept["mean_non"])),
+		_sd_non(CAST_DOUBLE(intercept["sd_non"])), _mean(include_mean),
+		_dim(y.cols()), _dim_design(x.cols()), _num_design(y.rows()),
+		_num_lowerchol(_dim * (_dim - 1) / 2), _num_coef(_dim * _dim_design),
+		_num_alpha(_mean ? _num_coef - _dim : _num_coef), _nrow(_num_alpha / _dim) {}
+};
 
 class McmcAlgo {
 public:
@@ -49,6 +75,105 @@ protected:
 	 * 
 	 */
 	void addStep() { ++mcmc_step; }
+};
+
+/**
+ * @brief Class that conducts MCMC
+ * 
+ */
+class McmcRun {
+public:
+	McmcRun(int num_chains, int num_iter, int num_burn, int thin, bool display_progress, int nthreads)
+	: num_chains(num_chains), num_iter(num_iter), num_burn(num_burn), thin(thin), nthreads(nthreads),
+		display_progress(display_progress), mcmc_ptr(num_chains), res(num_chains) {}
+	virtual ~McmcRun() = default;
+
+	/**
+	 * @brief Conduct multi-chain MCMC
+	 * 
+	 */
+	void fit() {
+		if (num_chains == 1) {
+			runGibbs(0);
+		} else {
+		#ifdef _OPENMP
+			#pragma omp parallel for num_threads(nthreads)
+		#endif
+			for (int chain = 0; chain < num_chains; chain++) {
+				runGibbs(chain);
+			}
+		}
+	}
+
+	/**
+	 * @brief Conduct multi-chain MCMC and return MCMC records of every chain
+	 * 
+	 * @return LIST_OF_LIST `LIST_OF_LIST`
+	 */
+	LIST_OF_LIST returnRecords() {
+		fit();
+		return WRAP(res);
+	}
+
+protected:
+	int num_chains;
+	int num_iter;
+	int num_burn;
+	int thin;
+	int nthreads;
+	bool display_progress;
+	std::vector<std::unique_ptr<McmcAlgo>> mcmc_ptr;
+	std::vector<LIST> res;
+
+	/**
+	 * @brief Single chain MCMC
+	 * 
+	 * @param chain Chain id
+	 */
+	void runGibbs(int chain) {
+		std::string log_name = fmt::format("Chain {}", chain + 1);
+		auto logger = spdlog::get(log_name);
+		if (logger == nullptr) {
+			logger = SPDLOG_SINK_MT(log_name);
+		}
+		logger->set_pattern("[%n] [Thread " + std::to_string(omp_get_thread_num()) + "] %v");
+		int logging_freq = num_iter / 20; // 5 percent
+		if (logging_freq == 0) {
+			logging_freq = 1;
+		}
+		bvharinterrupt();
+		for (int i = 0; i < num_burn; ++i) {
+			mcmc_ptr[chain]->doWarmUp();
+			if (display_progress && (i + 1) % logging_freq == 0) {
+				logger->info("{} / {} (Warmup)", i + 1, num_iter);
+			}
+		}
+		logger->flush();
+		for (int i = num_burn; i < num_iter; ++i) {
+			if (bvharinterrupt::is_interrupted()) {
+				logger->warn("User interrupt in {} / {}", i + 1, num_iter);
+			#ifdef _OPENMP
+				#pragma omp critical
+			#endif
+				{
+					res[chain] = mcmc_ptr[chain]->returnRecords(0, 1);
+				}
+				break;
+			}
+			mcmc_ptr[chain]->doPosteriorDraws();
+			if (display_progress && (i + 1) % logging_freq == 0) {
+				logger->info("{} / {} (Sampling)", i + 1, num_iter);
+			}
+		}
+	#ifdef _OPENMP
+		#pragma omp critical
+	#endif
+		{
+			res[chain] = mcmc_ptr[chain]->returnRecords(0, thin);
+		}
+		logger->flush();
+		spdlog::drop(log_name);
+	}
 };
 
 } // namespace bvhar

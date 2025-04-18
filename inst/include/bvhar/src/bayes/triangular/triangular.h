@@ -6,10 +6,7 @@
 #ifndef BVHAR_BAYES_TRIANGULAR_TRIANGULAR_H
 #define BVHAR_BAYES_TRIANGULAR_TRIANGULAR_H
 
-#include "../bayes.h"
 #include "./config.h"
-#include "../../core/progress.h"
-#include "../../core/interrupt.h"
 #include <type_traits>
 
 namespace bvhar {
@@ -27,8 +24,7 @@ template <typename BaseMcmc, bool isGroup> class McmcNg;
 template <typename BaseMcmc, bool isGroup> class McmcDl;
 template <typename BaseMcmc> class McmcGdp;
 // Running MCMC
-class McmcInterface;
-template <typename BaseMcmc, bool isGroup> class McmcRun;
+template <typename BaseMcmc, bool isGroup> class CtaRun;
 
 /**
  * @brief Corrected Triangular Algorithm (CTA)
@@ -1144,31 +1140,15 @@ inline std::vector<std::unique_ptr<BaseMcmc>> initialize_mcmc(
 }
 
 /**
- * @brief Interface class for MCMC
- * 
- */
-class McmcInterface {
-public:
-	virtual ~McmcInterface() = default;
-
-	/**
-	 * @brief Conduct multi-chain MCMC and return MCMC records of every chain
-	 * 
-	 * @return LIST_OF_LIST `LIST_OF_LIST`
-	 */
-	virtual LIST_OF_LIST returnRecords() = 0;
-};
-
-/**
- * @brief Class that conducts MCMC
+ * @brief Class that conducts MCMC using CTA
  * 
  * @tparam BaseMcmc `McmcReg` or `McmcSv`
  * @tparam isGroup If `true`, use group shrinkage parameter
  */
 template <typename BaseMcmc = McmcReg, bool isGroup = true>
-class McmcRun : public McmcInterface {
+class CtaRun : public McmcRun {
 public:
-	McmcRun(
+	CtaRun(
 		int num_chains, int num_iter, int num_burn, int thin,
     const Eigen::MatrixXd& x, const Eigen::MatrixXd& y,
 		LIST& param_cov, LIST& param_prior, LIST& param_intercept,
@@ -1176,99 +1156,18 @@ public:
     const Eigen::VectorXi& grp_id, const Eigen::VectorXi& own_id, const Eigen::VectorXi& cross_id, const Eigen::MatrixXi& grp_mat,
     bool include_mean, const Eigen::VectorXi& seed_chain, bool display_progress, int nthreads
 	)
-	: num_chains(num_chains), num_iter(num_iter), num_burn(num_burn), thin(thin), nthreads(nthreads),
-		display_progress(display_progress), mcmc_ptr(num_chains), res(num_chains) {
-		mcmc_ptr = initialize_mcmc<BaseMcmc, isGroup>(
+	: McmcRun(num_chains, num_iter, num_burn, thin, display_progress, nthreads) {
+		auto temp_mcmc = initialize_mcmc<BaseMcmc, isGroup>(
 			num_chains, num_iter - num_burn, x, y,
 			param_cov, param_prior, param_intercept, param_init, prior_type,
 			grp_id, own_id, cross_id, grp_mat,
 			include_mean, seed_chain
 		);
-	}
-	virtual ~McmcRun() = default;
-
-	/**
-	 * @brief Conduct multi-chain MCMC
-	 * 
-	 */
-	void fit() {
-		if (num_chains == 1) {
-			runGibbs(0);
-		} else {
-		#ifdef _OPENMP
-			#pragma omp parallel for num_threads(nthreads)
-		#endif
-			for (int chain = 0; chain < num_chains; chain++) {
-				runGibbs(chain);
-			}
+		for (int i = 0; i < num_chains; ++i) {
+			mcmc_ptr[i] = std::move(temp_mcmc[i]);
 		}
 	}
-
-	LIST_OF_LIST returnRecords() override {
-		fit();
-		return WRAP(res);
-	}
-
-protected:
-	/**
-	 * @brief Single chain MCMC
-	 * 
-	 * @param chain Chain id
-	 */
-	void runGibbs(int chain) {
-		std::string log_name = fmt::format("Chain {}", chain + 1);
-		auto logger = spdlog::get(log_name);
-		if (logger == nullptr) {
-			logger = SPDLOG_SINK_MT(log_name);
-		}
-		logger->set_pattern("[%n] [Thread " + std::to_string(omp_get_thread_num()) + "] %v");
-		int logging_freq = num_iter / 20; // 5 percent
-		if (logging_freq == 0) {
-			logging_freq = 1;
-		}
-		bvharinterrupt();
-		for (int i = 0; i < num_burn; ++i) {
-			mcmc_ptr[chain]->doWarmUp();
-			if (display_progress && (i + 1) % logging_freq == 0) {
-				logger->info("{} / {} (Warmup)", i + 1, num_iter);
-			}
-		}
-		logger->flush();
-		for (int i = num_burn; i < num_iter; ++i) {
-			if (bvharinterrupt::is_interrupted()) {
-				logger->warn("User interrupt in {} / {}", i + 1, num_iter);
-			#ifdef _OPENMP
-				#pragma omp critical
-			#endif
-				{
-					res[chain] = mcmc_ptr[chain]->returnRecords(0, 1);
-				}
-				break;
-			}
-			mcmc_ptr[chain]->doPosteriorDraws();
-			if (display_progress && (i + 1) % logging_freq == 0) {
-				logger->info("{} / {} (Sampling)", i + 1, num_iter);
-			}
-		}
-	#ifdef _OPENMP
-		#pragma omp critical
-	#endif
-		{
-			res[chain] = mcmc_ptr[chain]->returnRecords(0, thin);
-		}
-		logger->flush();
-		spdlog::drop(log_name);
-	}
-
-private:
-	int num_chains;
-	int num_iter;
-	int num_burn;
-	int thin;
-	int nthreads;
-	bool display_progress;
-	std::vector<std::unique_ptr<BaseMcmc>> mcmc_ptr;
-	std::vector<LIST> res;
+	virtual ~CtaRun() = default;
 };
 
 } // namespace bvhar

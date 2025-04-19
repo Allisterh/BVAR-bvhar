@@ -469,6 +469,25 @@ private:
 	Eigen::VectorXd local_lev;
 };
 
+/**
+ * @brief Function to initialize `ShrinkageUpdater`
+ * 
+ * @tparam UPDATER Shrinkage priors
+ * @tparam PARAMS Corresponding parameter struct
+ * @tparam INITS Corresponding initialization struct
+ * @param param_prior Shrinkage prior configuration
+ * @param param_init Initial values
+ * @return std::unique_ptr<ShrinkageUpdater> 
+ */
+template <typename UPDATER = ShrinkageUpdater, typename PARAMS = ShrinkageParams, typename INITS = ShrinkageInits>
+inline std::unique_ptr<ShrinkageUpdater> initialize_shrinkageupdater(LIST& param_prior, LIST& param_init) {
+	std::unique_ptr<ShrinkageUpdater> shrinkage_ptr;
+	PARAMS params(param_prior);
+	INITS inits(param_init);
+	shrinkage_ptr = std::make_unique<UPDATER>(params, inits);
+	return shrinkage_ptr;
+}
+
 template <typename PARAMS = ShrinkageParams, typename INITS = ShrinkageInits, bool isGroup = true>
 inline std::unique_ptr<ShrinkageUpdater> initialize_shrinkageupdater(LIST& param_prior, LIST& param_init, int prior_type) {
 	std::unique_ptr<ShrinkageUpdater> shrinkage_ptr;

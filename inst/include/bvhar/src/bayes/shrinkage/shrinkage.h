@@ -2,7 +2,6 @@
 #define BVHAR_BAYES_SHRINKAGE_SHRINKAGE_H
 
 #include "./config.h"
-#include <type_traits>
 
 namespace bvhar {
 
@@ -38,9 +37,9 @@ public:
 	 */
 	virtual void updateCoefPrec(
 		Eigen::Ref<Eigen::VectorXd> prior_alpha_prec,
-		Eigen::Ref<const Eigen::VectorXd> coef_vec,
+		Eigen::Ref<Eigen::VectorXd> coef_vec,
 		int num_alpha, int num_grp,
-		const Eigen::VectorXi& grp_vec, const Eigen::VectorXi& grp_id,
+		Eigen::VectorXi& grp_vec, Eigen::VectorXi& grp_id,
 		BHRNG& rng
 	) = 0;
 
@@ -76,9 +75,9 @@ public:
 	virtual ~MinnUpdater() = default;
 	void updateCoefPrec(
 		Eigen::Ref<Eigen::VectorXd> prior_alpha_prec,
-		Eigen::Ref<const Eigen::VectorXd> coef_vec,
+		Eigen::Ref<Eigen::VectorXd> coef_vec,
 		int num_alpha, int num_grp,
-		const Eigen::VectorXi& grp_vec, const Eigen::VectorXi& grp_id,
+		Eigen::VectorXi& grp_vec, Eigen::VectorXi& grp_id,
 		BHRNG& rng
 	) override {}
 	void updateImpactPrec(
@@ -96,31 +95,29 @@ public:
  */
 class HierminnUpdater : public ShrinkageUpdater {
 public:
-	HierminnUpdater(const HierminnParams2& params, const HierminnInits& inits)
+	HierminnUpdater(const HierminnParams2& params, const HierminnInits2& inits)
 	: ShrinkageUpdater(params, inits),
 		prior_mean(params._prior_mean.reshaped()),
 		grid_size(params._grid_size),
-		own_shape(params.shape), own_rate(params.rate),
-		cross_shape(params.shape), cross_rate(params.rate),
+		own_shape(params._shape), own_rate(params._rate),
+		// cross_shape(params.shape), cross_rate(params.rate),
 		own_lambda(inits._own_lambda), cross_lambda(inits._cross_lambda) {}
 	virtual ~HierminnUpdater() = default;
 
 	void updateCoefPrec(
 		Eigen::Ref<Eigen::VectorXd> prior_alpha_prec,
-		Eigen::Ref<const Eigen::VectorXd> coef_vec,
+		Eigen::Ref<Eigen::VectorXd> coef_vec,
 		int num_alpha, int num_grp,
-		const Eigen::VectorXi& grp_vec, const Eigen::VectorXi& grp_id,
+		Eigen::VectorXi& grp_vec, Eigen::VectorXi& grp_id,
 		BHRNG& rng
 	) override {
 		minnesota_lambda(
 			own_lambda, own_shape, own_rate,
-			// coef_vec.head(num_alpha), prior_mean.head(num_alpha), prior_alpha_prec.head(num_alpha),
 			coef_vec.head(num_alpha), prior_mean, prior_alpha_prec.head(num_alpha),
 			rng
 		);
 		minnesota_nu_griddy(
 			cross_lambda, grid_size,
-			// coef_vec.head(num_alpha), prior_mean.head(num_alpha), prior_alpha_prec.head(num_alpha),
 			coef_vec.head(num_alpha), prior_mean, prior_alpha_prec.head(num_alpha),
 			grp_vec, grp_id, rng
 		);
@@ -143,7 +140,7 @@ public:
 private:
 	Eigen::VectorXd prior_mean;
 	int grid_size;
-	double own_shape, own_rate, cross_shape, cross_rate;
+	double own_shape, own_rate;
 	double own_lambda, cross_lambda;
 };
 
@@ -163,9 +160,9 @@ public:
 	
 	void updateCoefPrec(
 		Eigen::Ref<Eigen::VectorXd> prior_alpha_prec,
-		Eigen::Ref<const Eigen::VectorXd> coef_vec,
+		Eigen::Ref<Eigen::VectorXd> coef_vec,
 		int num_alpha, int num_grp,
-		const Eigen::VectorXi& grp_vec, const Eigen::VectorXi& grp_id,
+		Eigen::VectorXi& grp_vec, Eigen::VectorXi& grp_id,
 		BHRNG& rng
 	) override {
 		ssvs_local_slab(slab, dummy, coef_vec.head(num_alpha), ig_shape, ig_scl, spike_scl, rng);
@@ -215,8 +212,8 @@ private:
 template <bool isGroup = true>
 class HorseshoeUpdater : public ShrinkageUpdater {
 public:
-	HorseshoeUpdater(const ShrinkageParams& params, const HorseshoeInits& inits)
-	: ShrinkageUpdater(),
+	HorseshoeUpdater(const ShrinkageParams& params, const HorseshoeInits2& inits)
+	: ShrinkageUpdater(params, inits),
 		local_lev(inits._local), group_lev(inits._group), global_lev(isGroup ? inits._global : 1.0),
 		shrink_fac(Eigen::VectorXd::Zero(local_lev.size())),
 		latent_local(Eigen::VectorXd::Zero(local_lev.size())),
@@ -227,9 +224,9 @@ public:
 
 	void updateCoefPrec(
 		Eigen::Ref<Eigen::VectorXd> prior_alpha_prec,
-		Eigen::Ref<const Eigen::VectorXd> coef_vec,
+		Eigen::Ref<Eigen::VectorXd> coef_vec,
 		int num_alpha, int num_grp,
-		const Eigen::VectorXi& grp_vec, const Eigen::VectorXi& grp_id,
+		Eigen::VectorXi& grp_vec, Eigen::VectorXi& grp_id,
 		BHRNG& rng
 	) override {
 		horseshoe_latent(latent_group, group_lev, rng);
@@ -300,9 +297,9 @@ public:
 	
 	void updateCoefPrec(
 		Eigen::Ref<Eigen::VectorXd> prior_alpha_prec,
-		Eigen::Ref<const Eigen::VectorXd> coef_vec,
+		Eigen::Ref<Eigen::VectorXd> coef_vec,
 		int num_alpha, int num_grp,
-		const Eigen::VectorXi& grp_vec, const Eigen::VectorXi& grp_id,
+		Eigen::VectorXi& grp_vec, Eigen::VectorXi& grp_id,
 		BHRNG& rng
 	) override {
 		ng_mn_shape_jump(local_shape, local_lev, group_lev, grp_vec, grp_id, global_lev, mh_sd, rng);
@@ -357,7 +354,7 @@ private:
 template <bool isGroup = true>
 class DlUpdater : public ShrinkageUpdater {
 public:
-	DlUpdater(const DlParams2& params, const GlInits2& inits)
+	DlUpdater(const DlParams2& params, const HorseshoeInits2& inits)
 	: ShrinkageUpdater(params, inits),
 		dir_concen(0.0), shape(params._shape), scl(params._scl), grid_size(params._grid_size),
 		local_lev(inits._local), group_lev(inits._group), global_lev(isGroup ? inits._global : 1.0),
@@ -367,9 +364,9 @@ public:
 	
 	void updateCoefPrec(
 		Eigen::Ref<Eigen::VectorXd> prior_alpha_prec,
-		Eigen::Ref<const Eigen::VectorXd> coef_vec,
+		Eigen::Ref<Eigen::VectorXd> coef_vec,
 		int num_alpha, int num_grp,
-		const Eigen::VectorXi& grp_vec, const Eigen::VectorXi& grp_id,
+		Eigen::VectorXi& grp_vec, Eigen::VectorXi& grp_id,
 		BHRNG& rng
 	) override {
 		dl_mn_sparsity(group_lev, grp_vec, grp_id, global_lev, local_lev, shape, scl, coef_vec.head(num_alpha), rng);
@@ -422,7 +419,7 @@ private:
 template <bool isGroup = true>
 class GdpUpdater : public ShrinkageUpdater {
 public:
-	GdpUpdater(const GdpParams& params, const GdpInits2& inits)
+	GdpUpdater(const GdpParams2& params, const GdpInits2& inits)
 	: ShrinkageUpdater(params, inits),
 		shape_grid(params._grid_shape), rate_grid(params._grid_rate),
 		group_rate(inits._group_rate), group_rate_fac(Eigen::VectorXd::Ones(inits._local.size())),
@@ -432,9 +429,9 @@ public:
 	
 	void updateCoefPrec(
 		Eigen::Ref<Eigen::VectorXd> prior_alpha_prec,
-		Eigen::Ref<const Eigen::VectorXd> coef_vec,
+		Eigen::Ref<Eigen::VectorXd> coef_vec,
 		int num_alpha, int num_grp,
-		const Eigen::VectorXi& grp_vec, const Eigen::VectorXi& grp_id,
+		Eigen::VectorXi& grp_vec, Eigen::VectorXi& grp_id,
 		BHRNG& rng
 	) override {
 		gdp_shape_griddy(gamma_shape, gamma_rate, shape_grid, coef_vec.head(num_alpha), rng);

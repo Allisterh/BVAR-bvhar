@@ -993,6 +993,25 @@ inline double minnesota_logdens_scl(double& cand, Eigen::Ref<Eigen::VectorXd> co
 	return -(mn_size * log(cand) + gaussian_kernel / cand) / 2;
 }
 
+inline double minnesota_logdens_scl(double& cand, Eigen::Ref<Eigen::VectorXd> coef,
+														 		 		Eigen::Ref<Eigen::VectorXd> coef_mean, Eigen::Ref<Eigen::VectorXd> coef_prec,
+														 		 		Eigen::VectorXi& grp_vec, Eigen::VectorXi& grp_id) {
+	double gaussian_kernel = 0;
+	int mn_size = 0;
+	int num_coef = coef.size();
+	Eigen::Array<bool, Eigen::Dynamic, 1> global_id;
+	for (int i = 0; i < grp_id.size(); ++i) {
+		global_id = grp_vec.array() == grp_id[i];
+		mn_size += global_id.count();
+		for (int j = 0; j < num_coef; ++j) {
+			if (global_id[j]) {
+				gaussian_kernel += (coef[j] - coef_mean[j]) * (coef[j] - coef_mean[j]) * coef_prec[j];
+			}
+		}
+	}
+	return -(mn_size * log(cand) + gaussian_kernel / cand) / 2;
+}
+
 inline void minnesota_nu_griddy(double& nu, int grid_size, Eigen::Ref<Eigen::VectorXd> coef,
 																Eigen::Ref<Eigen::VectorXd> coef_mean, Eigen::Ref<Eigen::VectorXd> coef_prec,
 																Eigen::VectorXi& grp_vec, std::set<int>& grp_id, BHRNG& rng) {
@@ -1008,6 +1027,30 @@ inline void minnesota_nu_griddy(double& nu, int grid_size, Eigen::Ref<Eigen::Vec
 	for (int i = 0; i < coef.size(); ++i) {
 		if (grp_id.find(grp_vec[i]) != grp_id.end()) {
 			coef_prec[i] *= old_nu / nu;
+		}
+	}
+}
+
+inline void minnesota_nu_griddy(double& nu, int grid_size, Eigen::Ref<Eigen::VectorXd> coef,
+																Eigen::Ref<Eigen::VectorXd> coef_mean, Eigen::Ref<Eigen::VectorXd> coef_prec,
+																Eigen::VectorXi& grp_vec, Eigen::VectorXi& grp_id, BHRNG& rng) {
+	Eigen::VectorXd grid = Eigen::VectorXd::LinSpaced(grid_size + 2, 0.0, 1.0).segment(1, grid_size);
+	Eigen::VectorXd log_wt(grid_size);
+	double old_nu = nu;
+	for (int i = 0; i < grid_size; ++i) {
+		log_wt[i] = minnesota_logdens_scl(grid[i], coef, coef_mean, coef_prec, grp_vec, grp_id);
+	}
+	Eigen::VectorXd weight = (log_wt.array() - log_wt.maxCoeff()).exp();
+	weight /= weight.sum();
+	nu = grid[cat_rand(weight, rng)];
+	int num_coef = coef.size();
+	Eigen::Array<bool, Eigen::Dynamic, 1> global_id;
+	for (int i = 0; i < grp_id.size(); ++i) {
+		global_id = grp_vec.array() == grp_id[i];
+		for (int j = 0; j < num_coef; ++j) {
+			if (global_id[j]) {
+				coef_prec[j] *= old_nu / nu;
+			}
 		}
 	}
 }

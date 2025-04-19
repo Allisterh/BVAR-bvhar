@@ -2,6 +2,7 @@
 #define BVHAR_BAYES_SHRINKAGE_CONFIG_H
 
 #include "../misc/draw.h"
+#include "../../math/design.h"
 
 namespace bvhar {
 
@@ -39,12 +40,13 @@ struct MinnParams2 : public ShrinkageParams {
 	Eigen::MatrixXd _prior_prec;
 	
 	MinnParams2(LIST& priors)
-	: ShrinkageParams(priors), _prec_diag(Eigen::MatrixXd::Zero(y.cols(), y.cols())) {
+	: ShrinkageParams(priors) {
 		int lag = CAST_INT(priors["p"]); // append to bayes_spec, p = 3 in VHAR
 		Eigen::VectorXd _sigma = CAST<Eigen::VectorXd>(priors["sigma"]);
 		double _lambda = CAST_DOUBLE(priors["lambda"]);
 		double _eps = CAST_DOUBLE(priors["eps"]);
 		int dim = _sigma.size();
+		_prec_diag = Eigen::MatrixXd::Zero(dim, dim);
 		Eigen::VectorXd _daily(dim);
 		Eigen::VectorXd _weekly(dim);
 		Eigen::VectorXd _monthly(dim);
@@ -67,7 +69,7 @@ struct MinnParams2 : public ShrinkageParams {
 		_prec_diag.diagonal() = 1 / _sigma.array();
 	}
 
-	void initPrec(Eigen::Ref<Eigen::MatrixXd> prior_alpha_mean, Eigen::Ref<Eigen::MatrixXd> prior_alpha_prec, int num_alpha) {
+	void initPrec(Eigen::Ref<Eigen::VectorXd> prior_alpha_mean, Eigen::Ref<Eigen::VectorXd> prior_alpha_prec, int num_alpha) {
 		prior_alpha_mean.head(num_alpha) = _prior_mean.reshaped();
 		prior_alpha_prec.head(num_alpha) = kronecker_eigen(_prec_diag, _prior_prec).diagonal();
 		// if (include_mean) {
@@ -76,15 +78,14 @@ struct MinnParams2 : public ShrinkageParams {
 	}
 };
 
-struct HierminnParams2 : public MinnParams {
-	double shape;
-	double rate;
+struct HierminnParams2 : public MinnParams2 {
+	double _shape, _rate;
 	int _grid_size;
 	// bool _minnesota;
 
-	HierminnParams(LIST& priors)
-	: MinnParams(priors),
-		shape(CAST_DOUBLE(priors["shape"])), rate(CAST_DOUBLE(priors["rate"])), _grid_size(CAST_INT(priors["grid_size"])) {}
+	HierminnParams2(LIST& priors)
+	: MinnParams2(priors),
+		_shape(CAST_DOUBLE(priors["shape"])), _rate(CAST_DOUBLE(priors["rate"])), _grid_size(CAST_INT(priors["grid_size"])) {}
 };
 
 struct SsvsParams2 : public ShrinkageParams {
@@ -94,7 +95,7 @@ struct SsvsParams2 : public ShrinkageParams {
 
 	SsvsParams2(LIST& priors)
 	: ShrinkageParams(priors),
-		_coef_s1(CAST<Eigen::VectorXd>(priors["coef_s1"])), _coef_s2(CAST<Eigen::VectorXd>(priors["coef_s2"])),
+		_s1(CAST<Eigen::VectorXd>(priors["coef_s1"])), _s2(CAST<Eigen::VectorXd>(priors["coef_s2"])),
 		_slab_shape(CAST_DOUBLE(priors["slab_shape"])), _slab_scl(CAST_DOUBLE(priors["_slab_scl"])),
 		_grid_size(CAST_INT(priors["grid_size"])) {}
 };
@@ -140,18 +141,27 @@ struct HierminnInits2 : public ShrinkageInits {
 	HierminnInits2(LIST& init)
 	: ShrinkageInits(init), _own_lambda(CAST_DOUBLE(init["own_lambda"])), _cross_lambda(CAST_DOUBLE(init["cross_lambda"])) {}
 
-	HierminnInits(LIST& init, int num_design)
+	HierminnInits2(LIST& init, int num_design)
 	: ShrinkageInits(init, num_design), _own_lambda(CAST_DOUBLE(init["own_lambda"])), _cross_lambda(CAST_DOUBLE(init["cross_lambda"])) {}
 
 	void initPrec(
-		Eigen::Ref<Eigen::MatrixXd> prior_prec, int num_alpha,
+		Eigen::Ref<Eigen::VectorXd> prior_prec, int num_alpha,
 		Optional<Eigen::VectorXi> grp_vec = NULLOPT, Optional<Eigen::VectorXi> cross_id = NULLOPT
 	) {
 		prior_prec.head(num_alpha).array() /= _own_lambda;
-		if (grp_vec) {
-			for (int i = 0; i < num_alpha; ++i) {
-				if (cross_id.find(grp_vec[i]) != cross_id.end()) {
-					prior_prec[i] /= _cross_lambda; // nu
+		if (grp_vec && cross_id) {
+			// for (int i = 0; i < num_alpha; ++i) {
+			// 	if (cross_id.find(grp_vec[i]) != cross_id.end()) {
+			// 		prior_prec[i] /= _cross_lambda; // nu
+			// 	}
+			// }
+			Eigen::Array<bool, Eigen::Dynamic, 1> global_id;
+			for (int i = 0; i < cross_id->size(); ++i) {
+				global_id = grp_vec->array() == (*cross_id)[i];
+				for (int j = 0; j < num_alpha; ++j) {
+					if (global_id[j]) {
+						prior_prec[j] /= _cross_lambda; // nu
+					}
 				}
 			}
 		}

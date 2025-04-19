@@ -2,6 +2,7 @@
 #define BVHAR_BAYES_SHRINKAGE_SHRINKAGE_H
 
 #include "./config.h"
+#include <type_traits>
 
 namespace bvhar {
 
@@ -21,7 +22,7 @@ template <bool isGroup> class GdpUpdater;
  */
 class ShrinkageUpdater {
 public:
-	ShrinkageUpdater() {}
+	ShrinkageUpdater(const ShrinkageParams& params, const ShrinkageInits& inits) {}
 	virtual ~ShrinkageUpdater() = default;
 
 	/**
@@ -71,7 +72,7 @@ public:
  */
 class MinnUpdater : public ShrinkageUpdater {
 public:
-	MinnUpdater() {}
+	MinnUpdater(const MinnParams2& params, const ShrinkageInits& inits) : ShrinkageUpdater(params, inits) {}
 	virtual ~MinnUpdater() = default;
 	void updateCoefPrec(
 		Eigen::Ref<Eigen::VectorXd> prior_alpha_prec,
@@ -95,16 +96,13 @@ public:
  */
 class HierminnUpdater : public ShrinkageUpdater {
 public:
-	HierminnUpdater(
-		const Eigen::VectorXd& prior_mean,
-		const double own_lambda, const double own_shape, const double own_rate,
-		const double cross_lambda, const double cross_shape, const double cross_rate,
-		int grid_size
-	)
-	: prior_mean(prior_mean),
-		own_lambda(own_lambda), own_shape(own_shape), own_rate(own_rate),
-		cross_lambda(cross_lambda), cross_shape(cross_shape), cross_rate(cross_rate),
-		grid_size(grid_size) {}
+	HierminnUpdater(const HierminnParams2& params, const HierminnInits& inits)
+	: ShrinkageUpdater(params, inits),
+		prior_mean(params._prior_mean.reshaped()),
+		grid_size(params._grid_size),
+		own_shape(params.shape), own_rate(params.rate),
+		cross_shape(params.shape), cross_rate(params.rate),
+		own_lambda(inits._own_lambda), cross_lambda(inits._cross_lambda) {}
 	virtual ~HierminnUpdater() = default;
 
 	void updateCoefPrec(
@@ -116,12 +114,14 @@ public:
 	) override {
 		minnesota_lambda(
 			own_lambda, own_shape, own_rate,
-			coef_vec.head(num_alpha), prior_mean.head(num_alpha), prior_alpha_prec.head(num_alpha),
+			// coef_vec.head(num_alpha), prior_mean.head(num_alpha), prior_alpha_prec.head(num_alpha),
+			coef_vec.head(num_alpha), prior_mean, prior_alpha_prec.head(num_alpha),
 			rng
 		);
 		minnesota_nu_griddy(
 			cross_lambda, grid_size,
-			coef_vec.head(num_alpha), prior_mean.head(num_alpha), prior_alpha_prec.head(num_alpha),
+			// coef_vec.head(num_alpha), prior_mean.head(num_alpha), prior_alpha_prec.head(num_alpha),
+			coef_vec.head(num_alpha), prior_mean, prior_alpha_prec.head(num_alpha),
 			grp_vec, grp_id, rng
 		);
 	}
@@ -142,9 +142,9 @@ public:
 
 private:
 	Eigen::VectorXd prior_mean;
-	double own_lambda, own_shape, own_rate;
-	double cross_lambda, cross_shape, cross_rate;
 	int grid_size;
+	double own_shape, own_rate, cross_shape, cross_rate;
+	double own_lambda, cross_lambda;
 };
 
 /**
@@ -153,14 +153,12 @@ private:
  */
 class SsvsUpdater : public ShrinkageUpdater {
 public:
-	SsvsUpdater(
-		const double& ig_shape, const double& ig_scl, const int& grid_size,
-    const Eigen::VectorXd& s1, const Eigen::VectorXd& s2,
-    const Eigen::VectorXd& init_dummy, const Eigen::VectorXd& init_weight,
-    const Eigen::VectorXd& init_slab, const double& init_spike_scl
-	)
-	: grid_size(grid_size), spike_scl(init_spike_scl), ig_shape(ig_shape), ig_scl(ig_scl), s1(s1), s2(s2),
-		dummy(init_dummy), weight(init_weight), slab(init_slab), slab_weight(Eigen::VectorXd::Ones(slab.size())) {}
+	SsvsUpdater(const SsvsParams2& params, const SsvsInits2& inits)
+	: ShrinkageUpdater(params, inits),
+		grid_size(params._grid_size),
+		ig_shape(params._slab_shape), ig_scl(params._slab_scl), s1(params._s1), s2(params._s2),
+		spike_scl(inits._spike_scl), dummy(inits._dummy), weight(inits._weight), slab(inits._slab),
+		slab_weight(Eigen::VectorXd::Ones(slab.size())) {}
 	virtual ~SsvsUpdater() = default;
 	
 	void updateCoefPrec(
@@ -200,9 +198,9 @@ public:
 
 private:
 	int grid_size;
-	double spike_scl; // scaling factor between 0 and 1: spike_sd = c * slab_sd
 	double ig_shape, ig_scl; // IG hyperparameter for spike sd
 	Eigen::VectorXd s1, s2; // Beta hyperparameter
+	double spike_scl; // scaling factor between 0 and 1: spike_sd = c * slab_sd
 	Eigen::VectorXd dummy;
 	Eigen::VectorXd weight;
 	Eigen::VectorXd slab;
@@ -217,15 +215,14 @@ private:
 template <bool isGroup = true>
 class HorseshoeUpdater : public ShrinkageUpdater {
 public:
-	HorseshoeUpdater(
-		const Eigen::VectorXd& init_local, const Eigen::VectorXd& init_group, const double& init_global
-	)
-	: local_lev(init_local), group_lev(init_group), global_lev(isGroup ? init_global : 1.0),
-		shrink_fac(Eigen::VectorXd::Zero(init_local.size())),
-		latent_local(Eigen::VectorXd::Zero(init_local.size())),
-		latent_group(Eigen::VectorXd::Zero(init_group.size())),
+	HorseshoeUpdater(const ShrinkageParams& params, const HorseshoeInits& inits)
+	: ShrinkageUpdater(),
+		local_lev(inits._local), group_lev(inits._group), global_lev(isGroup ? inits._global : 1.0),
+		shrink_fac(Eigen::VectorXd::Zero(local_lev.size())),
+		latent_local(Eigen::VectorXd::Zero(local_lev.size())),
+		latent_group(Eigen::VectorXd::Zero(group_lev.size())),
 		latent_global(0.0),
-		coef_var(Eigen::VectorXd::Ones(init_local.size())) {}
+		coef_var(Eigen::VectorXd::Ones(local_lev.size())) {}
 	virtual ~HorseshoeUpdater() = default;
 
 	void updateCoefPrec(
@@ -290,18 +287,15 @@ private:
 template <bool isGroup = true>
 class NgUpdater : public ShrinkageUpdater {
 public:
-	NgUpdater(
-		const double& mh_sd,
-		const double& group_shape, const double& group_scl,
-		const double& global_shape, const double& global_scl,
-		const Eigen::VectorXd& init_local_shape,
-		const Eigen::VectorXd& init_local, const Eigen::VectorXd& init_group, const double& init_global
-	)
-	: mh_sd(mh_sd), local_shape(init_local_shape),
-		local_shape_fac(Eigen::VectorXd::Ones(init_local_shape.size())),
-		group_shape(group_shape), group_scl(group_scl), global_shape(global_shape), global_scl(global_scl),
-		local_lev(init_local), group_lev(init_group), global_lev(isGroup ? init_global : 1.0),
-		coef_var(Eigen::VectorXd::Ones(init_local.size())) {}
+	NgUpdater(const NgParams2& params, const NgInits2& inits)
+	: ShrinkageUpdater(params, inits),
+		mh_sd(params._mh_sd),
+		group_shape(params._group_shape), group_scl(params._group_scl),
+		global_shape(params._global_shape), global_scl(params._global_scl),
+		local_shape(inits._local_shape),
+		local_shape_fac(Eigen::VectorXd::Ones(local_shape.size())),
+		local_lev(inits._local), group_lev(inits._group), global_lev(isGroup ? inits._global : 1.0),
+		coef_var(Eigen::VectorXd::Ones(local_lev.size())) {}
 	virtual ~NgUpdater() = default;
 	
 	void updateCoefPrec(
@@ -347,8 +341,8 @@ public:
 
 private:
 	double mh_sd;
-	Eigen::VectorXd local_shape, local_shape_fac;
 	double group_shape, group_scl, global_shape, global_scl;
+	Eigen::VectorXd local_shape, local_shape_fac;
 	Eigen::VectorXd local_lev;
 	Eigen::VectorXd group_lev;
 	double global_lev;
@@ -363,14 +357,12 @@ private:
 template <bool isGroup = true>
 class DlUpdater : public ShrinkageUpdater {
 public:
-	DlUpdater(
-		const int& grid_size, const double& shape, const double& scl,
-		const Eigen::VectorXd& init_local, const Eigen::VectorXd& init_group, const double& init_global
-	)
-	: dir_concen(0.0), shape(shape), scl(scl), grid_size(grid_size),
-		local_lev(init_local), group_lev(init_group), global_lev(isGroup ? init_global : 1.0),
-		latent_local(Eigen::VectorXd::Zero(init_local.size())),
-		coef_var(Eigen::VectorXd::Zero(init_local.size())) {}
+	DlUpdater(const DlParams2& params, const GlInits2& inits)
+	: ShrinkageUpdater(params, inits),
+		dir_concen(0.0), shape(params._shape), scl(params._scl), grid_size(params._grid_size),
+		local_lev(inits._local), group_lev(inits._group), global_lev(isGroup ? inits._global : 1.0),
+		latent_local(Eigen::VectorXd::Zero(local_lev.size())),
+		coef_var(Eigen::VectorXd::Zero(local_lev.size())) {}
 	virtual ~DlUpdater() = default;
 	
 	void updateCoefPrec(
@@ -430,16 +422,12 @@ private:
 template <bool isGroup = true>
 class GdpUpdater : public ShrinkageUpdater {
 public:
-	GdpUpdater(
-		const int& grid_shape, const int& grid_rate,
-		const double& gamma_shape, const double& gamma_rate,
-		const Eiegn::VectorXd& group_rate,
-		const Eigen::VectorXd& init_local
-	)
-	: group_rate(group_rate), group_rate_fac(Eigen::VectorXd::Ones(init_local.size())),
-		gamma_shape(gamma_shape), gamma_rate(gamma_rate),
-		shape_grid(grid_shape), rate_grid(grid_rate),
-		local_lev(init_local) {}
+	GdpUpdater(const GdpParams& params, const GdpInits2& inits)
+	: ShrinkageUpdater(params, inits),
+		shape_grid(params._grid_shape), rate_grid(params._grid_rate),
+		group_rate(inits._group_rate), group_rate_fac(Eigen::VectorXd::Ones(inits._local.size())),
+		gamma_shape(inits._gamma_shape), gamma_rate(inits._gamma_rate),
+		local_lev(inits._local) {}
 	virtual ~GdpUpdater() = default;
 	
 	void updateCoefPrec(
@@ -478,11 +466,49 @@ public:
 	void updateRecords() override {}
 
 private:
+	int shape_grid, rate_grid;
 	Eigen::VectorXd group_rate, group_rate_fac;
 	double gamma_shape, gamma_rate;
-	int shape_grid, rate_grid;
 	Eigen::VectorXd local_lev;
 };
+
+template <typename PARAMS = ShrinkageParams, typename INITS = ShrinkageInits, bool isGroup = true>
+inline std::unique_ptr<ShrinkageUpdater> initialize_shrinkageupdater(LIST& param_prior, LIST& param_init, int prior_type) {
+	std::unique_ptr<ShrinkageUpdater> shrinkage_ptr;
+	PARAMS params(param_prior);
+	INITS inits(param_init);
+	switch (prior_type) {
+		case 1: {
+			shrinkage_ptr = std::make_unique<MinnUpdater>(params, inits);
+			return shrinkage_ptr;
+		}
+		case 2: {
+			shrinkage_ptr = std::make_unique<SsvsUpdater>(params, inits);
+			return shrinkage_ptr;
+		}
+		case 3: {
+			shrinkage_ptr = std::make_unique<HorseshoeUpdater<isGroup>>(params, inits);
+			return shrinkage_ptr;
+		}
+		case 4: {
+			shrinkage_ptr = std::make_unique<HierminnUpdater>(params, inits);
+			return shrinkage_ptr;
+		}
+		case 5: {
+			shrinkage_ptr = std::make_unique<NgUpdater<isGroup>>(params, inits);
+			return shrinkage_ptr;
+		}
+		case 6: {
+			shrinkage_ptr = std::make_unique<DlUpdater<isGroup>>(params, inits);
+			return shrinkage_ptr;
+		}
+		case 7: {
+			shrinkage_ptr = std::make_unique<GdpUpdater<isGroup>>(params, inits);
+			return shrinkage_ptr;
+		}
+	}
+	return shrinkage_ptr;
+}
 
 } // namespace bvhar
 

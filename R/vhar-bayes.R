@@ -212,7 +212,7 @@ vhar_bayes <- function(y,
     arg_names = "coef_spec"
   )
   contem_prior <- validate_spec(
-    bayes_spec = coef_spec,
+    bayes_spec = contem_spec,
     y = y,
     p = p,
     dim_data = dim_data,

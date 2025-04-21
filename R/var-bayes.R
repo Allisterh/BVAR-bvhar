@@ -219,11 +219,11 @@ var_bayes <- function(y,
     arg_names = "coef_spec"
   )
   contem_prior <- validate_spec(
-    bayes_spec = coef_spec,
+    bayes_spec = contem_spec,
     y = y,
     p = p,
     dim_data = dim_data,
-    num_grp = num_grp,
+    num_grp = 1,
     grp_id = grp_id,
     own_id = own_id,
     cross_id = cross_id,

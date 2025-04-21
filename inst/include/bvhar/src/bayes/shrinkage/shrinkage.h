@@ -291,7 +291,7 @@ public:
 		group_shape(params._group_shape), group_scl(params._group_scl),
 		global_shape(params._global_shape), global_scl(params._global_scl),
 		local_shape(inits._local_shape),
-		local_shape_fac(Eigen::VectorXd::Ones(local_shape.size())),
+		local_shape_fac(Eigen::VectorXd::Ones(inits._local.size())),
 		local_lev(inits._local), group_lev(inits._group), global_lev(isGroup ? inits._global : 1.0),
 		coef_var(Eigen::VectorXd::Ones(local_lev.size())) {}
 	virtual ~NgUpdater() = default;
@@ -305,7 +305,7 @@ public:
 	) override {
 		ng_mn_shape_jump(local_shape, local_lev, group_lev, grp_vec, grp_id, global_lev, mh_sd, rng);
 		ng_mn_sparsity(group_lev, grp_vec, grp_id, local_shape, global_lev, local_lev, group_shape, group_scl, rng);
-		for (int j = 0; j < num_grp; j++) {
+		for (int j = 0; j < num_grp; ++j) {
 			coef_var = (grp_vec.array() == grp_id[j]).select(
 				group_lev[j],
 				coef_var
@@ -330,7 +330,7 @@ public:
 		BHRNG& rng
 	) override {
 		local_shape[0] = ng_shape_jump(local_shape[0], local_lev, group_lev[0], mh_sd, rng);
-		group_lev[0] = ng_global_sparsity(coef_var, local_shape[0], group_shape, group_scl, rng);
+		group_lev[0] = ng_global_sparsity(local_lev, local_shape[0], group_shape, group_scl, rng);
 		ng_local_sparsity(coef_var, local_shape[0], contem_coef, group_lev.replicate(1, num_lowerchol).reshaped(), rng);
 		prior_chol_prec = 1 / local_lev.array().square();
 	}

@@ -1,8 +1,8 @@
 #ifndef BVHAR_TRIANGULAR_H
 #define BVHAR_TRIANGULAR_H
 
-#include "src/bayes/triangular/deprecated/triangular.h"
-#include "src/bayes/triangular/deprecated/forecaster.h"
-#include "src/bayes/triangular/deprecated/spillover.h"
+#include "src/bayes/triangular/triangular.h"
+#include "src/bayes/triangular/forecaster.h"
+#include "src/bayes/triangular/spillover.h"
 
 #endif // BVHAR_TRIANGULAR_H

@@ -431,7 +431,7 @@ template <typename BaseMcmc = McmcReg, bool isGroup = true>
 inline std::vector<std::unique_ptr<McmcTriangular>> initialize_mcmc(
 	int num_chains, int num_iter, const Eigen::MatrixXd& x, const Eigen::MatrixXd& y,
 	LIST& param_reg, LIST& param_prior, LIST& param_intercept, LIST_OF_LIST& param_init, int prior_type,
-	// LIST& contem_prior, LIST_OF_LIST& contem_init, int contem_prior_type,
+	LIST& contem_prior, LIST_OF_LIST& contem_init, int contem_prior_type,
   const Eigen::VectorXi& grp_id, const Eigen::VectorXi& own_id, const Eigen::VectorXi& cross_id, const Eigen::MatrixXi& grp_mat,
   bool include_mean, Eigen::Ref<const Eigen::VectorXi> seed_chain, Optional<int> num_design = NULLOPT
 ) {
@@ -474,7 +474,7 @@ public:
     const Eigen::MatrixXd& x, const Eigen::MatrixXd& y,
 		LIST& param_cov, LIST& param_prior, LIST& param_intercept,
 		LIST_OF_LIST& param_init, int prior_type,
-		// LIST& contem_prior, LIST_OF_LIST& contem_init, int contem_prior_type,
+		LIST& contem_prior, LIST_OF_LIST& contem_init, int contem_prior_type,
     const Eigen::VectorXi& grp_id, const Eigen::VectorXi& own_id, const Eigen::VectorXi& cross_id, const Eigen::MatrixXi& grp_mat,
     bool include_mean, const Eigen::VectorXi& seed_chain, bool display_progress, int nthreads
 	)
@@ -482,7 +482,7 @@ public:
 		auto temp_mcmc = initialize_mcmc<BaseMcmc, isGroup>(
 			num_chains, num_iter - num_burn, x, y,
 			param_cov, param_prior, param_intercept, param_init, prior_type,
-			// contem_prior, contem_init, contem_prior_type,
+			contem_prior, contem_init, contem_prior_type,
 			grp_id, own_id, cross_id, grp_mat,
 			include_mean, seed_chain
 		);

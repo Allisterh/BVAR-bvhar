@@ -1,4 +1,4 @@
-#include <bvhar/triangular>
+#include <bvhar/deprecated_triangular>
 
 //' VAR with Shrinkage Priors
 //' 

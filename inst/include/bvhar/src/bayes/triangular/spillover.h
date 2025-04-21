@@ -274,6 +274,7 @@ public:
 	DynamicLdltSpillover(
 		const Eigen::MatrixXd& y, int window, int step, int lag, int num_chains, int num_iter, int num_burn, int thin, bool sparse,
 		LIST& param_reg, LIST& param_prior, LIST& param_intercept, LIST_OF_LIST& param_init, int prior_type, bool ggl,
+		LIST& contem_prior, LIST_OF_LIST& contem_init, int contem_prior_type,
 		const Eigen::VectorXi& grp_id, const Eigen::VectorXi& own_id, const Eigen::VectorXi& cross_id, const Eigen::MatrixXi& grp_mat,
 		bool include_mean, const Eigen::MatrixXi& seed_chain, int nthreads
 	)
@@ -288,12 +289,14 @@ public:
 		har_trans(NULLOPT) {
 		initialize(
 			y, param_reg, param_prior, param_intercept, param_init, prior_type, ggl,
+			contem_prior, contem_init, contem_prior_type,
 			grp_id, own_id, cross_id, grp_mat, seed_chain
 		);
 	}
 	DynamicLdltSpillover(
 		const Eigen::MatrixXd& y, int window, int step, int week, int month, int num_chains, int num_iter, int num_burn, int thin, bool sparse,
 		LIST& param_reg, LIST& param_prior, LIST& param_intercept, LIST_OF_LIST& param_init, int prior_type, bool ggl,
+		LIST& contem_prior, LIST_OF_LIST& contem_init, int contem_prior_type,
 		const Eigen::VectorXi& grp_id, const Eigen::VectorXi& own_id, const Eigen::VectorXi& cross_id, const Eigen::MatrixXi& grp_mat,
 		bool include_mean, const Eigen::MatrixXi& seed_chain, int nthreads
 	)
@@ -311,6 +314,7 @@ public:
 		}
 		initialize(
 			y, param_reg, param_prior, param_intercept, param_init, prior_type, ggl,
+			contem_prior, contem_init, contem_prior_type,
 			grp_id, own_id, cross_id, grp_mat,
 			seed_chain
 		);
@@ -356,6 +360,7 @@ protected:
 	 */
 	void initialize(
 		const Eigen::MatrixXd& y, LIST& param_reg, LIST& param_prior, LIST& param_intercept, LIST_OF_LIST& param_init, int prior_type, bool ggl,
+		LIST& contem_prior, LIST_OF_LIST& contem_init, int contem_prior_type,
 		const Eigen::VectorXi& grp_id, const Eigen::VectorXi& own_id, const Eigen::VectorXi& cross_id, const Eigen::MatrixXi& grp_mat,
 		const Eigen::MatrixXi& seed_chain
 	) {
@@ -379,6 +384,7 @@ protected:
 				model[i] = initialize_mcmc<McmcReg, true>(
 					num_chains, num_iter - num_burn, roll_design, roll_y0,
 					param_reg, param_prior, param_intercept, param_init, prior_type,
+					contem_prior, contem_init, contem_prior_type,
 					grp_id, own_id, cross_id, grp_mat,
 					include_mean, seed_chain.row(i)
 				);
@@ -386,6 +392,7 @@ protected:
 				model[i] = initialize_mcmc<McmcReg, false>(
 					num_chains, num_iter - num_burn, roll_design, roll_y0,
 					param_reg, param_prior, param_intercept, param_init, prior_type,
+					contem_prior, contem_init, contem_prior_type,
 					grp_id, own_id, cross_id, grp_mat,
 					include_mean, seed_chain.row(i)
 				);

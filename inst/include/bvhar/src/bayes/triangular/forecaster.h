@@ -605,6 +605,7 @@ public:
 		const Eigen::MatrixXd& y, int lag, int num_chains, int num_iter, int num_burn, int thin,
 		bool sparse, double level, LIST& fit_record,
 		LIST& param_reg, LIST& param_prior, LIST& param_intercept, LIST_OF_LIST& param_init, int prior_type,
+		LIST& contem_prior, LIST_OF_LIST& contem_init, int contem_prior_type,
 		const Eigen::VectorXi& grp_id, const Eigen::VectorXi& own_id, const Eigen::VectorXi& cross_id, const Eigen::MatrixXi& grp_mat,
 		bool include_mean, bool stable, int step, const Eigen::MatrixXd& y_test, bool get_lpl,
 		const Eigen::MatrixXi& seed_chain, const Eigen::VectorXi& seed_forecast, bool display_progress, int nthreads, bool sv = true
@@ -712,6 +713,7 @@ protected:
 	 */
 	virtual void initMcmc(
 		LIST& param_reg, LIST& param_prior, LIST& param_intercept, LIST_OF_LIST& param_init, int prior_type,
+		LIST& contem_prior, LIST_OF_LIST& contem_init, int contem_prior_type,
 		const Eigen::VectorXi& grp_id, const Eigen::VectorXi& own_id, const Eigen::VectorXi& cross_id, const Eigen::MatrixXi& grp_mat,
 		const Eigen::MatrixXi& seed_chain
 	) = 0;
@@ -752,6 +754,7 @@ protected:
 	void initialize(
 		const Eigen::MatrixXd& y, LIST& fit_record,
 		LIST& param_reg, LIST& param_prior, LIST& param_intercept, LIST_OF_LIST& param_init, int prior_type,
+		LIST& contem_prior, LIST_OF_LIST& contem_init, int contem_prior_type,
 		const Eigen::VectorXi& grp_id, const Eigen::VectorXi& own_id, const Eigen::VectorXi& cross_id, const Eigen::MatrixXi& grp_mat,
 		const Eigen::MatrixXi& seed_chain
 	) {
@@ -761,6 +764,7 @@ protected:
 		if (is_mcmc::value) {
 			initMcmc(
 				param_reg, param_prior, param_intercept, param_init, prior_type,
+				contem_prior, contem_init, contem_prior_type,
 				grp_id, own_id, cross_id, grp_mat, seed_chain
 			);
 		}
@@ -841,6 +845,7 @@ public:
 		const Eigen::MatrixXd& y, int lag, int num_chains, int num_iter, int num_burn, int thin,
 		bool sparse, double level, LIST& fit_record,
 		LIST& param_reg, LIST& param_prior, LIST& param_intercept, LIST_OF_LIST& param_init, int prior_type,
+		LIST& contem_prior, LIST_OF_LIST& contem_init, int contem_prior_type,
 		const Eigen::VectorXi& grp_id, const Eigen::VectorXi& own_id, const Eigen::VectorXi& cross_id, const Eigen::MatrixXi& grp_mat,
 		bool include_mean, bool stable, int step, const Eigen::MatrixXd& y_test, bool get_lpl,
 		const Eigen::MatrixXi& seed_chain, const Eigen::VectorXi& seed_forecast, bool display_progress, int nthreads, bool sv = true
@@ -848,6 +853,7 @@ public:
 	: McmcOutforecastRun<BaseForecaster, isUpdate>(
 			y, lag, num_chains, num_iter, num_burn, thin, sparse, level, fit_record,
 			param_reg, param_prior, param_intercept, param_init, prior_type,
+			contem_prior, contem_init, contem_prior_type,
 			grp_id, own_id, cross_id, grp_mat, include_mean, stable, step, y_test, get_lpl,
 			seed_chain, seed_forecast, display_progress, nthreads, sv
 		) {}
@@ -881,6 +887,7 @@ protected:
 	}
 	void initMcmc(
 		LIST& param_reg, LIST& param_prior, LIST& param_intercept, LIST_OF_LIST& param_init, int prior_type,
+		LIST& contem_prior, LIST_OF_LIST& contem_init, int contem_prior_type,
 		const Eigen::VectorXi& grp_id, const Eigen::VectorXi& own_id, const Eigen::VectorXi& cross_id, const Eigen::MatrixXi& grp_mat,
 		const Eigen::MatrixXi& seed_chain
 	) override {
@@ -889,6 +896,7 @@ protected:
 			model[window] = initialize_mcmc<BaseMcmc, isGroup>(
 				num_chains, num_iter - num_burn, design, roll_y0[window],
 				param_reg, param_prior, param_intercept, param_init, prior_type,
+				contem_prior, contem_init, contem_prior_type,
 				grp_id, own_id, cross_id, grp_mat,
 				include_mean, seed_chain.row(window)
 			);
@@ -911,6 +919,7 @@ public:
 		const Eigen::MatrixXd& y, int lag, int num_chains, int num_iter, int num_burn, int thin,
 		bool sparse, double level, LIST& fit_record,
 		LIST& param_reg, LIST& param_prior, LIST& param_intercept, LIST_OF_LIST& param_init, int prior_type,
+		LIST& contem_prior, LIST_OF_LIST& contem_init, int contem_prior_type,
 		const Eigen::VectorXi& grp_id, const Eigen::VectorXi& own_id, const Eigen::VectorXi& cross_id, const Eigen::MatrixXi& grp_mat,
 		bool include_mean, bool stable, int step, const Eigen::MatrixXd& y_test, bool get_lpl,
 		const Eigen::MatrixXi& seed_chain, const Eigen::VectorXi& seed_forecast, bool display_progress, int nthreads, bool sv = true
@@ -918,6 +927,7 @@ public:
 	: McmcOutforecastRun<BaseForecaster, isUpdate>(
 			y, lag, num_chains, num_iter, num_burn, thin, sparse, level, fit_record,
 			param_reg, param_prior, param_intercept, param_init, prior_type,
+			contem_prior, contem_init, contem_prior_type,
 			grp_id, own_id, cross_id, grp_mat, include_mean, stable, step, y_test, get_lpl,
 			seed_chain, seed_forecast, display_progress, nthreads, sv
 		) {}
@@ -951,6 +961,7 @@ protected:
 	}
 	void initMcmc(
 		LIST& param_reg, LIST& param_prior, LIST& param_intercept, LIST_OF_LIST& param_init, int prior_type,
+		LIST& contem_prior, LIST_OF_LIST& contem_init, int contem_prior_type,
 		const Eigen::VectorXi& grp_id, const Eigen::VectorXi& own_id, const Eigen::VectorXi& cross_id, const Eigen::MatrixXi& grp_mat,
 		const Eigen::MatrixXi& seed_chain
 	) override {
@@ -961,6 +972,7 @@ protected:
 				model[window] = initialize_mcmc<BaseMcmc, isGroup>(
 					num_chains, num_iter - num_burn, design, roll_y0[window],
 					param_reg, param_prior, param_intercept, param_init, prior_type,
+					contem_prior, contem_init, contem_prior_type,
 					grp_id, own_id, cross_id, grp_mat,
 					include_mean, seed_chain.row(window),
 					roll_y0[window].rows()
@@ -970,6 +982,7 @@ protected:
 				model[window] = initialize_mcmc<BaseMcmc, isGroup>(
 					num_chains, num_iter - num_burn, design, roll_y0[window],
 					param_reg, param_prior, param_intercept, param_init, prior_type,
+					contem_prior, contem_init, contem_prior_type,
 					grp_id, own_id, cross_id, grp_mat,
 					include_mean, seed_chain.row(window)
 				);
@@ -994,6 +1007,7 @@ public:
 		const Eigen::MatrixXd& y, int lag, int num_chains, int num_iter, int num_burn, int thin,
 		bool sparse, double level, LIST& fit_record,
 		LIST& param_reg, LIST& param_prior, LIST& param_intercept, LIST_OF_LIST& param_init, int prior_type,
+		LIST& contem_prior, LIST_OF_LIST& contem_init, int contem_prior_type,
 		const Eigen::VectorXi& grp_id, const Eigen::VectorXi& own_id, const Eigen::VectorXi& cross_id, const Eigen::MatrixXi& grp_mat,
 		bool include_mean, bool stable, int step, const Eigen::MatrixXd& y_test, bool get_lpl,
 		const Eigen::MatrixXi& seed_chain, const Eigen::VectorXi& seed_forecast, bool display_progress, int nthreads, bool sv = true
@@ -1001,11 +1015,13 @@ public:
 	: BaseOutForecast<BaseForecaster, isGroup, isUpdate>(
 			y, lag, num_chains, num_iter, num_burn, thin, sparse, level, fit_record,
 			param_reg, param_prior, param_intercept, param_init, prior_type,
+			contem_prior, contem_init, contem_prior_type,
 			grp_id, own_id, cross_id, grp_mat, include_mean, stable, step, y_test, get_lpl,
 			seed_chain, seed_forecast, display_progress, nthreads, sv
 		) {
 		initialize(
 			y, fit_record, param_reg, param_prior, param_intercept, param_init, prior_type,
+			contem_prior, contem_init, contem_prior_type,
 			grp_id, own_id, cross_id, grp_mat, seed_chain
 		);
 	}
@@ -1086,6 +1102,7 @@ public:
 		const Eigen::MatrixXd& y, int week, int month, int num_chains, int num_iter, int num_burn, int thin,
 		bool sparse, double level, LIST& fit_record,
 		LIST& param_reg, LIST& param_prior, LIST& param_intercept, LIST_OF_LIST& param_init, int prior_type,
+		LIST& contem_prior, LIST_OF_LIST& contem_init, int contem_prior_type,
 		const Eigen::VectorXi& grp_id, const Eigen::VectorXi& own_id, const Eigen::VectorXi& cross_id, const Eigen::MatrixXi& grp_mat,
 		bool include_mean, bool stable, int step, const Eigen::MatrixXd& y_test, bool get_lpl,
 		const Eigen::MatrixXi& seed_chain, const Eigen::VectorXi& seed_forecast, bool display_progress, int nthreads, bool sv = true
@@ -1093,12 +1110,14 @@ public:
 	: BaseOutForecast<BaseForecaster, isGroup, isUpdate>(
 			y, month, num_chains, num_iter, num_burn, thin, sparse, level, fit_record,
 			param_reg, param_prior, param_intercept, param_init, prior_type,
+			contem_prior, contem_init, contem_prior_type,
 			grp_id, own_id, cross_id, grp_mat, include_mean, stable, step, y_test, get_lpl,
 			seed_chain, seed_forecast, display_progress, nthreads, sv
 		),
 		har_trans(build_vhar(dim, week, month, include_mean)) {
 		initialize(
 			y, fit_record, param_reg, param_prior, param_intercept, param_init, prior_type,
+			contem_prior, contem_init, contem_prior_type,
 			grp_id, own_id, cross_id, grp_mat, seed_chain
 		);
 	}
@@ -1173,6 +1192,7 @@ inline std::unique_ptr<McmcOutforecastInterface<BaseForecaster>> initialize_outf
 	const Eigen::MatrixXd& y, int lag, int num_chains, int num_iter, int num_burn, int thinning,
 	bool sparse, double level, LIST& fit_record, bool run_mcmc,
 	LIST& param_reg, LIST& param_prior, LIST& param_intercept, LIST_OF_LIST& param_init, int prior_type, bool ggl,
+	LIST& contem_prior, LIST_OF_LIST& contem_init, int contem_prior_type,
 	const Eigen::VectorXi& grp_id, const Eigen::VectorXi& own_id, const Eigen::VectorXi& cross_id, const Eigen::MatrixXi& grp_mat,
 	bool include_mean, bool stable, int step, const Eigen::MatrixXd& y_test,
 	bool get_lpl, const Eigen::MatrixXi& seed_chain, const Eigen::VectorXi& seed_forecast, bool display_progress, int nthreads,
@@ -1183,6 +1203,7 @@ inline std::unique_ptr<McmcOutforecastInterface<BaseForecaster>> initialize_outf
 			y, lag, num_chains, num_iter, num_burn, thinning,
 			sparse, level, fit_record,
 			param_reg, param_prior, param_intercept, param_init, prior_type,
+			contem_prior, contem_init, contem_prior_type,
 			grp_id, own_id, cross_id, grp_mat, include_mean, stable, step, y_test,
 			get_lpl, seed_chain, seed_forecast, display_progress, nthreads, sv
 		);
@@ -1191,6 +1212,7 @@ inline std::unique_ptr<McmcOutforecastInterface<BaseForecaster>> initialize_outf
 			y, lag, num_chains, num_iter, num_burn, thinning,
 			sparse, level, fit_record,
 			param_reg, param_prior, param_intercept, param_init, prior_type,
+			contem_prior, contem_init, contem_prior_type,
 			grp_id, own_id, cross_id, grp_mat, include_mean, stable, step, y_test,
 			get_lpl, seed_chain, seed_forecast, display_progress, nthreads, sv
 		);
@@ -1199,6 +1221,7 @@ inline std::unique_ptr<McmcOutforecastInterface<BaseForecaster>> initialize_outf
 			y, lag, num_chains, num_iter, num_burn, thinning,
 			sparse, level, fit_record,
 			param_reg, param_prior, param_intercept, param_init, prior_type,
+			contem_prior, contem_init, contem_prior_type,
 			grp_id, own_id, cross_id, grp_mat, include_mean, stable, step, y_test,
 			get_lpl, seed_chain, seed_forecast, display_progress, nthreads, sv
 		);
@@ -1207,6 +1230,7 @@ inline std::unique_ptr<McmcOutforecastInterface<BaseForecaster>> initialize_outf
 		y, lag, num_chains, num_iter, num_burn, thinning,
 		sparse, level, fit_record,
 		param_reg, param_prior, param_intercept, param_init, prior_type,
+		contem_prior, contem_init, contem_prior_type,
 		grp_id, own_id, cross_id, grp_mat, include_mean, stable, step, y_test,
 		get_lpl, seed_chain, seed_forecast, display_progress, nthreads, sv
 	);
@@ -1217,6 +1241,7 @@ inline std::unique_ptr<McmcOutforecastInterface<BaseForecaster>> initialize_outf
 	const Eigen::MatrixXd& y, int week, int month, int num_chains, int num_iter, int num_burn, int thinning,
 	bool sparse, double level, LIST& fit_record, bool run_mcmc,
 	LIST& param_reg, LIST& param_prior, LIST& param_intercept, LIST_OF_LIST& param_init, int prior_type, bool ggl,
+	LIST& contem_prior, LIST_OF_LIST& contem_init, int contem_prior_type,
 	const Eigen::VectorXi& grp_id, const Eigen::VectorXi& own_id, const Eigen::VectorXi& cross_id, const Eigen::MatrixXi& grp_mat,
 	bool include_mean, bool stable, int step, const Eigen::MatrixXd& y_test,
 	bool get_lpl, const Eigen::MatrixXi& seed_chain, const Eigen::VectorXi& seed_forecast, bool display_progress, int nthreads,
@@ -1227,6 +1252,7 @@ inline std::unique_ptr<McmcOutforecastInterface<BaseForecaster>> initialize_outf
 			y, week, month, num_chains, num_iter, num_burn, thinning,
 			sparse, level, fit_record,
 			param_reg, param_prior, param_intercept, param_init, prior_type,
+			contem_prior, contem_init, contem_prior_type,
 			grp_id, own_id, cross_id, grp_mat, include_mean, stable, step, y_test,
 			get_lpl, seed_chain, seed_forecast, display_progress, nthreads, sv
 		);
@@ -1235,6 +1261,7 @@ inline std::unique_ptr<McmcOutforecastInterface<BaseForecaster>> initialize_outf
 			y, week, month, num_chains, num_iter, num_burn, thinning,
 			sparse, level, fit_record,
 			param_reg, param_prior, param_intercept, param_init, prior_type,
+			contem_prior, contem_init, contem_prior_type,
 			grp_id, own_id, cross_id, grp_mat, include_mean, stable, step, y_test,
 			get_lpl, seed_chain, seed_forecast, display_progress, nthreads, sv
 		);
@@ -1243,6 +1270,7 @@ inline std::unique_ptr<McmcOutforecastInterface<BaseForecaster>> initialize_outf
 			y, week, month, num_chains, num_iter, num_burn, thinning,
 			sparse, level, fit_record,
 			param_reg, param_prior, param_intercept, param_init, prior_type,
+			contem_prior, contem_init, contem_prior_type,
 			grp_id, own_id, cross_id, grp_mat, include_mean, stable, step, y_test,
 			get_lpl, seed_chain, seed_forecast, display_progress, nthreads, sv
 		);
@@ -1251,6 +1279,7 @@ inline std::unique_ptr<McmcOutforecastInterface<BaseForecaster>> initialize_outf
 		y, week, month, num_chains, num_iter, num_burn, thinning,
 		sparse, level, fit_record,
 		param_reg, param_prior, param_intercept, param_init, prior_type,
+		contem_prior, contem_init, contem_prior_type,
 		grp_id, own_id, cross_id, grp_mat, include_mean, stable, step, y_test,
 		get_lpl, seed_chain, seed_forecast, display_progress, nthreads, sv
 	);

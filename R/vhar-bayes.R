@@ -226,7 +226,7 @@ vhar_bayes <- function(y,
     param_init = param_init,
     prior_nm = contem_spec$prior,
     num_alpha = num_eta,
-    num_grp = ifelse(contem_spec$prior == "SSVS", num_eta, 1)
+    num_grp = ifelse(contem_spec$prior == "SSVS" || contem_spec$prior == "GDP", num_eta, 1)
   )
   param_init <- validate_init(
     param_init = param_init,

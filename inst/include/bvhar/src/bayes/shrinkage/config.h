@@ -23,14 +23,9 @@ struct GlInits2;
 struct HoreseshoeInits2;
 struct NgInits2;
 struct GdpInits2;
-// MCMC records
-struct ShrinkageRecords;
-struct SsvsRecords2;
-struct GlobalLocalRecords2;
-struct HorseshoeRecords2;
-struct NgRecords2;
 
 struct ShrinkageParams {
+	ShrinkageParams() {}
 	ShrinkageParams(LIST& priors) {}
 };
 
@@ -130,6 +125,7 @@ struct GdpParams2 : public ShrinkageParams {
 };
 
 struct ShrinkageInits {
+	ShrinkageInits() {}
 	ShrinkageInits(LIST& init) {}
 	ShrinkageInits(LIST& init, int num_design) {}
 };
@@ -180,7 +176,7 @@ struct SsvsInits2 : public ShrinkageInits {
 		_spike_scl(CAST_DOUBLE(init["spike_scl"])) {}
 	
 	SsvsInits2(LIST& init, int num_design)
-	: ShrinkageInits(init),
+	: ShrinkageInits(init, num_design),
 		_dummy(CAST<Eigen::VectorXd>(init["dummy"])),
 		_weight(CAST<Eigen::VectorXd>(init["mixture"])),
 		_slab(CAST<Eigen::VectorXd>(init["slab"])),
@@ -241,10 +237,6 @@ struct GdpInits2 : public ShrinkageInits {
 		_local(CAST<Eigen::VectorXd>(init["local_sparsity"])),
 		_group_rate(CAST<Eigen::VectorXd>(init["group_rate"])),
 		_gamma_shape(CAST_DOUBLE(init["gamma_shape"])), _gamma_rate(CAST_DOUBLE(init["gamma_rate"])) {}
-};
-
-struct ShrinkageRecords {
-	// 
 };
 
 } // namespace bvhar

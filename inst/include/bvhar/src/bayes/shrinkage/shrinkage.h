@@ -59,10 +59,11 @@ public:
 	) = 0;
 
 	/**
-	 * @brief Save MCMC records
+	 * @brief Append shrinkage prior's parameter record to the result `LIST`
 	 * 
+	 * @param list Contains MCMC record result
 	 */
-	virtual void updateRecords() = 0;
+	virtual void appendRecords(LIST& list) = 0;
 };
 
 /**
@@ -86,7 +87,7 @@ public:
 		int num_lowerchol,
 		BHRNG& rng
 	) override {}
-	void updateRecords() override {}
+	void appendRecords(LIST& list) override {}
 };
 
 /**
@@ -135,7 +136,7 @@ public:
 		);
 	}
 
-	void updateRecords() override {}
+	void appendRecords(LIST& list) override {}
 
 private:
 	Eigen::VectorXd prior_mean;
@@ -191,7 +192,7 @@ public:
 		prior_chol_prec = 1 / build_ssvs_sd(spike_scl * slab, slab, dummy).array().square();
 	}
 
-	void updateRecords() override {}
+	void appendRecords(LIST& list) override {}
 
 private:
 	int grid_size;
@@ -263,7 +264,7 @@ public:
 		prior_chol_prec = 1 / (coef_var.array() * local_lev.array()).square();
 	}
 
-	void updateRecords() override {}
+	void appendRecords(LIST& list) override {}
 
 private:
 	Eigen::VectorXd local_lev;
@@ -334,7 +335,7 @@ public:
 		prior_chol_prec = 1 / local_lev.array().square();
 	}
 
-	void updateRecords() override {}
+	void appendRecords(LIST& list) override {}
 
 private:
 	double mh_sd;
@@ -399,7 +400,7 @@ public:
 		prior_chol_prec = 1 / ((group_lev[0] * local_lev.array()).square() * latent_local.array());
 	}
 
-	void updateRecords() override {}
+	void appendRecords(LIST& list) override {}
 
 private:
 	double dir_concen, shape, scl;
@@ -460,7 +461,7 @@ public:
 		prior_chol_prec = 1 / local_lev.array();
 	}
 
-	void updateRecords() override {}
+	void appendRecords(LIST& list) override {}
 
 private:
 	int shape_grid, rate_grid;

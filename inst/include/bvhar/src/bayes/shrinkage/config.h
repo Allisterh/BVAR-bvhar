@@ -8,33 +8,33 @@ namespace bvhar {
 
 // Parameters
 struct ShrinkageParams;
-struct MinnParams2;
-struct HierminnParams2;
-struct SsvsParams2;
-// struct HorseshoeParams2;
-struct NgParams2;
-struct DlParams2;
-struct GdpParams2;
+struct MinnParams;
+struct HierminnParams;
+struct SsvsParams;
+// struct HorseshoeParams;
+struct NgParams;
+struct DlParams;
+struct GdpParams;
 // Initialization
 struct ShrinkageInits;
-struct HierminnInits2;
-struct SsvsInits2;
-struct GlInits2;
-struct HoreseshoeInits2;
-struct NgInits2;
-struct GdpInits2;
+struct HierminnInits;
+struct SsvsInits;
+struct GlInits;
+struct HoreseshoeInits;
+struct NgInits;
+struct GdpInits;
 
 struct ShrinkageParams {
 	ShrinkageParams() {}
 	ShrinkageParams(LIST& priors) {}
 };
 
-struct MinnParams2 : public ShrinkageParams {
+struct MinnParams : public ShrinkageParams {
 	Eigen::MatrixXd _prec_diag;
 	Eigen::MatrixXd _prior_mean;
 	Eigen::MatrixXd _prior_prec;
 	
-	MinnParams2(LIST& priors)
+	MinnParams(LIST& priors)
 	: ShrinkageParams(priors) {
 		int lag = CAST_INT(priors["p"]); // append to bayes_spec, p = 3 in VHAR
 		Eigen::VectorXd _sigma = CAST<Eigen::VectorXd>(priors["sigma"]);
@@ -73,54 +73,54 @@ struct MinnParams2 : public ShrinkageParams {
 	}
 };
 
-struct HierminnParams2 : public MinnParams2 {
+struct HierminnParams : public MinnParams {
 	double _shape, _rate;
 	int _grid_size;
 	// bool _minnesota;
 
-	HierminnParams2(LIST& priors)
-	: MinnParams2(priors),
+	HierminnParams(LIST& priors)
+	: MinnParams(priors),
 		_shape(CAST_DOUBLE(priors["shape"])), _rate(CAST_DOUBLE(priors["rate"])), _grid_size(CAST_INT(priors["grid_size"])) {}
 };
 
-struct SsvsParams2 : public ShrinkageParams {
+struct SsvsParams : public ShrinkageParams {
 	Eigen::VectorXd _s1, _s2;
 	double _slab_shape, _slab_scl;
 	int _grid_size;
 
-	SsvsParams2(LIST& priors)
+	SsvsParams(LIST& priors)
 	: ShrinkageParams(priors),
 		_s1(CAST<Eigen::VectorXd>(priors["coef_s1"])), _s2(CAST<Eigen::VectorXd>(priors["coef_s2"])),
 		_slab_shape(CAST_DOUBLE(priors["slab_shape"])), _slab_scl(CAST_DOUBLE(priors["_slab_scl"])),
 		_grid_size(CAST_INT(priors["grid_size"])) {}
 };
 
-// struct HorseshoeParams2 : public ShrinkageParams {
+// struct HorseshoeParams : public ShrinkageParams {
 // 	HorseshoeParams() {}
 // };
 
-struct NgParams2 : public ShrinkageParams {
+struct NgParams : public ShrinkageParams {
 	double _mh_sd, _group_shape, _group_scl, _global_shape, _global_scl;
 
-	NgParams2(LIST& priors)
+	NgParams(LIST& priors)
 	: ShrinkageParams(priors),
 		_mh_sd(CAST_DOUBLE(priors["shape_sd"])),
 		_group_shape(CAST_DOUBLE(priors["group_shape"])), _group_scl(CAST_DOUBLE(priors["group_scale"])),
 		_global_shape(CAST_DOUBLE(priors["global_shape"])), _global_scl(CAST_DOUBLE(priors["global_scale"])) {}
 };
 
-struct DlParams2 : public ShrinkageParams {
+struct DlParams : public ShrinkageParams {
 	int _grid_size;
 	double _shape, _scl;
 
-	DlParams2(LIST& priors)
+	DlParams(LIST& priors)
 	: ShrinkageParams(priors), _grid_size(CAST_INT(priors["grid_size"])), _shape(CAST_DOUBLE(priors["shape"])), _scl(CAST_DOUBLE(priors["scale"])) {}
 };
 
-struct GdpParams2 : public ShrinkageParams {
+struct GdpParams : public ShrinkageParams {
 	int _grid_shape, _grid_rate;
 
-	GdpParams2(LIST& priors)
+	GdpParams(LIST& priors)
 	: ShrinkageParams(priors), _grid_shape(CAST_INT(priors["grid_shape"])), _grid_rate(CAST_INT(priors["grid_rate"])) {}
 };
 
@@ -130,14 +130,14 @@ struct ShrinkageInits {
 	ShrinkageInits(LIST& init, int num_design) {}
 };
 
-struct HierminnInits2 : public ShrinkageInits {
+struct HierminnInits : public ShrinkageInits {
 	double _own_lambda;
 	double _cross_lambda;
 
-	HierminnInits2(LIST& init)
+	HierminnInits(LIST& init)
 	: ShrinkageInits(init), _own_lambda(CAST_DOUBLE(init["own_lambda"])), _cross_lambda(CAST_DOUBLE(init["cross_lambda"])) {}
 
-	HierminnInits2(LIST& init, int num_design)
+	HierminnInits(LIST& init, int num_design)
 	: ShrinkageInits(init, num_design), _own_lambda(CAST_DOUBLE(init["own_lambda"])), _cross_lambda(CAST_DOUBLE(init["cross_lambda"])) {}
 
 	void initPrec(
@@ -164,18 +164,18 @@ struct HierminnInits2 : public ShrinkageInits {
 	}
 };
 
-struct SsvsInits2 : public ShrinkageInits {
+struct SsvsInits : public ShrinkageInits {
 	Eigen::VectorXd _dummy, _weight, _slab;
 	double _spike_scl;
 
-	SsvsInits2(LIST& init)
+	SsvsInits(LIST& init)
 	: ShrinkageInits(init),
 		_dummy(CAST<Eigen::VectorXd>(init["dummy"])),
 		_weight(CAST<Eigen::VectorXd>(init["mixture"])),
 		_slab(CAST<Eigen::VectorXd>(init["slab"])),
 		_spike_scl(CAST_DOUBLE(init["spike_scl"])) {}
 	
-	SsvsInits2(LIST& init, int num_design)
+	SsvsInits(LIST& init, int num_design)
 	: ShrinkageInits(init, num_design),
 		_dummy(CAST<Eigen::VectorXd>(init["dummy"])),
 		_weight(CAST<Eigen::VectorXd>(init["mixture"])),
@@ -183,56 +183,56 @@ struct SsvsInits2 : public ShrinkageInits {
 		_spike_scl(CAST_DOUBLE(init["spike_scl"])) {}
 };
 
-struct GlInits2 : public ShrinkageInits {
+struct GlInits : public ShrinkageInits {
 	Eigen::VectorXd _local;
 	double _global;
 
-	GlInits2(LIST& init)
+	GlInits(LIST& init)
 	: ShrinkageInits(init),
 		_local(CAST<Eigen::VectorXd>(init["local_sparsity"])),
 		_global(CAST_DOUBLE(init["global_sparsity"])) {}
 	
-	GlInits2(LIST& init, int num_design)
+	GlInits(LIST& init, int num_design)
 	: ShrinkageInits(init, num_design),
 		_local(CAST<Eigen::VectorXd>(init["local_sparsity"])),
 		_global(CAST_DOUBLE(init["global_sparsity"])) {}
 };
 
-struct HorseshoeInits2 : public GlInits2 {
+struct HorseshoeInits : public GlInits {
 	Eigen::VectorXd _group;
 
-	HorseshoeInits2(LIST& init)
-	: GlInits2(init),
+	HorseshoeInits(LIST& init)
+	: GlInits(init),
 		_group(CAST<Eigen::VectorXd>(init["group_sparsity"])) {}
 	
-	HorseshoeInits2(LIST& init, int num_design)
-	: GlInits2(init, num_design),
+	HorseshoeInits(LIST& init, int num_design)
+	: GlInits(init, num_design),
 		_group(CAST<Eigen::VectorXd>(init["group_sparsity"])) {}
 };
 
-struct NgInits2 : public HorseshoeInits2 {
+struct NgInits : public HorseshoeInits {
 	Eigen::VectorXd _local_shape;
 
-	NgInits2(LIST& init)
-	: HorseshoeInits2(init),
+	NgInits(LIST& init)
+	: HorseshoeInits(init),
 		_local_shape(CAST<Eigen::VectorXd>(init["local_shape"])) {}
 	
-	NgInits2(LIST& init, int num_design)
-	: HorseshoeInits2(init, num_design),
+	NgInits(LIST& init, int num_design)
+	: HorseshoeInits(init, num_design),
 		_local_shape(CAST<Eigen::VectorXd>(init["local_shape"])) {}
 };
 
-struct GdpInits2 : public ShrinkageInits {
+struct GdpInits : public ShrinkageInits {
 	Eigen::VectorXd _local, _group_rate;
 	double _gamma_shape, _gamma_rate;
 
-	GdpInits2(LIST& init)
+	GdpInits(LIST& init)
 	: ShrinkageInits(init),
 		_local(CAST<Eigen::VectorXd>(init["local_sparsity"])),
 		_group_rate(CAST<Eigen::VectorXd>(init["group_rate"])),
 		_gamma_shape(CAST_DOUBLE(init["gamma_shape"])), _gamma_rate(CAST_DOUBLE(init["gamma_rate"])) {}
 	
-	GdpInits2(LIST& init, int num_design)
+	GdpInits(LIST& init, int num_design)
 	: ShrinkageInits(init, num_design),
 		_local(CAST<Eigen::VectorXd>(init["local_sparsity"])),
 		_group_rate(CAST<Eigen::VectorXd>(init["group_rate"])),

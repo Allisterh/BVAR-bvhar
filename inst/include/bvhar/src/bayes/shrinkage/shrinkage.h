@@ -72,7 +72,7 @@ public:
  */
 class MinnUpdater : public ShrinkageUpdater {
 public:
-	MinnUpdater(const MinnParams2& params, const ShrinkageInits& inits) : ShrinkageUpdater(params, inits) {}
+	MinnUpdater(const MinnParams& params, const ShrinkageInits& inits) : ShrinkageUpdater(params, inits) {}
 	virtual ~MinnUpdater() = default;
 	void updateCoefPrec(
 		Eigen::Ref<Eigen::VectorXd> prior_alpha_prec,
@@ -96,7 +96,7 @@ public:
  */
 class HierminnUpdater : public ShrinkageUpdater {
 public:
-	HierminnUpdater(const HierminnParams2& params, const HierminnInits2& inits)
+	HierminnUpdater(const HierminnParams& params, const HierminnInits& inits)
 	: ShrinkageUpdater(params, inits),
 		prior_mean(params._prior_mean.reshaped()),
 		grid_size(params._grid_size),
@@ -151,7 +151,7 @@ private:
  */
 class SsvsUpdater : public ShrinkageUpdater {
 public:
-	SsvsUpdater(const SsvsParams2& params, const SsvsInits2& inits)
+	SsvsUpdater(const SsvsParams& params, const SsvsInits& inits)
 	: ShrinkageUpdater(params, inits),
 		grid_size(params._grid_size),
 		ig_shape(params._slab_shape), ig_scl(params._slab_scl), s1(params._s1), s2(params._s2),
@@ -213,7 +213,7 @@ private:
 template <bool isGroup = true>
 class HorseshoeUpdater : public ShrinkageUpdater {
 public:
-	HorseshoeUpdater(const ShrinkageParams& params, const HorseshoeInits2& inits)
+	HorseshoeUpdater(const ShrinkageParams& params, const HorseshoeInits& inits)
 	: ShrinkageUpdater(params, inits),
 		local_lev(inits._local), group_lev(inits._group), global_lev(isGroup ? inits._global : 1.0),
 		shrink_fac(Eigen::VectorXd::Zero(local_lev.size())),
@@ -285,7 +285,7 @@ private:
 template <bool isGroup = true>
 class NgUpdater : public ShrinkageUpdater {
 public:
-	NgUpdater(const NgParams2& params, const NgInits2& inits)
+	NgUpdater(const NgParams& params, const NgInits& inits)
 	: ShrinkageUpdater(params, inits),
 		mh_sd(params._mh_sd),
 		group_shape(params._group_shape), group_scl(params._group_scl),
@@ -355,7 +355,7 @@ private:
 template <bool isGroup = true>
 class DlUpdater : public ShrinkageUpdater {
 public:
-	DlUpdater(const DlParams2& params, const HorseshoeInits2& inits)
+	DlUpdater(const DlParams& params, const HorseshoeInits& inits)
 	: ShrinkageUpdater(params, inits),
 		dir_concen(0.0), shape(params._shape), scl(params._scl), grid_size(params._grid_size),
 		local_lev(inits._local), group_lev(inits._group), global_lev(isGroup ? inits._global : 1.0),
@@ -420,7 +420,7 @@ private:
 template <bool isGroup = true>
 class GdpUpdater : public ShrinkageUpdater {
 public:
-	GdpUpdater(const GdpParams2& params, const GdpInits2& inits)
+	GdpUpdater(const GdpParams& params, const GdpInits& inits)
 	: ShrinkageUpdater(params, inits),
 		shape_grid(params._grid_shape), rate_grid(params._grid_rate),
 		group_rate(inits._group_rate), group_rate_fac(Eigen::VectorXd::Ones(inits._local.size())),
@@ -470,6 +470,86 @@ private:
 	Eigen::VectorXd local_lev;
 };
 
+template <typename ShrinkageType>
+struct ShrinkageParamsMap {
+	using type = ShrinkageParams;
+};
+
+template <>
+struct ShrinkageParamsMap<MinnUpdater> {
+	using type = MinnParams;
+};
+
+template <>
+struct ShrinkageParamsMap<HierminnUpdater> {
+	using type = HierminnParams;
+};
+
+template <>
+struct ShrinkageParamsMap<SsvsUpdater> {
+	using type = SsvsParams;
+};
+
+template <>
+struct ShrinkageParamsMap<HorseshoeUpdater> {
+	using type = ShrinkageParams;
+};
+
+template <>
+struct ShrinkageParamsMap<NgUpdater> {
+	using type = NgParams;
+};
+
+template <>
+struct ShrinkageParamsMap<DlUpdater> {
+	using type = DlParams;
+};
+
+template <>
+struct ShrinkageParamsMap<GdpUpdater> {
+	using type = GdpParams;
+};
+
+template <typename ShrinkageType>
+struct ShrinkageInitsMap {
+	using type = ShrinkageInits;
+};
+
+template <>
+struct ShrinkageInitsMap<MinnUpdater> {
+	using type = ShrinkageInits;
+};
+
+template <>
+struct ShrinkageInitsMap<HierminnUpdater> {
+	using type = HierminnInits;
+};
+
+template <>
+struct ShrinkageInitsMap<SsvsUpdater> {
+	using type = SsvsInits;
+};
+
+template <>
+struct ShrinkageInitsMap<HorseshoeUpdater> {
+	using type = HorseshoeInits;
+};
+
+template <>
+struct ShrinkageInitsMap<NgUpdater> {
+	using type = NgInits;
+};
+
+template <>
+struct ShrinkageInitsMap<DlUpdater> {
+	using type = HorseshoeInits;
+};
+
+template <>
+struct ShrinkageInitsMap<GdpUpdater> {
+	using type = GdpInits;
+};
+
 /**
  * @brief Function to initialize `ShrinkageUpdater`
  * 
@@ -480,46 +560,62 @@ private:
  * @param param_init Initial values
  * @return std::unique_ptr<ShrinkageUpdater> 
  */
-template <typename UPDATER = ShrinkageUpdater, typename PARAMS = ShrinkageParams, typename INITS = ShrinkageInits>
+template <typename UPDATER = ShrinkageUpdater>
 inline std::unique_ptr<ShrinkageUpdater> initialize_shrinkageupdater(LIST& param_prior, LIST& param_init) {
 	std::unique_ptr<ShrinkageUpdater> shrinkage_ptr;
+	using PARAMS = typename ShrinkageParamsMap<UPDATER>::type;
+	using INITS = typename ShrinkageInitsMap<UPDATER>::type;
 	PARAMS params(param_prior);
 	INITS inits(param_init);
 	shrinkage_ptr = std::make_unique<UPDATER>(params, inits);
 	return shrinkage_ptr;
 }
 
-template <typename PARAMS = ShrinkageParams, typename INITS = ShrinkageInits, bool isGroup = true>
+template <bool isGroup = true>
 inline std::unique_ptr<ShrinkageUpdater> initialize_shrinkageupdater(LIST& param_prior, LIST& param_init, int prior_type) {
 	std::unique_ptr<ShrinkageUpdater> shrinkage_ptr;
-	PARAMS params(param_prior);
-	INITS inits(param_init);
+	// PARAMS params(param_prior);
+	// INITS inits(param_init);
 	switch (prior_type) {
 		case 1: {
+			MinnParams params(param_prior);
+			ShrinkageInits inits(param_init);
 			shrinkage_ptr = std::make_unique<MinnUpdater>(params, inits);
 			return shrinkage_ptr;
 		}
 		case 2: {
+			SsvsParams params(param_prior);
+			SsvsInits inits(param_init);
 			shrinkage_ptr = std::make_unique<SsvsUpdater>(params, inits);
 			return shrinkage_ptr;
 		}
 		case 3: {
+			ShrinkageParams params(param_prior);
+			HorseshoeInits inits(param_init);
 			shrinkage_ptr = std::make_unique<HorseshoeUpdater<isGroup>>(params, inits);
 			return shrinkage_ptr;
 		}
 		case 4: {
+			HierminnParams params(param_prior);
+			HierminnInits inits(param_init);
 			shrinkage_ptr = std::make_unique<HierminnUpdater>(params, inits);
 			return shrinkage_ptr;
 		}
 		case 5: {
+			NgParams params(param_prior);
+			NgInits inits(param_init);
 			shrinkage_ptr = std::make_unique<NgUpdater<isGroup>>(params, inits);
 			return shrinkage_ptr;
 		}
 		case 6: {
+			DlParams params(param_prior);
+			HorseshoeInits inits(param_init);
 			shrinkage_ptr = std::make_unique<DlUpdater<isGroup>>(params, inits);
 			return shrinkage_ptr;
 		}
 		case 7: {
+			GdpParams params(param_prior);
+			GdpInits inits(param_init);
 			shrinkage_ptr = std::make_unique<GdpUpdater<isGroup>>(params, inits);
 			return shrinkage_ptr;
 		}

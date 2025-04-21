@@ -98,7 +98,7 @@ class HierminnUpdater : public ShrinkageUpdater {
 public:
 	HierminnUpdater(const HierminnParams& params, const HierminnInits& inits)
 	: ShrinkageUpdater(params, inits),
-		prior_mean(params._prior_mean.reshaped()),
+		prior_mean(params._prior_mean.reshaped()), // -> fix the size of _prior_mean of MinnParams
 		grid_size(params._grid_size),
 		own_shape(params._shape), own_rate(params._rate),
 		// cross_shape(params.shape), cross_rate(params.rate),

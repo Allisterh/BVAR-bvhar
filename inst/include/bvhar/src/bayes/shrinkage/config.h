@@ -60,7 +60,7 @@ struct MinnParams : public ShrinkageParams {
 			_lambda, _sigma, _eps, false
 		);
 		_prior_prec = dummy_design.transpose() * dummy_design;
-		_prior_mean = _prior_prec.llt().solve(dummy_design.transpose() * dummy_response);
+		_prior_mean = _prior_prec.llt().solve(dummy_design.transpose() * dummy_response); // -> wrong size when contemupdater: should be num_lowerchol size
 		_prec_diag.diagonal() = 1 / _sigma.array();
 	}
 

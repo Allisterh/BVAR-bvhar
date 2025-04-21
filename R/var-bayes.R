@@ -11,7 +11,8 @@
 #' @param num_iter MCMC iteration number
 #' @param num_burn Number of burn-in (warm-up). Half of the iteration is the default choice.
 #' @param thinning Thinning every thinning-th iteration
-#' @param bayes_spec A BVAR model specification by [set_bvar()], [set_ssvs()], or [set_horseshoe()].
+#' @param coef_spec Coefficient prior specification by [set_bvar()], [set_ssvs()], or [set_horseshoe()].
+#' @param contem_spec Contemporaneous coefficient prior specification by [set_bvar()], [set_ssvs()], or [set_horseshoe()].
 #' @param cov_spec `r lifecycle::badge("experimental")` SV specification by [set_sv()].
 #' @param intercept `r lifecycle::badge("experimental")` Prior for the constant term by [set_intercept()].
 #' @param include_mean Add constant term (Default: `TRUE`) or not (`FALSE`)
@@ -84,7 +85,8 @@ var_bayes <- function(y,
                       num_iter = 1000,
                       num_burn = floor(num_iter / 2),
                       thinning = 1,
-                      bayes_spec = set_bvar(),
+                      coef_spec = set_bvar(),
+                      contem_spec = coef_spec,
                       cov_spec = set_ldlt(),
                       intercept = set_intercept(),
                       include_mean = TRUE,
@@ -122,14 +124,24 @@ var_bayes <- function(y,
   num_eta <- dim_data * (dim_data - 1) / 2
   # model specification---------------
   if (!(
-    is.bvharspec(bayes_spec) ||
-    is.ssvsinput(bayes_spec) ||
-    is.horseshoespec(bayes_spec) ||
-    is.ngspec(bayes_spec) ||
-    is.dlspec(bayes_spec) ||
-    is.gdpspec(bayes_spec)
+    is.bvharspec(coef_spec) ||
+    is.ssvsinput(coef_spec) ||
+    is.horseshoespec(coef_spec) ||
+    is.ngspec(coef_spec) ||
+    is.dlspec(coef_spec) ||
+    is.gdpspec(coef_spec)
   )) {
-    stop("Provide 'bvharspec', 'ssvsinput', 'horseshoespec', 'ngspec', 'dlspec', or 'gdpspec' for 'bayes_spec'.")
+    stop("Provide 'bvharspec', 'ssvsinput', 'horseshoespec', 'ngspec', 'dlspec', or 'gdpspec' for 'coef_spec'.")
+  }
+  if (!(
+    is.bvharspec(contem_spec) ||
+    is.ssvsinput(contem_spec) ||
+    is.horseshoespec(contem_spec) ||
+    is.ngspec(contem_spec) ||
+    is.dlspec(contem_spec) ||
+    is.gdpspec(contem_spec)
+  )) {
+    stop("Provide 'bvharspec', 'ssvsinput', 'horseshoespec', 'ngspec', 'dlspec', or 'gdpspec' for 'contem_spec'.")
   }
   if (!is.covspec(cov_spec)) {
     stop("Provide 'covspec' for 'cov_spec'.")
@@ -154,21 +166,27 @@ var_bayes <- function(y,
   if (thinning < 1) {
     stop("'thinning' should be non-negative.")
   }
-  # prior_nm <- bayes_spec$prior
-  prior_nm <- ifelse(
-    bayes_spec$prior == "MN_Hierarchical",
-    "Minnesota",
-    bayes_spec$prior
-  )
+  # prior_nm <- coef_spec$prior
+  # prior_nm <- ifelse(
+  #   coef_spec$prior == "MN_Hierarchical",
+  #   "Minnesota",
+  #   coef_spec$prior
+  # )
   # Initialization--------------------
-  param_init <- lapply(
-    seq_len(num_chains),
-    function(x) {
-      list(
-        init_coef = matrix(runif(dim_data * dim_design, -1, 1), ncol = dim_data),
-        init_contem = exp(runif(num_eta, -1, 0)) # Cholesky factor
-      )
-    }
+  # param_init <- lapply(
+  #   seq_len(num_chains),
+  #   function(x) {
+  #     list(
+  #       init_coef = matrix(runif(dim_data * dim_design, -1, 1), ncol = dim_data),
+  #       init_contem = exp(runif(num_eta, -1, 0)) # Cholesky factor
+  #     )
+  #   }
+  # )
+  param_init <- validate_coef_init(
+    num_chains = num_chains,
+    dim_data = dim_data,
+    dim_design = dim_design,
+    num_eta = num_eta
   )
   glob_idmat <- build_grpmat(
     p = p,
@@ -189,238 +207,274 @@ var_bayes <- function(y,
     cross_id <- 2
   }
   num_grp <- length(grp_id)
-  if (prior_nm == "Minnesota") {
-    if (bayes_spec$process != "BVAR") {
-      stop("'bayes_spec' must be the result of 'set_bvar()'.")
-    }
-    # if (bayes_spec$prior != "Minnesota") {
-    #   stop("In 'set_bvar()', just input numeric values.")
-    # }
-    if (is.null(bayes_spec$sigma)) {
-      bayes_spec$sigma <- apply(y, 2, sd)
-    }
-    if (is.null(bayes_spec$delta)) {
-      bayes_spec$delta <- rep(0, dim_data)
-    }
-    if (length(bayes_spec$delta) == 1) {
-      bayes_spec$delta <- rep(bayes_spec$delta, dim_data)
-    }
-    param_prior <- append(bayes_spec, list(p = p))
-    if (bayes_spec$hierarchical) {
-      param_prior$shape <- bayes_spec$lambda$param[1]
-      param_prior$rate <- bayes_spec$lambda$param[2]
-      param_prior$grid_size <- bayes_spec$lambda$grid_size
-      prior_nm <- "MN_Hierarchical"
-      param_init <- lapply(
-        param_init,
-        function(init) {
-          append(
-            init,
-            list(
-              own_lambda = runif(1, 0, 1),
-              cross_lambda = runif(1, 0, 1),
-              contem_lambda = runif(1, 0, 1)
-            )
-          )
-        }
-      )
-    }
-  } else if (prior_nm == "SSVS") {
-    # if (length(bayes_spec$coef_spike) == 1) {
-    #   bayes_spec$coef_spike <- rep(bayes_spec$coef_spike, num_alpha)
-    # }
-    # if (length(bayes_spec$coef_slab) == 1) {
-    #   bayes_spec$coef_slab <- rep(bayes_spec$coef_slab, num_alpha)
-    # }
-    # if (length(bayes_spec$coef_mixture) == 1) {
-    #   bayes_spec$coef_mixture <- rep(bayes_spec$coef_mixture, num_grp)
-    # }
-    if (length(bayes_spec$coef_s1) == 2) {
-      coef_s1 <- numeric(num_grp)
-      coef_s1[grp_id %in% own_id] <- bayes_spec$coef_s1[1]
-      coef_s1[grp_id %in% cross_id] <- bayes_spec$coef_s1[2]
-      bayes_spec$coef_s1 <- coef_s1
-    }
-    if (length(bayes_spec$coef_s2) == 2) {
-      coef_s2 <- numeric(num_grp)
-      coef_s2[grp_id %in% own_id] <- bayes_spec$coef_s2[1]
-      coef_s2[grp_id %in% cross_id] <- bayes_spec$coef_s2[2]
-      bayes_spec$coef_s2 <- coef_s2
-    }
-    # if (length(bayes_spec$chol_spike) == 1) {
-    #   bayes_spec$chol_spike <- rep(bayes_spec$chol_spike, num_eta)
-    # }
-    # if (length(bayes_spec$chol_slab) == 1) {
-    #   bayes_spec$chol_slab <- rep(bayes_spec$chol_slab, num_eta)
-    # }
-    # if (length(bayes_spec$chol_mixture) == 1) {
-    #   bayes_spec$chol_mixture <- rep(bayes_spec$chol_mixture, num_eta)
-    # }
-    # if (all(is.na(bayes_spec$coef_spike)) || all(is.na(bayes_spec$coef_slab))) {
-    #   # Conduct semiautomatic function using var_lm()
-    #   stop("Specify spike-and-slab of coefficients.")
-    # }
-    # if (!(
-    #   length(bayes_spec$coef_spike) == num_alpha &&
-    #     length(bayes_spec$coef_slab) == num_alpha &&
-    #     length(bayes_spec$coef_mixture) == num_grp
-    # )) {
-    #   stop("Invalid 'coef_spike', 'coef_slab', and 'coef_mixture' size.")
-    # }
-    param_prior <- bayes_spec
-    param_init <- lapply(
-      param_init,
-      function(init) {
-        coef_mixture <- runif(num_grp, -1, 1)
-        coef_mixture <- exp(coef_mixture) / (1 + exp(coef_mixture)) # minnesota structure?
-        init_coef_dummy <- rbinom(num_alpha, 1, .5) # minnesota structure?
-        chol_mixture <- runif(num_eta, -1, 1)
-        chol_mixture <- exp(chol_mixture) / (1 + exp(chol_mixture))
-        # init_chol_dummy <- rbinom(num_eta, 1, .5)
-        init_coef_slab <- exp(runif(num_alpha, -1, 1))
-        init_contem_slab <- exp(runif(num_eta, -1, 1))
-        append(
-          init,
-          list(
-            init_coef_dummy = init_coef_dummy,
-            coef_mixture = coef_mixture,
-            coef_slab = init_coef_slab,
-            chol_mixture = chol_mixture,
-            contem_slab = init_contem_slab,
-            coef_spike_scl = runif(1, 0, 1),
-            chol_spike_scl = runif(1, 0, 1)
-          )
-        )
-      }
-    )
-  } else if (prior_nm == "Horseshoe") {
-    if (length(bayes_spec$local_sparsity) != dim_design) {
-      if (length(bayes_spec$local_sparsity) == 1) {
-        bayes_spec$local_sparsity <- rep(bayes_spec$local_sparsity, num_alpha)
-      } else {
-        stop("Length of the vector 'local_sparsity' should be dim * p or dim * p + 1.")
-      }
-    }
-    # bayes_spec$global_sparsity <- rep(bayes_spec$global_sparsity, num_grp)
-    bayes_spec$group_sparsity <- rep(bayes_spec$group_sparsity, num_grp)
-    param_prior <- list()
-    param_init <- lapply(
-      param_init,
-      function(init) {
-        local_sparsity <- exp(runif(num_alpha, -1, 1))
-        # global_sparsity <- exp(runif(num_grp, -1, 1))
-        global_sparsity <- exp(runif(1, -1, 1))
-        group_sparsity <- exp(runif(num_grp, -1, 1))
-        contem_local_sparsity <- exp(runif(num_eta, -1, 1)) # sd = local * global
-        contem_global_sparsity <- exp(runif(1, -1, 1)) # sd = local * global
-        append(
-          init,
-          list(
-            local_sparsity = local_sparsity,
-            global_sparsity = global_sparsity,
-            group_sparsity = group_sparsity,
-            contem_local_sparsity = contem_local_sparsity,
-            contem_global_sparsity = contem_global_sparsity
-          )
-        )
-      }
-    )
-  } else if (prior_nm == "NG") {
-    # if (length(bayes_spec$local_shape) == 1) {
-    #   bayes_spec$local_shape <- rep(bayes_spec$local_shape, num_alpha)
-    # }
-    # if (length(bayes_spec$contem_shape) == 1) {
-    #   bayes_spec$contem_shape <- rep(bayes_spec$contem_shape, num_eta)
-    # }
-    param_prior <- bayes_spec
-    param_init <- lapply(
-      param_init,
-      function(init) {
-        local_sparsity <- exp(runif(num_alpha, -1, 1))
-        global_sparsity <- exp(runif(1, -1, 1))
-        group_sparsity <- exp(runif(num_grp, -1, 1))
-        contem_local_sparsity <- exp(runif(num_eta, -1, 1)) # sd = local * global
-        contem_global_sparsity <- exp(runif(1, -1, 1)) # sd = local * global
-        append(
-          init,
-          list(
-            local_shape = runif(num_grp, 0, 1),
-            contem_shape = runif(1, 0, 1),
-            local_sparsity = local_sparsity,
-            global_sparsity = global_sparsity,
-            group_sparsity = group_sparsity,
-            contem_local_sparsity = contem_local_sparsity,
-            contem_global_sparsity = contem_global_sparsity
-          )
-        )
-      }
-    )
-  } else if (prior_nm == "DL") {
-    # if (length(bayes_spec$dirichlet) == 1) {
-    #   bayes_spec$dirichlet <- 1 / num_alpha^(1 + .01)
-    # }
-    # if (length(bayes_spec$contem_dirichlet) == 1) {
-    #   bayes_spec$contem_dirichlet <- 1 / num_eta^(1 + .01)
-    # }
-    param_prior <- bayes_spec
-    param_init <- lapply(
-      param_init,
-      function(init) {
-        local_sparsity <- exp(runif(num_alpha, -1, 1))
-        global_sparsity <- exp(runif(1, -1, 1))
-        # group_sparsity <- exp(runif(num_grp, -1, 1))
-        contem_local_sparsity <- exp(runif(num_eta, -1, 1)) # sd = local * global
-        contem_global_sparsity <- exp(runif(1, -1, 1)) # sd = local * global
-        append(
-          init,
-          list(
-            local_sparsity = local_sparsity,
-            global_sparsity = global_sparsity,
-            # group_sparsity = group_sparsity,
-            contem_local_sparsity = contem_local_sparsity,
-            contem_global_sparsity = contem_global_sparsity
-          )
-        )
-      }
-    )
-  } else if (prior_nm == "GDP") {
-    param_prior <- bayes_spec
-    param_init <- lapply(
-      param_init,
-      function(init) {
-        local_sparsity <- exp(runif(num_alpha, -1, 1))
-        group_rate <- exp(runif(num_grp, -1, 1))
-        contem_local_sparsity <- exp(runif(num_eta, -1, 1)) # sd = local * global
-        contem_local_rate <- exp(runif(num_eta, -1, 1))
-        coef_shape <- runif(1, 0, 1)
-        coef_rate <- runif(1, 0, 1)
-        contem_shape <- runif(1, 0, 1)
-        contem_rate <- runif(1, 0, 1)
-        append(
-          init,
-          list(
-            local_sparsity = local_sparsity,
-            group_rate = group_rate,
-            contem_local_sparsity = contem_local_sparsity,
-            contem_rate = contem_local_rate,
-            gamma_shape = coef_shape,
-            gamma_rate = coef_rate,
-            contem_gamma_shape = contem_shape,
-            contem_gamma_rate = contem_rate
-          )
-        )
-      }
-    )
-  }
-  prior_type <- switch(prior_nm,
-    "Minnesota" = 1,
-    "SSVS" = 2,
-    "Horseshoe" = 3,
-    "MN_Hierarchical" = 4,
-    "NG" = 5,
-    "DL" = 6,
-    "GDP" = 7
+  coef_prior <- validate_spec(
+    bayes_spec = coef_spec,
+    y = y,
+    p = p,
+    dim_data = dim_data,
+    num_grp = num_grp,
+    grp_id = grp_id,
+    own_id = own_id,
+    cross_id = cross_id,
+    arg_names = "coef_spec"
   )
+  contem_prior <- validate_spec(
+    bayes_spec = coef_spec,
+    y = y,
+    p = p,
+    dim_data = dim_data,
+    num_grp = num_grp,
+    grp_id = grp_id,
+    own_id = own_id,
+    cross_id = cross_id,
+    arg_names = "contem_spec"
+  )
+  contem_init <- validate_init(
+    param_init = param_init,
+    prior_nm = contem_spec$prior,
+    num_alpha = num_eta,
+    num_grp = ifelse(contem_spec$prior == "SSVS", num_eta, 1)
+  )
+  param_init <- validate_init(
+    param_init = param_init,
+    prior_nm = coef_spec$prior,
+    num_alpha = num_alpha,
+    num_grp = num_grp
+  )
+  # if (prior_nm == "Minnesota") {
+  #   if (coef_spec$process != "BVAR") {
+  #     stop("'coef_spec' must be the result of 'set_bvar()'.")
+  #   }
+  #   # if (coef_spec$prior != "Minnesota") {
+  #   #   stop("In 'set_bvar()', just input numeric values.")
+  #   # }
+  #   if (is.null(coef_spec$sigma)) {
+  #     coef_spec$sigma <- apply(y, 2, sd)
+  #   }
+  #   if (is.null(coef_spec$delta)) {
+  #     coef_spec$delta <- rep(0, dim_data)
+  #   }
+  #   if (length(coef_spec$delta) == 1) {
+  #     coef_spec$delta <- rep(coef_spec$delta, dim_data)
+  #   }
+  #   param_prior <- append(coef_spec, list(p = p))
+  #   if (coef_spec$hierarchical) {
+  #     param_prior$shape <- coef_spec$lambda$param[1]
+  #     param_prior$rate <- coef_spec$lambda$param[2]
+  #     param_prior$grid_size <- coef_spec$lambda$grid_size
+  #     prior_nm <- "MN_Hierarchical"
+  #     param_init <- lapply(
+  #       param_init,
+  #       function(init) {
+  #         append(
+  #           init,
+  #           list(
+  #             own_lambda = runif(1, 0, 1),
+  #             cross_lambda = runif(1, 0, 1),
+  #             contem_lambda = runif(1, 0, 1)
+  #           )
+  #         )
+  #       }
+  #     )
+  #   }
+  # } else if (prior_nm == "SSVS") {
+  #   # if (length(coef_spec$coef_spike) == 1) {
+  #   #   coef_spec$coef_spike <- rep(coef_spec$coef_spike, num_alpha)
+  #   # }
+  #   # if (length(coef_spec$coef_slab) == 1) {
+  #   #   coef_spec$coef_slab <- rep(coef_spec$coef_slab, num_alpha)
+  #   # }
+  #   # if (length(coef_spec$coef_mixture) == 1) {
+  #   #   coef_spec$coef_mixture <- rep(coef_spec$coef_mixture, num_grp)
+  #   # }
+  #   if (length(coef_spec$coef_s1) == 2) {
+  #     coef_s1 <- numeric(num_grp)
+  #     coef_s1[grp_id %in% own_id] <- coef_spec$coef_s1[1]
+  #     coef_s1[grp_id %in% cross_id] <- coef_spec$coef_s1[2]
+  #     coef_spec$coef_s1 <- coef_s1
+  #   }
+  #   if (length(coef_spec$coef_s2) == 2) {
+  #     coef_s2 <- numeric(num_grp)
+  #     coef_s2[grp_id %in% own_id] <- coef_spec$coef_s2[1]
+  #     coef_s2[grp_id %in% cross_id] <- coef_spec$coef_s2[2]
+  #     coef_spec$coef_s2 <- coef_s2
+  #   }
+  #   # if (length(coef_spec$chol_spike) == 1) {
+  #   #   coef_spec$chol_spike <- rep(coef_spec$chol_spike, num_eta)
+  #   # }
+  #   # if (length(coef_spec$chol_slab) == 1) {
+  #   #   coef_spec$chol_slab <- rep(coef_spec$chol_slab, num_eta)
+  #   # }
+  #   # if (length(coef_spec$chol_mixture) == 1) {
+  #   #   coef_spec$chol_mixture <- rep(coef_spec$chol_mixture, num_eta)
+  #   # }
+  #   # if (all(is.na(coef_spec$coef_spike)) || all(is.na(coef_spec$coef_slab))) {
+  #   #   # Conduct semiautomatic function using var_lm()
+  #   #   stop("Specify spike-and-slab of coefficients.")
+  #   # }
+  #   # if (!(
+  #   #   length(coef_spec$coef_spike) == num_alpha &&
+  #   #     length(coef_spec$coef_slab) == num_alpha &&
+  #   #     length(coef_spec$coef_mixture) == num_grp
+  #   # )) {
+  #   #   stop("Invalid 'coef_spike', 'coef_slab', and 'coef_mixture' size.")
+  #   # }
+  #   param_prior <- coef_spec
+  #   param_init <- lapply(
+  #     param_init,
+  #     function(init) {
+  #       coef_mixture <- runif(num_grp, -1, 1)
+  #       coef_mixture <- exp(coef_mixture) / (1 + exp(coef_mixture)) # minnesota structure?
+  #       init_coef_dummy <- rbinom(num_alpha, 1, .5) # minnesota structure?
+  #       chol_mixture <- runif(num_eta, -1, 1)
+  #       chol_mixture <- exp(chol_mixture) / (1 + exp(chol_mixture))
+  #       # init_chol_dummy <- rbinom(num_eta, 1, .5)
+  #       init_coef_slab <- exp(runif(num_alpha, -1, 1))
+  #       init_contem_slab <- exp(runif(num_eta, -1, 1))
+  #       append(
+  #         init,
+  #         list(
+  #           init_coef_dummy = init_coef_dummy,
+  #           coef_mixture = coef_mixture,
+  #           coef_slab = init_coef_slab,
+  #           chol_mixture = chol_mixture,
+  #           contem_slab = init_contem_slab,
+  #           coef_spike_scl = runif(1, 0, 1),
+  #           chol_spike_scl = runif(1, 0, 1)
+  #         )
+  #       )
+  #     }
+  #   )
+  # } else if (prior_nm == "Horseshoe") {
+  #   if (length(coef_spec$local_sparsity) != dim_design) {
+  #     if (length(coef_spec$local_sparsity) == 1) {
+  #       coef_spec$local_sparsity <- rep(coef_spec$local_sparsity, num_alpha)
+  #     } else {
+  #       stop("Length of the vector 'local_sparsity' should be dim * p or dim * p + 1.")
+  #     }
+  #   }
+  #   # coef_spec$global_sparsity <- rep(coef_spec$global_sparsity, num_grp)
+  #   coef_spec$group_sparsity <- rep(coef_spec$group_sparsity, num_grp)
+  #   param_prior <- list()
+  #   param_init <- lapply(
+  #     param_init,
+  #     function(init) {
+  #       local_sparsity <- exp(runif(num_alpha, -1, 1))
+  #       # global_sparsity <- exp(runif(num_grp, -1, 1))
+  #       global_sparsity <- exp(runif(1, -1, 1))
+  #       group_sparsity <- exp(runif(num_grp, -1, 1))
+  #       contem_local_sparsity <- exp(runif(num_eta, -1, 1)) # sd = local * global
+  #       contem_global_sparsity <- exp(runif(1, -1, 1)) # sd = local * global
+  #       append(
+  #         init,
+  #         list(
+  #           local_sparsity = local_sparsity,
+  #           global_sparsity = global_sparsity,
+  #           group_sparsity = group_sparsity,
+  #           contem_local_sparsity = contem_local_sparsity,
+  #           contem_global_sparsity = contem_global_sparsity
+  #         )
+  #       )
+  #     }
+  #   )
+  # } else if (prior_nm == "NG") {
+  #   # if (length(coef_spec$local_shape) == 1) {
+  #   #   coef_spec$local_shape <- rep(coef_spec$local_shape, num_alpha)
+  #   # }
+  #   # if (length(coef_spec$contem_shape) == 1) {
+  #   #   coef_spec$contem_shape <- rep(coef_spec$contem_shape, num_eta)
+  #   # }
+  #   param_prior <- coef_spec
+  #   param_init <- lapply(
+  #     param_init,
+  #     function(init) {
+  #       local_sparsity <- exp(runif(num_alpha, -1, 1))
+  #       global_sparsity <- exp(runif(1, -1, 1))
+  #       group_sparsity <- exp(runif(num_grp, -1, 1))
+  #       contem_local_sparsity <- exp(runif(num_eta, -1, 1)) # sd = local * global
+  #       contem_global_sparsity <- exp(runif(1, -1, 1)) # sd = local * global
+  #       append(
+  #         init,
+  #         list(
+  #           local_shape = runif(num_grp, 0, 1),
+  #           contem_shape = runif(1, 0, 1),
+  #           local_sparsity = local_sparsity,
+  #           global_sparsity = global_sparsity,
+  #           group_sparsity = group_sparsity,
+  #           contem_local_sparsity = contem_local_sparsity,
+  #           contem_global_sparsity = contem_global_sparsity
+  #         )
+  #       )
+  #     }
+  #   )
+  # } else if (prior_nm == "DL") {
+  #   # if (length(coef_spec$dirichlet) == 1) {
+  #   #   coef_spec$dirichlet <- 1 / num_alpha^(1 + .01)
+  #   # }
+  #   # if (length(coef_spec$contem_dirichlet) == 1) {
+  #   #   coef_spec$contem_dirichlet <- 1 / num_eta^(1 + .01)
+  #   # }
+  #   param_prior <- coef_spec
+  #   param_init <- lapply(
+  #     param_init,
+  #     function(init) {
+  #       local_sparsity <- exp(runif(num_alpha, -1, 1))
+  #       global_sparsity <- exp(runif(1, -1, 1))
+  #       # group_sparsity <- exp(runif(num_grp, -1, 1))
+  #       contem_local_sparsity <- exp(runif(num_eta, -1, 1)) # sd = local * global
+  #       contem_global_sparsity <- exp(runif(1, -1, 1)) # sd = local * global
+  #       append(
+  #         init,
+  #         list(
+  #           local_sparsity = local_sparsity,
+  #           global_sparsity = global_sparsity,
+  #           # group_sparsity = group_sparsity,
+  #           contem_local_sparsity = contem_local_sparsity,
+  #           contem_global_sparsity = contem_global_sparsity
+  #         )
+  #       )
+  #     }
+  #   )
+  # } else if (prior_nm == "GDP") {
+  #   param_prior <- coef_spec
+  #   param_init <- lapply(
+  #     param_init,
+  #     function(init) {
+  #       local_sparsity <- exp(runif(num_alpha, -1, 1))
+  #       group_rate <- exp(runif(num_grp, -1, 1))
+  #       contem_local_sparsity <- exp(runif(num_eta, -1, 1)) # sd = local * global
+  #       contem_local_rate <- exp(runif(num_eta, -1, 1))
+  #       coef_shape <- runif(1, 0, 1)
+  #       coef_rate <- runif(1, 0, 1)
+  #       contem_shape <- runif(1, 0, 1)
+  #       contem_rate <- runif(1, 0, 1)
+  #       append(
+  #         init,
+  #         list(
+  #           local_sparsity = local_sparsity,
+  #           group_rate = group_rate,
+  #           contem_local_sparsity = contem_local_sparsity,
+  #           contem_rate = contem_local_rate,
+  #           gamma_shape = coef_shape,
+  #           gamma_rate = coef_rate,
+  #           contem_gamma_shape = contem_shape,
+  #           contem_gamma_rate = contem_rate
+  #         )
+  #       )
+  #     }
+  #   )
+  # }
+  prior_type <- enumerate_prior(coef_spec$prior)
+  # prior_type <- switch(prior_nm,
+  #   "Minnesota" = 1,
+  #   "SSVS" = 2,
+  #   "Horseshoe" = 3,
+  #   "MN_Hierarchical" = 4,
+  #   "NG" = 5,
+  #   "DL" = 6,
+  #   "GDP" = 7
+  # )
+  contem_prior_type <- enumerate_prior(contem_spec$prior)
   if (num_thread > get_maxomp()) {
     warning("'num_thread' is greater than 'omp_get_max_threads()'. Check with bvhar:::get_maxomp(). Check OpenMP support of your machine with bvhar:::check_omp().")
   }
@@ -471,11 +525,15 @@ var_bayes <- function(y,
     x = X0,
     y = Y0,
     param_reg = param_cov,
-    param_prior = param_prior,
+    # param_prior = param_prior,
+    param_prior = coef_prior,
     param_intercept = intercept[c("mean_non", "sd_non")],
     param_init = param_init,
     prior_type = prior_type,
     ggl = ggl,
+    contem_prior = contem_prior,
+    contem_init = contem_init,
+    contem_prior_type = contem_prior_type,
     grp_id = grp_id,
     own_id = own_id,
     cross_id = cross_id,
@@ -524,7 +582,7 @@ var_bayes <- function(y,
   }
   colnames(res$pip) <- name_var
   rownames(res$pip) <- name_lag
-  # if (bayes_spec$prior == "SSVS") {
+  # if (coef_spec$prior == "SSVS") {
   #   res$pip <- colMeans(res$gamma_record)
   #   res$pip <- matrix(res$pip, ncol = dim_data)
   #   if (include_mean) {
@@ -532,7 +590,7 @@ var_bayes <- function(y,
   #   }
   #   colnames(res$pip) <- name_var
   #   rownames(res$pip) <- name_lag
-  # } else if (bayes_spec$prior == "Horseshoe") {
+  # } else if (coef_spec$prior == "Horseshoe") {
   #   res$pip <- 1 - matrix(colMeans(res$kappa_record), ncol = dim_data)
   #   if (include_mean) {
   #     res$pip <- rbind(res$pip, rep(1L, dim_data))
@@ -585,35 +643,35 @@ var_bayes <- function(y,
       res$c_sparse_record
     )
   }
-  if (bayes_spec$prior == "SSVS") {
-    res$param <- bind_draws(
-      res$param,
-      res$gamma_record
-    )
-  } else if (bayes_spec$prior == "Horseshoe") {
-    res$param <- bind_draws(
-      res$param,
-      res$lambda_record,
-      res$eta_record,
-      res$tau_record,
-      res$kappa_record
-    )
-  } else if (bayes_spec$prior == "NG") {
-    res$param <- bind_draws(
-      res$param,
-      res$lambda_record,
-      res$eta_record,
-      res$tau_record
-    )
-  } else if (bayes_spec$prior == "DL") {
-    res$param <- bind_draws(
-      res$param,
-      res$lambda_record,
-      res$tau_record
-    )
-  } else if (bayes_spec$prior == "GDP") {
-    # 
-  }
+  # if (coef_spec$prior == "SSVS") {
+  #   res$param <- bind_draws(
+  #     res$param,
+  #     res$gamma_record
+  #   )
+  # } else if (coef_spec$prior == "Horseshoe") {
+  #   res$param <- bind_draws(
+  #     res$param,
+  #     res$lambda_record,
+  #     res$eta_record,
+  #     res$tau_record,
+  #     res$kappa_record
+  #   )
+  # } else if (coef_spec$prior == "NG") {
+  #   res$param <- bind_draws(
+  #     res$param,
+  #     res$lambda_record,
+  #     res$eta_record,
+  #     res$tau_record
+  #   )
+  # } else if (coef_spec$prior == "DL") {
+  #   res$param <- bind_draws(
+  #     res$param,
+  #     res$lambda_record,
+  #     res$tau_record
+  #   )
+  # } else if (coef_spec$prior == "GDP") {
+  #   # 
+  # }
   res[rec_names] <- NULL
   res$param_names <- param_names
   if (!is.null(convergence)) {
@@ -630,7 +688,7 @@ var_bayes <- function(y,
   }
   res$group <- glob_idmat
   res$num_group <- length(grp_id)
-  # if (bayes_spec$prior == "Minnesota") {
+  # if (coef_spec$prior == "Minnesota") {
   #   res$prior_mean <- prior_mean
   #   res$prior_prec <- prior_prec
   # }
@@ -643,12 +701,16 @@ var_bayes <- function(y,
   res$totobs <- nrow(y)
   # model-----------------
   res$call <- match.call()
-  res$process <- paste("VAR", bayes_spec$prior, cov_spec$process, sep = "_")
+  res$process <- paste("VAR", coef_spec$prior, cov_spec$process, sep = "_")
   res$type <- ifelse(include_mean, "const", "none")
-  res$spec <- bayes_spec
+  # res$spec <- coef_spec
+  res$spec_coef <- coef_spec
+  res$spec_contem <- contem_spec
   res$sv <- cov_spec
   res$intercept <- intercept
-  res$init <- param_init
+  # res$init <- param_init
+  res$init_coef <- param_init
+  res$init_contem <- contem_init
   res$chain <- num_chains
   res$iter <- num_iter
   res$burn <- num_burn
@@ -663,15 +725,15 @@ var_bayes <- function(y,
   } else {
     class(res) <- c("bvarldlt", "ldltmod", class(res))
   }
-  if (bayes_spec$prior == "Horseshoe") {
+  if (coef_spec$prior == "Horseshoe") {
     class(res) <- c(class(res), "hsmod")
-  } else if (bayes_spec$prior == "SSVS") {
+  } else if (coef_spec$prior == "SSVS") {
     class(res) <- c(class(res), "ssvsmod")
-  } else if (bayes_spec$prior == "NG") {
+  } else if (coef_spec$prior == "NG") {
     class(res) <- c(class(res), "ngmod")
-  } else if (bayes_spec$prior == "DL") {
+  } else if (coef_spec$prior == "DL") {
     class(res) <- c(class(res), "dlmod")
-  } else if (bayes_spec$prior == "GDP") {
+  } else if (coef_spec$prior == "GDP") {
     class(res) <- c(class(res), "gdpmod")
   }
   res

@@ -3,8 +3,8 @@
  * @brief Header including MCMC algorithm
  */
 
-#ifndef BVHAR_BAYES_TRIANGULAR_TRIANGULAR_H
-#define BVHAR_BAYES_TRIANGULAR_TRIANGULAR_H
+#ifndef BVHAR_BAYES_TRIANGULAR_DEPRECATED_TRIANGULAR_H
+#define BVHAR_BAYES_TRIANGULAR_DEPRECATED_TRIANGULAR_H
 
 #include "./config.h"
 #include <type_traits>
@@ -1158,4 +1158,4 @@ public:
 
 } // namespace bvhar
 
-#endif // BVHAR_BAYES_TRIANGULAR_TRIANGULAR_H
+#endif // BVHAR_BAYES_TRIANGULAR_DEPRECATED_TRIANGULAR_H

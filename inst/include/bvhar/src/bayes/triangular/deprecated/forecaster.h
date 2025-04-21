@@ -1,5 +1,5 @@
-#ifndef BVHAR_BAYES_TRIANGULAR_FORECASTER_H
-#define BVHAR_BAYES_TRIANGULAR_FORECASTER_H
+#ifndef BVHAR_BAYES_TRIANGULAR_DEPRECATED_FORECASTER_H
+#define BVHAR_BAYES_TRIANGULAR_DEPRECATED_FORECASTER_H
 
 #include "./triangular.h"
 
@@ -1258,4 +1258,4 @@ inline std::unique_ptr<McmcOutforecastInterface<BaseForecaster>> initialize_outf
 
 } // namespace bvhar
 
-#endif // BVHAR_BAYES_TRIANGULAR_FORECASTER_H
+#endif // BVHAR_BAYES_TRIANGULAR_DEPRECATED_FORECASTER_H

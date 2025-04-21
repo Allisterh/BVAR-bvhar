@@ -4,8 +4,8 @@
  * @brief Headers including MCMC configuration structs
  */
 
-#ifndef BVHAR_BAYES_TRIANGULAR_CONFIG_H
-#define BVHAR_BAYES_TRIANGULAR_CONFIG_H
+#ifndef BVHAR_BAYES_TRIANGULAR_DEPRECATED_CONFIG_H
+#define BVHAR_BAYES_TRIANGULAR_DEPRECATED_CONFIG_H
 
 #include "../../misc/draw.h"
 #include "../../bayes.h"
@@ -1358,4 +1358,4 @@ inline void initialize_record(std::unique_ptr<SvRecords>& record, int chain_id, 
 
 } // namespace bvhar
 
-#endif // BVHAR_BAYES_TRIANGULAR_CONFIG_H
+#endif // BVHAR_BAYES_TRIANGULAR_DEPRECATED_CONFIG_H

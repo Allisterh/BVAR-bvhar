@@ -29,8 +29,8 @@ class McmcTriangular : public McmcAlgo {
 public:
 	McmcTriangular(
 		const RegParams& params, const RegInits& inits,
-		std::unique_ptr<ShrinkageUpdater> coef_prior,
-		std::unique_ptr<ShrinkageUpdater> contem_prior,
+		std::unique_ptr<ShrinkageUpdater>& coef_prior,
+		std::unique_ptr<ShrinkageUpdater>& contem_prior,
 		unsigned int seed
 	)
 	: McmcAlgo(params, seed),
@@ -69,7 +69,7 @@ public:
 	 * 
 	 * @param list `LIST` containing MCMC record result
 	 */
-	virtual void appendRecords(LIST& list) = 0;
+	// virtual void appendRecords(LIST& list) = 0;
 
 	void doWarmUp() override {
 		std::lock_guard<std::mutex> lock(mtx);
@@ -101,7 +101,7 @@ public:
 
 	LIST returnRecords(int num_burn, int thin) override {
 		LIST res = gatherRecords();
-		appendRecords(res);
+		// appendRecords(res);
 		for (auto& record : res) {
 			if (IS_MATRIX(ACCESS_LIST(record, res))) {
 				ACCESS_LIST(record, res) = thin_record(CAST<Eigen::MatrixXd>(ACCESS_LIST(record, res)), num_iter, num_burn, thin);
@@ -239,7 +239,10 @@ protected:
 	 * @brief Save MCMC records
 	 * 
 	 */
-	virtual void updateRecords() = 0;
+	void updateRecords() {
+		updateCoefRecords();
+	}
+	// virtual void updateRecords() = 0;
 
 	/**
 	 * @brief Draw coefficients
@@ -335,8 +338,8 @@ class McmcReg : public McmcTriangular {
 public:
 	McmcReg(
 		const RegParams& params, const LdltInits& inits,
-		std::unique_ptr<ShrinkageUpdater> coef_prior,
-		std::unique_ptr<ShrinkageUpdater> contem_prior,
+		std::unique_ptr<ShrinkageUpdater>& coef_prior,
+		std::unique_ptr<ShrinkageUpdater>& contem_prior,
 		unsigned int seed
 	)
 	: McmcTriangular(params, inits, coef_prior, contem_prior, seed), diag_vec(inits._diag) {
@@ -365,11 +368,11 @@ class McmcSv : public McmcTriangular {
 public:
 	McmcSv(
 		const SvParams& params, const SvInits& inits,
-		std::unique_ptr<ShrinkageUpdater> coef_prior,
-		std::unique_ptr<ShrinkageUpdater> contem_prior,
+		std::unique_ptr<ShrinkageUpdater>& coef_prior,
+		std::unique_ptr<ShrinkageUpdater>& contem_prior,
 		unsigned int seed
 	)
-	: McmcTriangular(params, inits, seed),
+	: McmcTriangular(params, inits, coef_prior, contem_prior, seed),
 		ortho_latent(Eigen::MatrixXd::Zero(num_design, dim)),
 		lvol_draw(inits._lvol), lvol_init(inits._lvol_init), lvol_sig(inits._lvol_sig),
 		prior_init_mean(params._init_mean), prior_init_prec(params._init_prec) {
@@ -428,7 +431,7 @@ private:
  * @return std::vector<std::unique_ptr<BaseMcmc>> 
  */
 template <typename BaseMcmc = McmcReg, bool isGroup = true>
-inline std::vector<std::unique_ptr<McmcTriangular>> initialize_mcmc(
+inline std::vector<std::unique_ptr<BaseMcmc>> initialize_mcmc(
 	int num_chains, int num_iter, const Eigen::MatrixXd& x, const Eigen::MatrixXd& y,
 	LIST& param_reg, LIST& param_prior, LIST& param_intercept, LIST_OF_LIST& param_init, int prior_type,
 	LIST& contem_prior, LIST_OF_LIST& contem_init, int contem_prior_type,
@@ -444,16 +447,18 @@ inline std::vector<std::unique_ptr<McmcTriangular>> initialize_mcmc(
 		grp_id, grp_mat,
 		param_intercept, include_mean
 	);
-	std::vector<std::unique_ptr<McmcTriangular>> mcmc_ptr(num_chains);
+	std::vector<std::unique_ptr<BaseMcmc>> mcmc_ptr(num_chains);
 	for (int i = 0; i < num_chains; ++i) {
-		auto coef_prior = initialize_shrinkageupdater<isGroup>(param_prior, param_init, prior_type);
-		// auto contem_prior = initialize_shrinkageupdater<isGroup>(contem_prior, contem_init, contem_prior_type);
-		auto contem_prior = initialize_shrinkageupdater<isGroup>(param_prior, param_init, prior_type); // test if the current R code working
 		LIST init_spec = param_init[i];
+		auto coef_updater = initialize_shrinkageupdater<isGroup>(param_prior, init_spec, prior_type);
+		LIST contem_init_spec = contem_init[i];
+		auto contem_updater = initialize_shrinkageupdater<isGroup>(contem_prior, contem_init_spec, contem_prior_type);
+		// LIST init_spec = param_init[i];
 		INITS ldlt_inits = num_design ? INITS(init_spec, *num_design) : INITS(init_spec);
 		mcmc_ptr[i] = std::make_unique<BaseMcmc>(
 			base_params, ldlt_inits,
-			std::move(coef_prior), std::move(contem_prior),
+			// std::move(coef_updater), std::move(contem_updater),
+			coef_updater, contem_updater,
 			static_cast<unsigned int>(seed_chain[i])
 		);
 	}

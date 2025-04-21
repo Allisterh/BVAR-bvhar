@@ -20,7 +20,7 @@ struct ShrinkageInits;
 struct HierminnInits;
 struct SsvsInits;
 struct GlInits;
-struct HoreseshoeInits;
+struct HorseshoeInits;
 struct NgInits;
 struct GdpInits;
 
@@ -90,8 +90,8 @@ struct SsvsParams : public ShrinkageParams {
 
 	SsvsParams(LIST& priors)
 	: ShrinkageParams(priors),
-		_s1(CAST<Eigen::VectorXd>(priors["coef_s1"])), _s2(CAST<Eigen::VectorXd>(priors["coef_s2"])),
-		_slab_shape(CAST_DOUBLE(priors["slab_shape"])), _slab_scl(CAST_DOUBLE(priors["_slab_scl"])),
+		_s1(CAST<Eigen::VectorXd>(priors["s1"])), _s2(CAST<Eigen::VectorXd>(priors["s2"])),
+		_slab_shape(CAST_DOUBLE(priors["slab_shape"])), _slab_scl(CAST_DOUBLE(priors["slab_scl"])),
 		_grid_size(CAST_INT(priors["grid_size"])) {}
 };
 

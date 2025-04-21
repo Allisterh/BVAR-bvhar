@@ -470,85 +470,85 @@ private:
 	Eigen::VectorXd local_lev;
 };
 
-template <typename ShrinkageType>
-struct ShrinkageParamsMap {
-	using type = ShrinkageParams;
-};
+// template <typename ShrinkageType>
+// struct ShrinkageParamsMap {
+// 	using type = ShrinkageParams;
+// };
 
-template <>
-struct ShrinkageParamsMap<MinnUpdater> {
-	using type = MinnParams;
-};
+// template <>
+// struct ShrinkageParamsMap<MinnUpdater> {
+// 	using type = MinnParams;
+// };
 
-template <>
-struct ShrinkageParamsMap<HierminnUpdater> {
-	using type = HierminnParams;
-};
+// template <>
+// struct ShrinkageParamsMap<HierminnUpdater> {
+// 	using type = HierminnParams;
+// };
 
-template <>
-struct ShrinkageParamsMap<SsvsUpdater> {
-	using type = SsvsParams;
-};
+// template <>
+// struct ShrinkageParamsMap<SsvsUpdater> {
+// 	using type = SsvsParams;
+// };
 
-template <>
-struct ShrinkageParamsMap<HorseshoeUpdater> {
-	using type = ShrinkageParams;
-};
+// template <>
+// struct ShrinkageParamsMap<HorseshoeUpdater<>> {
+// 	using type = ShrinkageParams;
+// };
 
-template <>
-struct ShrinkageParamsMap<NgUpdater> {
-	using type = NgParams;
-};
+// template <>
+// struct ShrinkageParamsMap<NgUpdater<>> {
+// 	using type = NgParams;
+// };
 
-template <>
-struct ShrinkageParamsMap<DlUpdater> {
-	using type = DlParams;
-};
+// template <>
+// struct ShrinkageParamsMap<DlUpdater<>> {
+// 	using type = DlParams;
+// };
 
-template <>
-struct ShrinkageParamsMap<GdpUpdater> {
-	using type = GdpParams;
-};
+// template <>
+// struct ShrinkageParamsMap<GdpUpdater<>> {
+// 	using type = GdpParams;
+// };
 
-template <typename ShrinkageType>
-struct ShrinkageInitsMap {
-	using type = ShrinkageInits;
-};
+// template <typename ShrinkageType>
+// struct ShrinkageInitsMap {
+// 	using type = ShrinkageInits;
+// };
 
-template <>
-struct ShrinkageInitsMap<MinnUpdater> {
-	using type = ShrinkageInits;
-};
+// template <>
+// struct ShrinkageInitsMap<MinnUpdater> {
+// 	using type = ShrinkageInits;
+// };
 
-template <>
-struct ShrinkageInitsMap<HierminnUpdater> {
-	using type = HierminnInits;
-};
+// template <>
+// struct ShrinkageInitsMap<HierminnUpdater> {
+// 	using type = HierminnInits;
+// };
 
-template <>
-struct ShrinkageInitsMap<SsvsUpdater> {
-	using type = SsvsInits;
-};
+// template <>
+// struct ShrinkageInitsMap<SsvsUpdater> {
+// 	using type = SsvsInits;
+// };
 
-template <>
-struct ShrinkageInitsMap<HorseshoeUpdater> {
-	using type = HorseshoeInits;
-};
+// template <>
+// struct ShrinkageInitsMap<HorseshoeUpdater<>> {
+// 	using type = HorseshoeInits;
+// };
 
-template <>
-struct ShrinkageInitsMap<NgUpdater> {
-	using type = NgInits;
-};
+// template <>
+// struct ShrinkageInitsMap<NgUpdater<>> {
+// 	using type = NgInits;
+// };
 
-template <>
-struct ShrinkageInitsMap<DlUpdater> {
-	using type = HorseshoeInits;
-};
+// template <>
+// struct ShrinkageInitsMap<DlUpdater<>> {
+// 	using type = HorseshoeInits;
+// };
 
-template <>
-struct ShrinkageInitsMap<GdpUpdater> {
-	using type = GdpInits;
-};
+// template <>
+// struct ShrinkageInitsMap<GdpUpdater<>> {
+// 	using type = GdpInits;
+// };
 
 /**
  * @brief Function to initialize `ShrinkageUpdater`
@@ -560,22 +560,9 @@ struct ShrinkageInitsMap<GdpUpdater> {
  * @param param_init Initial values
  * @return std::unique_ptr<ShrinkageUpdater> 
  */
-template <typename UPDATER = ShrinkageUpdater>
-inline std::unique_ptr<ShrinkageUpdater> initialize_shrinkageupdater(LIST& param_prior, LIST& param_init) {
-	std::unique_ptr<ShrinkageUpdater> shrinkage_ptr;
-	using PARAMS = typename ShrinkageParamsMap<UPDATER>::type;
-	using INITS = typename ShrinkageInitsMap<UPDATER>::type;
-	PARAMS params(param_prior);
-	INITS inits(param_init);
-	shrinkage_ptr = std::make_unique<UPDATER>(params, inits);
-	return shrinkage_ptr;
-}
-
 template <bool isGroup = true>
 inline std::unique_ptr<ShrinkageUpdater> initialize_shrinkageupdater(LIST& param_prior, LIST& param_init, int prior_type) {
 	std::unique_ptr<ShrinkageUpdater> shrinkage_ptr;
-	// PARAMS params(param_prior);
-	// INITS inits(param_init);
 	switch (prior_type) {
 		case 1: {
 			MinnParams params(param_prior);
@@ -622,6 +609,17 @@ inline std::unique_ptr<ShrinkageUpdater> initialize_shrinkageupdater(LIST& param
 	}
 	return shrinkage_ptr;
 }
+
+// template <typename UPDATER = ShrinkageUpdater>
+// inline std::unique_ptr<ShrinkageUpdater> initialize_shrinkageupdater(LIST& param_prior, LIST& param_init) {
+// 	std::unique_ptr<ShrinkageUpdater> shrinkage_ptr;
+// 	using PARAMS = typename ShrinkageParamsMap<UPDATER>::type;
+// 	using INITS = typename ShrinkageInitsMap<UPDATER>::type;
+// 	PARAMS params(param_prior);
+// 	INITS inits(param_init);
+// 	shrinkage_ptr = std::make_unique<UPDATER>(params, inits);
+// 	return shrinkage_ptr;
+// }
 
 } // namespace bvhar
 

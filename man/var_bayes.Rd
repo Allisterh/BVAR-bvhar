@@ -15,7 +15,8 @@ var_bayes(
   num_iter = 1000,
   num_burn = floor(num_iter/2),
   thinning = 1,
-  bayes_spec = set_bvar(),
+  coef_spec = set_bvar(),
+  contem_spec = coef_spec,
   cov_spec = set_ldlt(),
   intercept = set_intercept(),
   include_mean = TRUE,
@@ -48,7 +49,9 @@ var_bayes(
 
 \item{thinning}{Thinning every thinning-th iteration}
 
-\item{bayes_spec}{A BVAR model specification by \code{\link[=set_bvar]{set_bvar()}}, \code{\link[=set_ssvs]{set_ssvs()}}, or \code{\link[=set_horseshoe]{set_horseshoe()}}.}
+\item{coef_spec}{Coefficient prior specification by \code{\link[=set_bvar]{set_bvar()}}, \code{\link[=set_ssvs]{set_ssvs()}}, or \code{\link[=set_horseshoe]{set_horseshoe()}}.}
+
+\item{contem_spec}{Contemporaneous coefficient prior specification by \code{\link[=set_bvar]{set_bvar()}}, \code{\link[=set_ssvs]{set_ssvs()}}, or \code{\link[=set_horseshoe]{set_horseshoe()}}.}
 
 \item{cov_spec}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}} SV specification by \code{\link[=set_sv]{set_sv()}}.}
 

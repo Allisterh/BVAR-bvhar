@@ -31,8 +31,7 @@ struct ShrinkageParams {
 
 struct MinnParams : public ShrinkageParams {
 	// Eigen::MatrixXd _prec_diag;
-	Eigen::VectorXd _prior_prec;
-	Eigen::VectorXd _prior_mean;
+	Eigen::VectorXd _prior_prec, _prior_mean;
 	
 	MinnParams(LIST& priors)
 	: ShrinkageParams(priors) {
@@ -60,7 +59,7 @@ struct MinnParams : public ShrinkageParams {
 			lam, sigma, eps, false
 		);
 		Eigen::MatrixXd prior_prec = dummy_design.transpose() * dummy_design;
-		_prior_mean = prior_prec.llt().solve(dummy_design.transpose() * dummy_response).reshaped(); // -> wrong size when contemupdater: should be num_lowerchol size
+		_prior_mean = prior_prec.llt().solve(dummy_design.transpose() * dummy_response).reshaped();
 		prec_diag.diagonal() = 1 / sigma.array();
 		_prior_prec = kronecker_eigen(prec_diag, prior_prec).diagonal();
 	}

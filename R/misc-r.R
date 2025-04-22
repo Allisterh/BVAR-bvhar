@@ -216,15 +216,18 @@ validate_spec <- function(bayes_spec,
       }
     }
     # param_prior <- append(bayes_spec, list(p = p))
-    param_prior <- append(bayes_spec, list(num_lowerchol = dim_data))
     param_prior <- bayes_spec
     if (bayes_spec$hierarchical) {
+      # param_prior <- append(bayes_spec, list(num = num_alpha))
       param_prior$shape <- bayes_spec$lambda$param[1]
       param_prior$rate <- bayes_spec$lambda$param[2]
       param_prior$grid_size <- bayes_spec$lambda$grid_size
-      prior_nm <- "MN_Hierarchical"
+      # prior_nm <- "MN_Hierarchical"
+    }
+    if (p > 0) {
+      param_prior <- append(param_prior, list(p = p)) # when coef case
     } else {
-      param_prior <- append(bayes_spec, list(p = p))
+      param_prior <- append(param_prior, list(num = dim_data)) # when contem
     }
   } else if (prior_nm == "SSVS") {
     if (length(bayes_spec$s1) == 2) {

@@ -221,7 +221,7 @@ var_bayes <- function(y,
   contem_prior <- validate_spec(
     bayes_spec = contem_spec,
     y = y,
-    p = p,
+    p = 0,
     dim_data = num_eta,
     num_grp = 1,
     grp_id = grp_id,

@@ -214,7 +214,7 @@ vhar_bayes <- function(y,
   contem_prior <- validate_spec(
     bayes_spec = contem_spec,
     y = y,
-    p = 3,
+    p = 0,
     dim_data = num_eta,
     num_grp = num_grp,
     grp_id = grp_id,

@@ -458,11 +458,9 @@ inline std::vector<std::unique_ptr<BaseMcmc>> initialize_mcmc(
 		LIST contem_init_spec = contem_init[i];
 		auto contem_updater = initialize_shrinkageupdater<isGroup>(contem_prior, contem_init_spec, contem_prior_type);
 		contem_updater->initImpactPrec(base_params._chol_prec);
-		// LIST init_spec = param_init[i];
 		INITS ldlt_inits = num_design ? INITS(init_spec, *num_design) : INITS(init_spec);
 		mcmc_ptr[i] = std::make_unique<BaseMcmc>(
 			base_params, ldlt_inits,
-			// std::move(coef_updater), std::move(contem_updater),
 			coef_updater, contem_updater,
 			static_cast<unsigned int>(seed_chain[i])
 		);

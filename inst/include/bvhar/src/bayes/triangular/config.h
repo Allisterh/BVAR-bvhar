@@ -54,7 +54,7 @@ struct RegParams : McmcParams {
 	)
 	: McmcParams(num_iter, x, y, include_mean),
 		_alpha_mean(Eigen::VectorXd::Zero(_num_coef)),
-		_alpha_prec(Eigen::VectorXd::Zero(_num_coef)),
+		_alpha_prec(Eigen::VectorXd::Ones(_num_coef)),
 		_chol_mean(Eigen::VectorXd::Zero(_num_lowerchol)),
 		_chol_prec(Eigen::VectorXd::Ones(_num_lowerchol)),
 		_sig_shp(CAST<Eigen::VectorXd>(spec["shape"])),

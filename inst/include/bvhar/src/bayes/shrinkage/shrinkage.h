@@ -137,6 +137,7 @@ public:
 
 	void initCoefPrec(Eigen::Ref<Eigen::VectorXd> prior_alpha_prec, int num_alpha, Eigen::VectorXi& grp_vec, std::set<int>& cross_id) override {
 		prior_alpha_prec.head(num_alpha) = prior_prec;
+		prior_alpha_prec.head(num_alpha).array() /= own_lambda;
 		for (int i = 0; i < num_alpha; ++i) {
 			if (cross_id.find(grp_vec[i]) != cross_id.end()) {
 				prior_alpha_prec[i] /= cross_lambda; // nu
@@ -537,7 +538,7 @@ inline std::unique_ptr<ShrinkageUpdater> initialize_shrinkageupdater(LIST& param
 				params_ptr = std::make_unique<MinnParams>(param_prior);
 			} else {
 				// append num_lowerchol to param_prior when contem
-				params_ptr = std::make_unique<MinnParams>(param_prior, CAST_INT(param_prior["num_lowerchol"]));
+				params_ptr = std::make_unique<MinnParams>(param_prior, CAST_INT(param_prior["num"]));
 			}
 			// MinnParams params(param_prior);
 			ShrinkageInits inits(param_init);
@@ -562,7 +563,7 @@ inline std::unique_ptr<ShrinkageUpdater> initialize_shrinkageupdater(LIST& param
 			if (CONTAINS(param_prior, "p")) {
 				params_ptr = std::make_unique<HierminnParams>(param_prior);
 			} else {
-				params_ptr = std::make_unique<HierminnParams>(param_prior, CAST_INT(param_prior["num_lowerchol"]));
+				params_ptr = std::make_unique<HierminnParams>(param_prior, CAST_INT(param_prior["num"]));
 			}
 			// HierminnParams params(param_prior);
 			HierminnInits inits(param_init);

@@ -80,21 +80,6 @@ set_sv()
 (fit_dl <- vhar_bayes(etf_train, num_chains = 2, num_iter = 20, coef_spec = set_dl(), cov_spec = set_sv(), include_mean = FALSE, minnesota = "longrun"))
 ```
 
-## Bayesian visualization
-
-`autoplot()` also provides Bayesian visualization. `type = "trace"` gives MCMC trace plot.
-
-```{r}
-autoplot(fit_hs, type = "trace", regex_pars = "tau")
-```
-
-`type = "dens"` draws MCMC density plot.
-
-```{r denshs}
-autoplot(fit_hs, type = "dens", regex_pars = "tau")
-```
-
-
 ```{r resetopts, include=FALSE}
 options(orig_opts)
 ```

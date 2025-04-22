@@ -30,47 +30,45 @@ struct ShrinkageParams {
 };
 
 struct MinnParams : public ShrinkageParams {
-	Eigen::MatrixXd _prec_diag;
-	Eigen::MatrixXd _prior_mean;
-	Eigen::MatrixXd _prior_prec;
+	// Eigen::MatrixXd _prec_diag;
+	Eigen::VectorXd _prior_prec;
+	Eigen::VectorXd _prior_mean;
 	
 	MinnParams(LIST& priors)
 	: ShrinkageParams(priors) {
 		int lag = CAST_INT(priors["p"]); // append to bayes_spec, p = 3 in VHAR
-		Eigen::VectorXd _sigma = CAST<Eigen::VectorXd>(priors["sigma"]);
-		double _lambda = CAST_DOUBLE(priors["lambda"]);
-		double _eps = CAST_DOUBLE(priors["eps"]);
-		int dim = _sigma.size();
-		_prec_diag = Eigen::MatrixXd::Zero(dim, dim);
-		Eigen::VectorXd _daily(dim);
-		Eigen::VectorXd _weekly(dim);
-		Eigen::VectorXd _monthly(dim);
+		Eigen::VectorXd sigma = CAST<Eigen::VectorXd>(priors["sigma"]);
+		double lam = CAST_DOUBLE(priors["lambda"]);
+		double eps = CAST_DOUBLE(priors["eps"]);
+		int dim = sigma.size();
+		Eigen::MatrixXd prec_diag = Eigen::MatrixXd::Zero(dim, dim);
+		Eigen::VectorXd daily(dim);
+		Eigen::VectorXd weekly(dim);
+		Eigen::VectorXd monthly(dim);
 		if (CONTAINS(priors, "delta")) {
-			_daily = CAST<Eigen::VectorXd>(priors["delta"]);
-			_weekly.setZero();
-			_monthly.setZero();
+			daily = CAST<Eigen::VectorXd>(priors["delta"]);
+			weekly.setZero();
+			monthly.setZero();
 		} else {
-			_daily = CAST<Eigen::VectorXd>(priors["daily"]);
-			_weekly = CAST<Eigen::VectorXd>(priors["weekly"]);
-			_monthly = CAST<Eigen::VectorXd>(priors["monthly"]);
+			daily = CAST<Eigen::VectorXd>(priors["daily"]);
+			weekly = CAST<Eigen::VectorXd>(priors["weekly"]);
+			monthly = CAST<Eigen::VectorXd>(priors["monthly"]);
 		}
-		Eigen::MatrixXd dummy_response = build_ydummy(lag, _sigma, _lambda, _daily, _weekly, _monthly, false);
+		Eigen::MatrixXd dummy_response = build_ydummy(lag, sigma, lam, daily, weekly, monthly, false);
 		Eigen::MatrixXd dummy_design = build_xdummy(
 			Eigen::VectorXd::LinSpaced(lag, 1, lag),
-			_lambda, _sigma, _eps, false
+			lam, sigma, eps, false
 		);
-		_prior_prec = dummy_design.transpose() * dummy_design;
-		_prior_mean = _prior_prec.llt().solve(dummy_design.transpose() * dummy_response); // -> wrong size when contemupdater: should be num_lowerchol size
-		_prec_diag.diagonal() = 1 / _sigma.array();
+		Eigen::MatrixXd prior_prec = dummy_design.transpose() * dummy_design;
+		_prior_mean = prior_prec.llt().solve(dummy_design.transpose() * dummy_response).reshaped(); // -> wrong size when contemupdater: should be num_lowerchol size
+		prec_diag.diagonal() = 1 / sigma.array();
+		_prior_prec = kronecker_eigen(prec_diag, prior_prec).diagonal();
 	}
 
-	void initPrec(Eigen::Ref<Eigen::VectorXd> prior_alpha_mean, Eigen::Ref<Eigen::VectorXd> prior_alpha_prec, int num_alpha) {
-		prior_alpha_mean.head(num_alpha) = _prior_mean.reshaped();
-		prior_alpha_prec.head(num_alpha) = kronecker_eigen(_prec_diag, _prior_prec).diagonal();
-		// if (include_mean) {
-		// 	prior_alpha_mean.tail(dim) = BaseRegParams::_mean_non;
-		// }
-	}
+	MinnParams(LIST& priors, int num_lowerchol)
+	: ShrinkageParams(priors),
+		_prior_prec(Eigen::VectorXd::Ones(num_lowerchol)),
+		_prior_mean(Eigen::VectorXd::Zero(num_lowerchol)) {}
 };
 
 struct HierminnParams : public MinnParams {
@@ -80,6 +78,10 @@ struct HierminnParams : public MinnParams {
 
 	HierminnParams(LIST& priors)
 	: MinnParams(priors),
+		_shape(CAST_DOUBLE(priors["shape"])), _rate(CAST_DOUBLE(priors["rate"])), _grid_size(CAST_INT(priors["grid_size"])) {}
+	
+	HierminnParams(LIST& priors, int num_lowerchol)
+	: MinnParams(priors, num_lowerchol),
 		_shape(CAST_DOUBLE(priors["shape"])), _rate(CAST_DOUBLE(priors["rate"])), _grid_size(CAST_INT(priors["grid_size"])) {}
 };
 
@@ -139,29 +141,6 @@ struct HierminnInits : public ShrinkageInits {
 
 	HierminnInits(LIST& init, int num_design)
 	: ShrinkageInits(init, num_design), _own_lambda(CAST_DOUBLE(init["own_lambda"])), _cross_lambda(CAST_DOUBLE(init["cross_lambda"])) {}
-
-	void initPrec(
-		Eigen::Ref<Eigen::VectorXd> prior_prec, int num_alpha,
-		Optional<Eigen::VectorXi> grp_vec = NULLOPT, Optional<Eigen::VectorXi> cross_id = NULLOPT
-	) {
-		prior_prec.head(num_alpha).array() /= _own_lambda;
-		if (grp_vec && cross_id) {
-			// for (int i = 0; i < num_alpha; ++i) {
-			// 	if (cross_id.find(grp_vec[i]) != cross_id.end()) {
-			// 		prior_prec[i] /= _cross_lambda; // nu
-			// 	}
-			// }
-			Eigen::Array<bool, Eigen::Dynamic, 1> global_id;
-			for (int i = 0; i < cross_id->size(); ++i) {
-				global_id = grp_vec->array() == (*cross_id)[i];
-				for (int j = 0; j < num_alpha; ++j) {
-					if (global_id[j]) {
-						prior_prec[j] /= _cross_lambda; // nu
-					}
-				}
-			}
-		}
-	}
 };
 
 struct SsvsInits : public ShrinkageInits {

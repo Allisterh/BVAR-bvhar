@@ -25,6 +25,30 @@ public:
 	virtual ~ShrinkageUpdater() = default;
 
 	/**
+	 * @brief Build coefficient prior mean structure
+	 * 
+	 * @param prior_alpha_mean Coefficient prior mean
+	 */
+	virtual void initCoefMean(Eigen::Ref<Eigen::VectorXd> prior_alpha_mean, int num_alpha) {}
+
+	/**
+	 * @brief Build coefficient prior precision structure
+	 * 
+	 * @param prior_alpha_prec Coefficient prior precision
+	 * @param num_alpha Number of alpha
+	 * @param grp_vec Group vector
+	 * @param cross_id Cross id
+	 */
+	virtual void initCoefPrec(Eigen::Ref<Eigen::VectorXd> prior_alpha_prec, int num_alpha, Eigen::VectorXi& grp_vec, std::set<int>& cross_id) {}
+
+	/**
+	 * @brief Build contemporaneous coefficient precision structure
+	 * 
+	 * @param prior_chol_prec Contemporaneous coefficient prior precision
+	 */
+	virtual void initImpactPrec(Eigen::Ref<Eigen::VectorXd> prior_chol_prec) {}
+
+	/**
 	 * @brief Draw precision of coefficient based on each shrinkage priors
 	 * 
 	 * @param prior_alpha_prec Prior precision
@@ -41,7 +65,7 @@ public:
 		int num_alpha, int num_grp,
 		Eigen::VectorXi& grp_vec, Eigen::VectorXi& grp_id,
 		BHRNG& rng
-	) = 0;
+	) {}
 
 	/**
 	 * @brief Draw precision of contemporaneous coefficient based on each shrinkage priors
@@ -56,7 +80,7 @@ public:
 		Eigen::Ref<Eigen::VectorXd> contem_coef,
 		int num_lowerchol,
 		BHRNG& rng
-	) = 0;
+	) {}
 
 	/**
 	 * @brief Append shrinkage prior's parameter record to the result `LIST`
@@ -72,22 +96,24 @@ public:
  */
 class MinnUpdater : public ShrinkageUpdater {
 public:
-	MinnUpdater(const MinnParams& params, const ShrinkageInits& inits) : ShrinkageUpdater(params, inits) {}
+	MinnUpdater(const MinnParams& params, const ShrinkageInits& inits)
+	: ShrinkageUpdater(params, inits), prior_mean(params._prior_mean), prior_prec(params._prior_prec) {}
 	virtual ~MinnUpdater() = default;
-	void updateCoefPrec(
-		Eigen::Ref<Eigen::VectorXd> prior_alpha_prec,
-		Eigen::Ref<Eigen::VectorXd> coef_vec,
-		int num_alpha, int num_grp,
-		Eigen::VectorXi& grp_vec, Eigen::VectorXi& grp_id,
-		BHRNG& rng
-	) override {}
-	void updateImpactPrec(
-		Eigen::Ref<Eigen::VectorXd> prior_chol_prec,
-		Eigen::Ref<Eigen::VectorXd> contem_coef,
-		int num_lowerchol,
-		BHRNG& rng
-	) override {}
+	
+	void initCoefMean(Eigen::Ref<Eigen::VectorXd> prior_alpha_mean, int num_alpha) override {
+		prior_alpha_mean.head(num_alpha) = prior_mean;
+		prior_mean.resize(0);
+	}
+
+	void initCoefPrec(Eigen::Ref<Eigen::VectorXd> prior_alpha_prec, int num_alpha, Eigen::VectorXi& grp_vec, std::set<int>& cross_id) override {
+		prior_alpha_prec.head(num_alpha) = prior_prec;
+		prior_prec.resize(0);
+	}
+
 	void appendRecords(LIST& list) override {}
+
+private:
+	Eigen::VectorXd prior_mean, prior_prec;
 };
 
 /**
@@ -98,12 +124,31 @@ class HierminnUpdater : public ShrinkageUpdater {
 public:
 	HierminnUpdater(const HierminnParams& params, const HierminnInits& inits)
 	: ShrinkageUpdater(params, inits),
-		prior_mean(params._prior_mean.reshaped()), // -> fix the size of _prior_mean of MinnParams
+		prior_mean(params._prior_mean), prior_prec(params._prior_prec),
 		grid_size(params._grid_size),
 		own_shape(params._shape), own_rate(params._rate),
 		// cross_shape(params.shape), cross_rate(params.rate),
 		own_lambda(inits._own_lambda), cross_lambda(inits._cross_lambda) {}
 	virtual ~HierminnUpdater() = default;
+
+	void initCoefMean(Eigen::Ref<Eigen::VectorXd> prior_alpha_mean, int num_alpha) override {
+		prior_alpha_mean.head(num_alpha) = prior_mean;
+	}
+
+	void initCoefPrec(Eigen::Ref<Eigen::VectorXd> prior_alpha_prec, int num_alpha, Eigen::VectorXi& grp_vec, std::set<int>& cross_id) override {
+		prior_alpha_prec.head(num_alpha) = prior_prec;
+		for (int i = 0; i < num_alpha; ++i) {
+			if (cross_id.find(grp_vec[i]) != cross_id.end()) {
+				prior_alpha_prec[i] /= cross_lambda; // nu
+			}
+		}
+		prior_prec.resize(0);
+	}
+
+	void initImpactPrec(Eigen::Ref<Eigen::VectorXd> prior_chol_prec) override {
+		prior_chol_prec.array() /= own_lambda; // divide because it is precision
+		prior_prec.resize(0);
+	}
 
 	void updateCoefPrec(
 		Eigen::Ref<Eigen::VectorXd> prior_alpha_prec,
@@ -139,7 +184,7 @@ public:
 	void appendRecords(LIST& list) override {}
 
 private:
-	Eigen::VectorXd prior_mean;
+	Eigen::VectorXd prior_mean, prior_prec;
 	int grid_size;
 	double own_shape, own_rate;
 	double own_lambda, cross_lambda;
@@ -470,86 +515,6 @@ private:
 	Eigen::VectorXd local_lev;
 };
 
-// template <typename ShrinkageType>
-// struct ShrinkageParamsMap {
-// 	using type = ShrinkageParams;
-// };
-
-// template <>
-// struct ShrinkageParamsMap<MinnUpdater> {
-// 	using type = MinnParams;
-// };
-
-// template <>
-// struct ShrinkageParamsMap<HierminnUpdater> {
-// 	using type = HierminnParams;
-// };
-
-// template <>
-// struct ShrinkageParamsMap<SsvsUpdater> {
-// 	using type = SsvsParams;
-// };
-
-// template <>
-// struct ShrinkageParamsMap<HorseshoeUpdater<>> {
-// 	using type = ShrinkageParams;
-// };
-
-// template <>
-// struct ShrinkageParamsMap<NgUpdater<>> {
-// 	using type = NgParams;
-// };
-
-// template <>
-// struct ShrinkageParamsMap<DlUpdater<>> {
-// 	using type = DlParams;
-// };
-
-// template <>
-// struct ShrinkageParamsMap<GdpUpdater<>> {
-// 	using type = GdpParams;
-// };
-
-// template <typename ShrinkageType>
-// struct ShrinkageInitsMap {
-// 	using type = ShrinkageInits;
-// };
-
-// template <>
-// struct ShrinkageInitsMap<MinnUpdater> {
-// 	using type = ShrinkageInits;
-// };
-
-// template <>
-// struct ShrinkageInitsMap<HierminnUpdater> {
-// 	using type = HierminnInits;
-// };
-
-// template <>
-// struct ShrinkageInitsMap<SsvsUpdater> {
-// 	using type = SsvsInits;
-// };
-
-// template <>
-// struct ShrinkageInitsMap<HorseshoeUpdater<>> {
-// 	using type = HorseshoeInits;
-// };
-
-// template <>
-// struct ShrinkageInitsMap<NgUpdater<>> {
-// 	using type = NgInits;
-// };
-
-// template <>
-// struct ShrinkageInitsMap<DlUpdater<>> {
-// 	using type = HorseshoeInits;
-// };
-
-// template <>
-// struct ShrinkageInitsMap<GdpUpdater<>> {
-// 	using type = GdpInits;
-// };
-
 /**
  * @brief Function to initialize `ShrinkageUpdater`
  * 
@@ -558,6 +523,7 @@ private:
  * @tparam INITS Corresponding initialization struct
  * @param param_prior Shrinkage prior configuration
  * @param param_init Initial values
+ * @param prior_type Prior type
  * @return std::unique_ptr<ShrinkageUpdater> 
  */
 template <bool isGroup = true>
@@ -565,9 +531,18 @@ inline std::unique_ptr<ShrinkageUpdater> initialize_shrinkageupdater(LIST& param
 	std::unique_ptr<ShrinkageUpdater> shrinkage_ptr;
 	switch (prior_type) {
 		case 1: {
-			MinnParams params(param_prior);
+			std::unique_ptr<MinnParams> params_ptr;
+			if (CONTAINS(param_prior, "p")) {
+				// p is only in coef_prior
+				params_ptr = std::make_unique<MinnParams>(param_prior);
+			} else {
+				// append num_lowerchol to param_prior when contem
+				params_ptr = std::make_unique<MinnParams>(param_prior, CAST_INT(param_prior["num_lowerchol"]));
+			}
+			// MinnParams params(param_prior);
 			ShrinkageInits inits(param_init);
-			shrinkage_ptr = std::make_unique<MinnUpdater>(params, inits);
+			// shrinkage_ptr = std::make_unique<MinnUpdater>(params, inits);
+			shrinkage_ptr = std::make_unique<MinnUpdater>(*params_ptr, inits);
 			return shrinkage_ptr;
 		}
 		case 2: {
@@ -583,9 +558,16 @@ inline std::unique_ptr<ShrinkageUpdater> initialize_shrinkageupdater(LIST& param
 			return shrinkage_ptr;
 		}
 		case 4: {
-			HierminnParams params(param_prior);
+			std::unique_ptr<HierminnParams> params_ptr;
+			if (CONTAINS(param_prior, "p")) {
+				params_ptr = std::make_unique<HierminnParams>(param_prior);
+			} else {
+				params_ptr = std::make_unique<HierminnParams>(param_prior, CAST_INT(param_prior["num_lowerchol"]));
+			}
+			// HierminnParams params(param_prior);
 			HierminnInits inits(param_init);
-			shrinkage_ptr = std::make_unique<HierminnUpdater>(params, inits);
+			// shrinkage_ptr = std::make_unique<HierminnUpdater>(params, inits);
+			shrinkage_ptr = std::make_unique<HierminnUpdater>(*params_ptr, inits);
 			return shrinkage_ptr;
 		}
 		case 5: {
@@ -609,17 +591,6 @@ inline std::unique_ptr<ShrinkageUpdater> initialize_shrinkageupdater(LIST& param
 	}
 	return shrinkage_ptr;
 }
-
-// template <typename UPDATER = ShrinkageUpdater>
-// inline std::unique_ptr<ShrinkageUpdater> initialize_shrinkageupdater(LIST& param_prior, LIST& param_init) {
-// 	std::unique_ptr<ShrinkageUpdater> shrinkage_ptr;
-// 	using PARAMS = typename ShrinkageParamsMap<UPDATER>::type;
-// 	using INITS = typename ShrinkageInitsMap<UPDATER>::type;
-// 	PARAMS params(param_prior);
-// 	INITS inits(param_init);
-// 	shrinkage_ptr = std::make_unique<UPDATER>(params, inits);
-// 	return shrinkage_ptr;
-// }
 
 } // namespace bvhar
 

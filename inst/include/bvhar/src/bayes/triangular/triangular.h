@@ -35,15 +35,17 @@ public:
 	)
 	: McmcAlgo(params, seed),
 		coef_updater(std::move(coef_prior)), contem_updater(std::move(contem_prior)),
-		own_id(params._own_id), grp_id(params._grp_id), grp_vec(params._grp_mat.reshaped()), num_grp(grp_id.size()),
+		own_id(params._own_id), grp_id(params._grp_id), grp_vec(params._grp_vec), num_grp(grp_id.size()),
 		// reg_record(std::make_unique<RegRecords>(num_iter, dim, num_design, num_coef, num_lowerchol)),
 		sparse_record(num_iter, dim, num_design, num_coef, num_lowerchol),
 		coef_vec(Eigen::VectorXd::Zero(num_coef)), contem_coef(inits._contem),
-		prior_alpha_mean(Eigen::VectorXd::Zero(num_coef)),
-		prior_alpha_prec(Eigen::VectorXd::Zero(num_coef)),
+		// prior_alpha_mean(Eigen::VectorXd::Zero(num_coef)),
+		// prior_alpha_prec(Eigen::VectorXd::Zero(num_coef)),
+		prior_alpha_mean(params._alpha_mean), prior_alpha_prec(params._alpha_prec),
 		alpha_penalty(Eigen::VectorXd::Zero(num_alpha)),
-		prior_chol_mean(Eigen::VectorXd::Zero(num_lowerchol)),
-		prior_chol_prec(Eigen::VectorXd::Ones(num_lowerchol)),
+		// prior_chol_mean(Eigen::VectorXd::Zero(num_lowerchol)),
+		// prior_chol_prec(Eigen::VectorXd::Ones(num_lowerchol)),
+		prior_chol_mean(params._chol_mean), prior_chol_prec(params._chol_prec),
 		coef_mat(inits._coef), contem_id(0),
 		sparse_coef(Eigen::MatrixXd::Zero(dim_design, dim)), sparse_contem(Eigen::VectorXd::Zero(num_lowerchol)),
 		chol_lower(build_inv_lower(dim, contem_coef)),
@@ -451,8 +453,11 @@ inline std::vector<std::unique_ptr<BaseMcmc>> initialize_mcmc(
 	for (int i = 0; i < num_chains; ++i) {
 		LIST init_spec = param_init[i];
 		auto coef_updater = initialize_shrinkageupdater<isGroup>(param_prior, init_spec, prior_type);
+		coef_updater->initCoefMean(base_params._alpha_mean, base_params._num_alpha);
+		coef_updater->initCoefPrec(base_params._alpha_prec, base_params._num_alpha, base_params._grp_vec, base_params._cross_id);
 		LIST contem_init_spec = contem_init[i];
 		auto contem_updater = initialize_shrinkageupdater<isGroup>(contem_prior, contem_init_spec, contem_prior_type);
+		contem_updater->initImpactPrec(base_params._chol_prec);
 		// LIST init_spec = param_init[i];
 		INITS ldlt_inits = num_design ? INITS(init_spec, *num_design) : INITS(init_spec);
 		mcmc_ptr[i] = std::make_unique<BaseMcmc>(

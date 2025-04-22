@@ -36,12 +36,13 @@ struct NgRecords;
  * 
  */
 struct RegParams : McmcParams {
-	Eigen::VectorXd _sig_shp, _sig_scl, _mean_non;
+	Eigen::VectorXd _alpha_mean, _alpha_prec, _chol_mean, _chol_prec, _sig_shp, _sig_scl, _mean_non;
 	double _sd_non;
 	std::set<int> _own_id;
 	std::set<int> _cross_id;
 	Eigen::VectorXi _grp_id;
-	Eigen::MatrixXi _grp_mat;
+	// Eigen::MatrixXi _grp_mat;
+	Eigen::VectorXi _grp_vec;
 
 	RegParams(
 		int num_iter, const Eigen::MatrixXd& x, const Eigen::MatrixXd& y,
@@ -52,11 +53,16 @@ struct RegParams : McmcParams {
 		bool include_mean
 	)
 	: McmcParams(num_iter, x, y, include_mean),
+		_alpha_mean(Eigen::VectorXd::Zero(_num_coef)),
+		_alpha_prec(Eigen::VectorXd::Zero(_num_coef)),
+		_chol_mean(Eigen::VectorXd::Zero(_num_lowerchol)),
+		_chol_prec(Eigen::VectorXd::Ones(_num_lowerchol)),
 		_sig_shp(CAST<Eigen::VectorXd>(spec["shape"])),
 		_sig_scl(CAST<Eigen::VectorXd>(spec["scale"])),
 		_mean_non(CAST<Eigen::VectorXd>(intercept["mean_non"])),
 		_sd_non(CAST_DOUBLE(intercept["sd_non"])),
-		_grp_id(grp_id), _grp_mat(grp_mat) {
+		// _grp_id(grp_id), _grp_mat(grp_mat) {
+			_grp_id(grp_id), _grp_vec(grp_mat.reshaped()) {
 		set_grp_id(_own_id, _cross_id, own_id, cross_id);
 	}
 };

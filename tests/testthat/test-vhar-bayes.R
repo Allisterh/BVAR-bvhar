@@ -7,8 +7,8 @@ test_that("VHAR-Minn-LDLT", {
     etf_vix[1:50, 1:2],
     num_iter = 5,
     num_burn = 0,
-    coef_spec = set_bvar(),
-    contem_spec = set_bvar(),
+    coef_spec = set_bvhar(),
+    contem_spec = set_bvhar(),
     cov_spec = set_ldlt(),
     include_mean = FALSE
   )
@@ -57,8 +57,8 @@ test_that("VHAR-Hierminn-LDLT", {
     etf_vix[1:50, 1:2],
     num_iter = 5,
     num_burn = 0,
-    coef_spec = set_bvar(lambda = set_lambda()),
-    contem_spec = set_bvar(lambda = set_lambda()),
+    coef_spec = set_bvhar(lambda = set_lambda()),
+    contem_spec = set_bvhar(lambda = set_lambda()),
     cov_spec = set_ldlt(),
     include_mean = FALSE
   )
@@ -124,8 +124,8 @@ test_that("Members - VHAR-Minn-SV", {
     etf_vix[1:50, 1:2],
     num_iter = 5,
     num_burn = 0,
-    coef_spec = set_bvar(),
-    contem_spec = set_bvar(),
+    coef_spec = set_bvhar(),
+    contem_spec = set_bvhar(),
     cov_spec = set_sv(),
     include_mean = FALSE
   )
@@ -174,8 +174,8 @@ test_that("Members - VHAR-Hierminn-SV", {
     etf_vix[1:50, 1:2],
     num_iter = 5,
     num_burn = 0,
-    coef_spec = set_bvar(lambda = set_lambda()),
-    contem_spec = set_bvar(lambda = set_lambda()),
+    coef_spec = set_bvhar(lambda = set_lambda()),
+    contem_spec = set_bvhar(lambda = set_lambda()),
     cov_spec = set_sv(),
     include_mean = FALSE
   )

@@ -540,9 +540,7 @@ inline std::unique_ptr<ShrinkageUpdater> initialize_shrinkageupdater(LIST& param
 				// append num_lowerchol to param_prior when contem
 				params_ptr = std::make_unique<MinnParams>(param_prior, CAST_INT(param_prior["num"]));
 			}
-			// MinnParams params(param_prior);
 			ShrinkageInits inits(param_init);
-			// shrinkage_ptr = std::make_unique<MinnUpdater>(params, inits);
 			shrinkage_ptr = std::make_unique<MinnUpdater>(*params_ptr, inits);
 			return shrinkage_ptr;
 		}
@@ -565,9 +563,7 @@ inline std::unique_ptr<ShrinkageUpdater> initialize_shrinkageupdater(LIST& param
 			} else {
 				params_ptr = std::make_unique<HierminnParams>(param_prior, CAST_INT(param_prior["num"]));
 			}
-			// HierminnParams params(param_prior);
 			HierminnInits inits(param_init);
-			// shrinkage_ptr = std::make_unique<HierminnUpdater>(params, inits);
 			shrinkage_ptr = std::make_unique<HierminnUpdater>(*params_ptr, inits);
 			return shrinkage_ptr;
 		}

@@ -182,7 +182,7 @@ var_bayes <- function(y,
   #     )
   #   }
   # )
-  param_init <- validate_coef_init(
+  param_init <- get_coef_init(
     num_chains = num_chains,
     dim_data = dim_data,
     dim_design = dim_design,
@@ -207,35 +207,45 @@ var_bayes <- function(y,
     cross_id <- 2
   }
   num_grp <- length(grp_id)
-  coef_prior <- validate_spec(
+  coef_spec <- validate_spec(
     bayes_spec = coef_spec,
     y = y,
-    p = p,
     dim_data = dim_data,
     num_grp = num_grp,
     grp_id = grp_id,
     own_id = own_id,
     cross_id = cross_id,
+    process = "BVAR",
     arg_names = "coef_spec"
   )
-  contem_prior <- validate_spec(
+  contem_spec <- validate_spec(
     bayes_spec = contem_spec,
     y = y,
-    p = 0,
     dim_data = num_eta,
     num_grp = 1,
     grp_id = grp_id,
     own_id = own_id,
     cross_id = cross_id,
+    process = "BVAR",
     arg_names = "contem_spec"
   )
-  contem_init <- validate_init(
+  coef_prior <- get_spec(
+    bayes_spec = coef_spec,
+    p = p,
+    dim_data = dim_data
+  )
+  contem_prior <- get_spec(
+    bayes_spec = contem_spec,
+    p = 0,
+    dim_data = num_eta
+  )
+  contem_init <- get_init(
     param_init = param_init,
     prior_nm = contem_spec$prior,
     num_alpha = num_eta,
     num_grp = ifelse(contem_spec$prior == "SSVS" || contem_spec$prior == "GDP", num_eta, 1)
   )
-  param_init <- validate_init(
+  param_init <- get_init(
     param_init = param_init,
     prior_nm = coef_spec$prior,
     num_alpha = num_alpha,

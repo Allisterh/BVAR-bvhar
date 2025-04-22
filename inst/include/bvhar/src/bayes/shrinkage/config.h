@@ -37,9 +37,13 @@ struct MinnParams : public ShrinkageParams {
 	: ShrinkageParams(priors) {
 		int lag = CAST_INT(priors["p"]); // append to bayes_spec, p = 3 in VHAR
 		Eigen::VectorXd sigma = CAST<Eigen::VectorXd>(priors["sigma"]);
-		// lambda is numeric only when Minn
-		// In Hierminn: list
-		double lam = CAST_DOUBLE(priors["lambda"]);
+		// double lam = CAST_DOUBLE(priors["lambda"]);
+		double lam;
+		if (CAST_BOOL(priors["hierarchical"])) {
+			lam = 1; // when Hierminn
+		} else {
+			lam = CAST_DOUBLE(priors["lambda"]); // when Minn
+		}
 		double eps = CAST_DOUBLE(priors["eps"]);
 		int dim = sigma.size();
 		Eigen::MatrixXd prec_diag = Eigen::MatrixXd::Zero(dim, dim);

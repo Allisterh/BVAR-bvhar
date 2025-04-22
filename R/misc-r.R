@@ -174,20 +174,24 @@ get_gammaparam <- function(mode, sd) {
 #' Validate prior specification
 #' @noRd
 validate_spec <- function(bayes_spec,
-                          y, p,
-                          dim_data, num_grp,
+                          y, dim_data, num_grp,
                           grp_id, own_id, cross_id,
+                          process = "BVAR",
                           arg_names = "coef_spec") {
-  param_prior <- list()
   prior_nm <- bayes_spec$prior
-  if (prior_nm == "Minnesota" || prior_nm == "MN_Hierarchical") {
-    if (bayes_spec$process != "BVAR") {
-      stop(paste0("'", arg_names, "' must be the result of 'set_bvar()'."))
+  if (prior_nm == "Minnesota" || prior_nm == "MN_VAR" || prior_nm == "MN_VHAR" || prior_nm == "MN_Hierarchical") {
+    if (bayes_spec$process != process) {
+      stop(
+        sprintf(
+          "'%s' must be the result of '%s'",
+          arg_names,
+          ifelse(process == "BVAR", "set_bvar()", "set_bvhar() or set_weight_bvhar()")
+        )
+      )
     }
     if (is.null(bayes_spec$sigma)) {
       bayes_spec$sigma <- apply(y, 2, sd)
     }
-    # 
     if ("delta" %in% names(bayes_spec)) {
       if (is.null(bayes_spec$delta)) {
         bayes_spec$delta <- rep(0, dim_data)
@@ -215,20 +219,6 @@ validate_spec <- function(bayes_spec,
         bayes_spec$monthly <- rep(bayes_spec$monthly, dim_data)
       }
     }
-    # param_prior <- append(bayes_spec, list(p = p))
-    param_prior <- bayes_spec
-    if (bayes_spec$hierarchical) {
-      # param_prior <- append(bayes_spec, list(num = num_alpha))
-      param_prior$shape <- bayes_spec$lambda$param[1]
-      param_prior$rate <- bayes_spec$lambda$param[2]
-      param_prior$grid_size <- bayes_spec$lambda$grid_size
-      # prior_nm <- "MN_Hierarchical"
-    }
-    if (p > 0) {
-      param_prior <- append(param_prior, list(p = p)) # when coef case
-    } else {
-      param_prior <- append(param_prior, list(num = dim_data)) # when contem
-    }
   } else if (prior_nm == "SSVS") {
     if (length(bayes_spec$s1) == 2) {
       s1 <- numeric(num_grp)
@@ -242,6 +232,30 @@ validate_spec <- function(bayes_spec,
       s2[grp_id %in% cross_id] <- bayes_spec$s2[2]
       bayes_spec$s2 <- s2
     }
+  }
+  bayes_spec
+}
+
+#' Validate prior specification
+#' @noRd
+get_spec <- function(bayes_spec, p, dim_data) {
+  param_prior <- list()
+  prior_nm <- bayes_spec$prior
+  if (prior_nm == "Minnesota" || prior_nm == "MN_VAR" || prior_nm == "MN_VHAR" || prior_nm == "MN_Hierarchical") {
+    # param_prior <- append(bayes_spec, list(p = p))
+    param_prior <- bayes_spec
+    if (bayes_spec$hierarchical) {
+      # param_prior <- append(bayes_spec, list(num = num_alpha))
+      param_prior$shape <- bayes_spec$lambda$param[1]
+      param_prior$rate <- bayes_spec$lambda$param[2]
+      param_prior$grid_size <- bayes_spec$lambda$grid_size
+    }
+    if (p > 0) {
+      param_prior <- append(param_prior, list(p = p)) # when coef case
+    } else {
+      param_prior <- append(param_prior, list(num = dim_data)) # when contem
+    }
+  } else if (prior_nm == "SSVS") {
     param_prior <- bayes_spec
   } else if (prior_nm == "Horseshoe") {
     param_prior <- list()
@@ -257,7 +271,7 @@ validate_spec <- function(bayes_spec,
 
 #' Set initial values for coefficients
 #' @noRd
-validate_coef_init <- function(num_chains, dim_data, dim_design, num_eta) {
+get_coef_init <- function(num_chains, dim_data, dim_design, num_eta) {
   lapply(
     seq_len(num_chains),
     function(x) {
@@ -271,7 +285,7 @@ validate_coef_init <- function(num_chains, dim_data, dim_design, num_eta) {
 
 #' Validate initial values
 #' @noRd
-validate_init <- function(param_init, prior_nm, num_alpha, num_grp) {
+get_init <- function(param_init, prior_nm, num_alpha, num_grp) {
   if (prior_nm == "MN_Hierarchical") {
     param_init <- lapply(
       param_init,
@@ -396,7 +410,8 @@ enumerate_prior <- function(prior_nm) {
     "MN_Hierarchical" = 4,
     "NG" = 5,
     "DL" = 6,
-    "GDP" = 7
+    "GDP" = 7,
+    1 # MN_VAR, MN_VHAR
   )
 }
 
@@ -420,7 +435,7 @@ get_coefspec <- function(object) {
 #' @noRd
 get_contemspec <- function(object) {
   if (is.bvharspec(object$spec_contem)) {
-    param_prior <- append(object$spec_contem, list(p = object$p))
+    param_prior <- append(object$spec_contem, list(num = object$m * (object$m - 1) / 2))
     if (object$spec_contem$hierarchical) {
       param_prior$shape <- object$spec_contem$lambda$param[1]
       param_prior$rate <- object$spec_contem$lambda$param[2]

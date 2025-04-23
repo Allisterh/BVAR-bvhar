@@ -584,6 +584,7 @@ private:
  * @tparam UPDATER Shrinkage priors
  * @tparam PARAMS Corresponding parameter struct
  * @tparam INITS Corresponding initialization struct
+ * @param num_iter MCMC iteration
  * @param param_prior Shrinkage prior configuration
  * @param param_init Initial values
  * @param prior_type Prior type

@@ -430,6 +430,9 @@ private:
  * @param param_intercept Constant term configuration
  * @param param_init MCMC initial values
  * @param prior_type Prior number to use
+ * @param contem_prior Contemporaneous shrinkage prior configuration
+ * @param contem_init MCMC initial values for Contemporaneous shrinkage prior
+ * @param contem_prior_type Contemporaneous shrinkage prior number to use
  * @param grp_id Minnesota group unique ids
  * @param own_id Own-lag id
  * @param cross_id Cross-lag id

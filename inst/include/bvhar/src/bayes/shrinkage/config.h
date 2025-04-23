@@ -24,11 +24,19 @@ struct HorseshoeInits;
 struct NgInits;
 struct GdpInits;
 
+/**
+ * @brief Hyperparameters for shrinkage priors `ShrinkageUpdater`
+ * 
+ */
 struct ShrinkageParams {
 	ShrinkageParams() {}
 	ShrinkageParams(LIST& priors) {}
 };
 
+/**
+ * @brief Hyperparameters for Minnesota prior `MinnUpdater`
+ * 
+ */
 struct MinnParams : public ShrinkageParams {
 	// Eigen::MatrixXd _prec_diag;
 	Eigen::VectorXd _prior_prec, _prior_mean;
@@ -76,6 +84,10 @@ struct MinnParams : public ShrinkageParams {
 		_prior_mean(Eigen::VectorXd::Zero(num_lowerchol)) {}
 };
 
+/**
+ * @brief Hyperparameters for hierarchical Minnesota prior `HierminnUpdater`
+ * 
+ */
 struct HierminnParams : public MinnParams {
 	double _shape, _rate;
 	int _grid_size;
@@ -90,6 +102,10 @@ struct HierminnParams : public MinnParams {
 		_shape(CAST_DOUBLE(priors["shape"])), _rate(CAST_DOUBLE(priors["rate"])), _grid_size(CAST_INT(priors["grid_size"])) {}
 };
 
+/**
+ * @brief Hyperparameters for SSVS prior `SsvsUpdater`
+ * 
+ */
 struct SsvsParams : public ShrinkageParams {
 	Eigen::VectorXd _s1, _s2;
 	double _slab_shape, _slab_scl;
@@ -102,10 +118,10 @@ struct SsvsParams : public ShrinkageParams {
 		_grid_size(CAST_INT(priors["grid_size"])) {}
 };
 
-// struct HorseshoeParams : public ShrinkageParams {
-// 	HorseshoeParams() {}
-// };
-
+/**
+ * @brief Hyperparameters for Normal-gamma prior `NgUpdater`
+ * 
+ */
 struct NgParams : public ShrinkageParams {
 	double _mh_sd, _group_shape, _group_scl, _global_shape, _global_scl;
 
@@ -116,6 +132,10 @@ struct NgParams : public ShrinkageParams {
 		_global_shape(CAST_DOUBLE(priors["global_shape"])), _global_scl(CAST_DOUBLE(priors["global_scale"])) {}
 };
 
+/**
+ * @brief Hyperparameters for Dirichlet-Laplace prior `DlUpdater`
+ * 
+ */
 struct DlParams : public ShrinkageParams {
 	int _grid_size;
 	double _shape, _scl;
@@ -124,6 +144,10 @@ struct DlParams : public ShrinkageParams {
 	: ShrinkageParams(priors), _grid_size(CAST_INT(priors["grid_size"])), _shape(CAST_DOUBLE(priors["shape"])), _scl(CAST_DOUBLE(priors["scale"])) {}
 };
 
+/**
+ * @brief Hyperparameters for GDP prior `GdpUpdater`
+ * 
+ */
 struct GdpParams : public ShrinkageParams {
 	int _grid_shape, _grid_rate;
 
@@ -131,12 +155,20 @@ struct GdpParams : public ShrinkageParams {
 	: ShrinkageParams(priors), _grid_shape(CAST_INT(priors["grid_shape"])), _grid_rate(CAST_INT(priors["grid_rate"])) {}
 };
 
+/**
+ * @brief MCMC initial values for `ShrinkageUpdater`
+ * 
+ */
 struct ShrinkageInits {
 	ShrinkageInits() {}
 	ShrinkageInits(LIST& init) {}
 	ShrinkageInits(LIST& init, int num_design) {}
 };
 
+/**
+ * @brief MCMC initial values for `HierminnUpdater`
+ * 
+ */
 struct HierminnInits : public ShrinkageInits {
 	double _own_lambda;
 	double _cross_lambda;
@@ -148,6 +180,10 @@ struct HierminnInits : public ShrinkageInits {
 	: ShrinkageInits(init, num_design), _own_lambda(CAST_DOUBLE(init["own_lambda"])), _cross_lambda(CAST_DOUBLE(init["cross_lambda"])) {}
 };
 
+/**
+ * @brief MCMC initial values for `SsvsUpdater`
+ * 
+ */
 struct SsvsInits : public ShrinkageInits {
 	Eigen::VectorXd _dummy, _weight, _slab;
 	double _spike_scl;
@@ -167,6 +203,10 @@ struct SsvsInits : public ShrinkageInits {
 		_spike_scl(CAST_DOUBLE(init["spike_scl"])) {}
 };
 
+/**
+ * @brief MCMC initial values for global-local shrinkage prior.
+ * 
+ */
 struct GlInits : public ShrinkageInits {
 	Eigen::VectorXd _local;
 	double _global;
@@ -182,6 +222,10 @@ struct GlInits : public ShrinkageInits {
 		_global(CAST_DOUBLE(init["global_sparsity"])) {}
 };
 
+/**
+ * @brief MCMC initial values for `HorseshoeUpdater`
+ * 
+ */
 struct HorseshoeInits : public GlInits {
 	Eigen::VectorXd _group;
 
@@ -194,6 +238,10 @@ struct HorseshoeInits : public GlInits {
 		_group(CAST<Eigen::VectorXd>(init["group_sparsity"])) {}
 };
 
+/**
+ * @brief MCMC initial values for `NgUpdater`
+ * 
+ */
 struct NgInits : public HorseshoeInits {
 	Eigen::VectorXd _local_shape;
 
@@ -206,6 +254,10 @@ struct NgInits : public HorseshoeInits {
 		_local_shape(CAST<Eigen::VectorXd>(init["local_shape"])) {}
 };
 
+/**
+ * @brief MCMC initial values for `GdpUpdater`
+ * 
+ */
 struct GdpInits : public ShrinkageInits {
 	Eigen::VectorXd _local, _group_rate;
 	double _gamma_shape, _gamma_rate;

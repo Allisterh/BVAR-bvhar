@@ -107,6 +107,20 @@ autoplot(fit_hs)
 (fit_dl <- vhar_bayes(etf_train, num_chains = 2, num_iter = 20, coef_spec = set_dl(), cov_spec = set_ldlt(), include_mean = FALSE, minnesota = "longrun"))
 ```
 
+# Bayesian visualization
+
+`autoplot()` also provides Bayesian visualization. `type = "trace"` gives MCMC trace plot.
+
+```{r}
+autoplot(fit_hs, type = "trace", regex_pars = "tau")
+```
+
+`type = "dens"` draws MCMC density plot. If specifying additional argument `facet_args = list(dir = "v")` of `bayesplot`, you can see plot as the same format with coefficient matrix.
+
+```{r denshs}
+autoplot(fit_hs, type = "dens", regex_pars = "kappa", facet_args = list(dir = "v", nrow = nrow(fit_hs$coefficients)))
+```
+
 ```{r resetopts, include=FALSE}
 options(orig_opts)
 ```

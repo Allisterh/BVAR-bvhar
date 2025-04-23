@@ -690,35 +690,35 @@ vhar_bayes <- function(y,
       res$c_sparse_record
     )
   }
-  # if (coef_spec$prior == "SSVS") {
-  #   res$param <- bind_draws(
-  #     res$param,
-  #     res$gamma_record
-  #   )
-  # } else if (coef_spec$prior == "Horseshoe") {
-  #   res$param <- bind_draws(
-  #     res$param,
-  #     res$lambda_record,
-  #     res$eta_record,
-  #     res$tau_record,
-  #     res$kappa_record
-  #   )
-  # } else if (coef_spec$prior == "NG") {
-  #   res$param <- bind_draws(
-  #     res$param,
-  #     res$lambda_record,
-  #     res$eta_record,
-  #     res$tau_record
-  #   )
-  # } else if (coef_spec$prior == "DL") {
-  #   res$param <- bind_draws(
-  #     res$param,
-  #     res$lambda_record,
-  #     res$tau_record
-  #   )
-  # } else if (coef_spec$prior == "GDP") {
-  #   # 
-  # }
+  if (coef_spec$prior == "SSVS") {
+    res$param <- bind_draws(
+      res$param,
+      res$gamma_record
+    )
+  } else if (coef_spec$prior == "Horseshoe") {
+    res$param <- bind_draws(
+      res$param,
+      res$lambda_record,
+      res$eta_record,
+      res$tau_record,
+      res$kappa_record
+    )
+  } else if (coef_spec$prior == "NG") {
+    res$param <- bind_draws(
+      res$param,
+      res$lambda_record,
+      res$eta_record,
+      res$tau_record
+    )
+  } else if (coef_spec$prior == "DL") {
+    res$param <- bind_draws(
+      res$param,
+      res$lambda_record,
+      res$tau_record
+    )
+  } else if (coef_spec$prior == "GDP") {
+    # 
+  }
   res[rec_names] <- NULL
   res$param_names <- param_names
   # if (coef_spec$prior == "SSVS" || coef_spec$prior == "Horseshoe") {

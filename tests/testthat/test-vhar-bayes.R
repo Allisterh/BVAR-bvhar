@@ -29,7 +29,7 @@ test_that("VHAR-HS-LDLT", {
     include_mean = FALSE
   )
   expect_s3_class(fit_test, "hsmod")
-  # expect_true(all(c("lambda", "tau", "kappa") %in% fit_test$param_names))
+  expect_true(all(c("lambda", "tau", "kappa") %in% fit_test$param_names))
 })
 
 test_that("VHAR-SSVS-LDLT", {
@@ -46,7 +46,7 @@ test_that("VHAR-SSVS-LDLT", {
     include_mean = FALSE
   )
   expect_s3_class(fit_test, "ssvsmod")
-  # expect_true("gamma" %in% fit_test$param_names)
+  expect_true("gamma" %in% fit_test$param_names)
 })
 
 test_that("VHAR-Hierminn-LDLT", {
@@ -79,7 +79,7 @@ test_that("VHAR-NG-LDLT", {
     include_mean = FALSE
   )
   expect_s3_class(fit_test, "ngmod")
-  # expect_true(all(c("lambda", "tau") %in% fit_test$param_names))
+  expect_true(all(c("lambda", "tau") %in% fit_test$param_names))
 })
 
 test_that("VHAR-DL-LDLT", {
@@ -96,7 +96,7 @@ test_that("VHAR-DL-LDLT", {
     include_mean = FALSE
   )
   expect_s3_class(fit_test, "dlmod")
-  # expect_true(all(c("lambda", "tau") %in% fit_test$param_names))
+  expect_true(all(c("lambda", "tau") %in% fit_test$param_names))
 })
 
 test_that("VHAR-GDP-LDLT", {
@@ -146,7 +146,7 @@ test_that("Members - VHAR-HS-SV", {
     include_mean = FALSE
   )
   expect_s3_class(fit_test, "hsmod")
-  # expect_true(all(c("lambda", "tau", "kappa") %in% fit_test$param_names))
+  expect_true(all(c("lambda", "tau", "kappa") %in% fit_test$param_names))
 })
 
 test_that("Members - VHAR-SSVS-SV", {
@@ -163,7 +163,7 @@ test_that("Members - VHAR-SSVS-SV", {
     include_mean = FALSE
   )
   expect_s3_class(fit_test, "ssvsmod")
-  # expect_true("gamma" %in% fit_test$param_names)
+  expect_true("gamma" %in% fit_test$param_names)
 })
 
 test_that("Members - VHAR-Hierminn-SV", {
@@ -196,7 +196,7 @@ test_that("Members - VHAR-NG-SV", {
     include_mean = FALSE
   )
   expect_s3_class(fit_test, "ngmod")
-  # expect_true(all(c("lambda", "tau") %in% fit_test$param_names))
+  expect_true(all(c("lambda", "tau") %in% fit_test$param_names))
 })
 
 test_that("Members - VHAR-DL-SV", {
@@ -213,7 +213,7 @@ test_that("Members - VHAR-DL-SV", {
     include_mean = FALSE
   )
   expect_s3_class(fit_test, "dlmod")
-  # expect_true(all(c("lambda", "tau") %in% fit_test$param_names))
+  expect_true(all(c("lambda", "tau") %in% fit_test$param_names))
 })
 
 test_that("Members - VHAR-GDP-SV", {

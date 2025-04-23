@@ -31,7 +31,7 @@ test_that("VAR-HS-LDLT", {
     include_mean = FALSE
   )
   expect_s3_class(fit_test, "hsmod")
-  # expect_true(all(c("lambda", "tau", "kappa") %in% fit_test$param_names))
+  expect_true(all(c("lambda", "tau", "kappa") %in% fit_test$param_names))
 })
 
 test_that("VAR-SSVS-LDLT", {
@@ -49,7 +49,7 @@ test_that("VAR-SSVS-LDLT", {
     include_mean = FALSE
   )
   expect_s3_class(fit_test, "ssvsmod")
-  # expect_true("gamma" %in% fit_test$param_names)
+  expect_true("gamma" %in% fit_test$param_names)
 })
 
 test_that("VAR-Hierminn-LDLT", {
@@ -84,7 +84,7 @@ test_that("VAR-NG-LDLT", {
     include_mean = FALSE
   )
   expect_s3_class(fit_test, "ngmod")
-  # expect_true(all(c("lambda", "tau") %in% fit_test$param_names))
+  expect_true(all(c("lambda", "tau") %in% fit_test$param_names))
 })
 
 test_that("VAR-DL-LDLT", {
@@ -102,7 +102,7 @@ test_that("VAR-DL-LDLT", {
     include_mean = FALSE
   )
   expect_s3_class(fit_test, "dlmod")
-  # expect_true(all(c("lambda", "tau") %in% fit_test$param_names))
+  expect_true(all(c("lambda", "tau") %in% fit_test$param_names))
 })
 
 test_that("VAR-GDP-LDLT", {
@@ -155,7 +155,7 @@ test_that("VAR-HS-LDLT", {
     include_mean = FALSE
   )
   expect_s3_class(fit_test, "hsmod")
-  # expect_true(all(c("lambda", "tau", "kappa") %in% fit_test$param_names))
+  expect_true(all(c("lambda", "tau", "kappa") %in% fit_test$param_names))
 })
 
 test_that("VAR-SSVS-SV", {
@@ -173,7 +173,7 @@ test_that("VAR-SSVS-SV", {
     include_mean = FALSE
   )
   expect_s3_class(fit_test, "ssvsmod")
-  # expect_true("gamma" %in% fit_test$param_names)
+  expect_true("gamma" %in% fit_test$param_names)
 })
 
 test_that("VAR-Hierminn-SV", {
@@ -208,7 +208,7 @@ test_that("VAR-NG-SV", {
     include_mean = FALSE
   )
   expect_s3_class(fit_test, "ngmod")
-  # expect_true(all(c("lambda", "tau") %in% fit_test$param_names))
+  expect_true(all(c("lambda", "tau") %in% fit_test$param_names))
 })
 
 test_that("VAR-DL-SV", {
@@ -226,10 +226,10 @@ test_that("VAR-DL-SV", {
     include_mean = FALSE
   )
   expect_s3_class(fit_test, "dlmod")
-  # expect_true(all(c("lambda", "tau") %in% fit_test$param_names))
+  expect_true(all(c("lambda", "tau") %in% fit_test$param_names))
 })
 
-test_that("VAR-DL-SV", {
+test_that("VAR-GDP-SV", {
   skip_on_cran()
 
   set.seed(1)

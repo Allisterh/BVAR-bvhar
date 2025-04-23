@@ -108,7 +108,7 @@ public:
 
 	LIST returnRecords(int num_burn, int thin) override {
 		LIST res = gatherRecords();
-		// appendRecords(res);
+		appendRecords(res);
 		for (auto& record : res) {
 			if (IS_MATRIX(ACCESS_LIST(record, res))) {
 				ACCESS_LIST(record, res) = thin_record(CAST<Eigen::MatrixXd>(ACCESS_LIST(record, res)), num_iter, num_burn, thin);

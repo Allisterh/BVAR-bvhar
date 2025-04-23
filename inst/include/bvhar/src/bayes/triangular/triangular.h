@@ -63,6 +63,8 @@ public:
 		}
 		// reg_record->assignRecords(0, coef_vec, contem_coef, diag_vec);
 		sparse_record.assignRecords(0, sparse_coef, sparse_contem);
+		coef_updater->updateRecords(0);
+		// contem_updater->updateRecords(0);
 	}
 	virtual ~McmcTriangular() = default;
 
@@ -71,7 +73,10 @@ public:
 	 * 
 	 * @param list `LIST` containing MCMC record result
 	 */
-	// virtual void appendRecords(LIST& list) = 0;
+	void appendRecords(LIST& list) {
+		coef_updater->appendCoefRecords(list);
+		// contem_updater->appendContemRecords(list);
+	}
 
 	void doWarmUp() override {
 		std::lock_guard<std::mutex> lock(mtx);
@@ -243,6 +248,8 @@ protected:
 	 */
 	void updateRecords() {
 		updateCoefRecords();
+		// coef_updater->updateRecords(mcmc_step);
+		// contem_updater->updateRecords(mcmc_step);
 	}
 	// virtual void updateRecords() = 0;
 
@@ -452,11 +459,11 @@ inline std::vector<std::unique_ptr<BaseMcmc>> initialize_mcmc(
 	std::vector<std::unique_ptr<BaseMcmc>> mcmc_ptr(num_chains);
 	for (int i = 0; i < num_chains; ++i) {
 		LIST init_spec = param_init[i];
-		auto coef_updater = initialize_shrinkageupdater<isGroup>(param_prior, init_spec, prior_type);
+		auto coef_updater = initialize_shrinkageupdater<isGroup>(num_iter, param_prior, init_spec, prior_type);
 		coef_updater->initCoefMean(base_params._alpha_mean, base_params._num_alpha);
 		coef_updater->initCoefPrec(base_params._alpha_prec, base_params._num_alpha, base_params._grp_vec, base_params._cross_id);
 		LIST contem_init_spec = contem_init[i];
-		auto contem_updater = initialize_shrinkageupdater<isGroup>(contem_prior, contem_init_spec, contem_prior_type);
+		auto contem_updater = initialize_shrinkageupdater<isGroup>(num_iter, contem_prior, contem_init_spec, contem_prior_type);
 		contem_updater->initImpactPrec(base_params._chol_prec);
 		INITS ldlt_inits = num_design ? INITS(init_spec, *num_design) : INITS(init_spec);
 		mcmc_ptr[i] = std::make_unique<BaseMcmc>(

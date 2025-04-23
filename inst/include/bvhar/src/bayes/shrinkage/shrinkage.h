@@ -21,7 +21,7 @@ template <bool isGroup> class GdpUpdater;
  */
 class ShrinkageUpdater {
 public:
-	ShrinkageUpdater(const ShrinkageParams& params, const ShrinkageInits& inits) {}
+	ShrinkageUpdater(int num_iter, const ShrinkageParams& params, const ShrinkageInits& inits) {}
 	virtual ~ShrinkageUpdater() = default;
 
 	/**
@@ -83,11 +83,24 @@ public:
 	) {}
 
 	/**
-	 * @brief Append shrinkage prior's parameter record to the result `LIST`
+	 * @brief Save MCMC records
+	 * 
+	 */
+	virtual void updateRecords(int id) {}
+
+	/**
+	 * @brief Append coefficient shrinkage prior's parameter record to the result `LIST`
 	 * 
 	 * @param list Contains MCMC record result
 	 */
-	virtual void appendRecords(LIST& list) = 0;
+	virtual void appendCoefRecords(LIST& list) {}
+
+	/**
+	 * @brief Append contemporaneous coefficient shrinkage prior's parameter record to the result `LIST`
+	 * 
+	 * @param list Contains MCMC record result
+	 */
+	virtual void appendContemRecords(LIST& list) {}
 };
 
 /**
@@ -96,8 +109,8 @@ public:
  */
 class MinnUpdater : public ShrinkageUpdater {
 public:
-	MinnUpdater(const MinnParams& params, const ShrinkageInits& inits)
-	: ShrinkageUpdater(params, inits), prior_mean(params._prior_mean), prior_prec(params._prior_prec) {}
+	MinnUpdater(int num_iter, const MinnParams& params, const ShrinkageInits& inits)
+	: ShrinkageUpdater(num_iter, params, inits), prior_mean(params._prior_mean), prior_prec(params._prior_prec) {}
 	virtual ~MinnUpdater() = default;
 	
 	void initCoefMean(Eigen::Ref<Eigen::VectorXd> prior_alpha_mean, int num_alpha) override {
@@ -110,8 +123,6 @@ public:
 		prior_prec.resize(0);
 	}
 
-	void appendRecords(LIST& list) override {}
-
 private:
 	Eigen::VectorXd prior_mean, prior_prec;
 };
@@ -122,8 +133,8 @@ private:
  */
 class HierminnUpdater : public ShrinkageUpdater {
 public:
-	HierminnUpdater(const HierminnParams& params, const HierminnInits& inits)
-	: ShrinkageUpdater(params, inits),
+	HierminnUpdater(int num_iter, const HierminnParams& params, const HierminnInits& inits)
+	: ShrinkageUpdater(num_iter, params, inits),
 		prior_mean(params._prior_mean), prior_prec(params._prior_prec),
 		grid_size(params._grid_size),
 		own_shape(params._shape), own_rate(params._rate),
@@ -182,8 +193,6 @@ public:
 		);
 	}
 
-	void appendRecords(LIST& list) override {}
-
 private:
 	Eigen::VectorXd prior_mean, prior_prec;
 	int grid_size;
@@ -197,12 +206,14 @@ private:
  */
 class SsvsUpdater : public ShrinkageUpdater {
 public:
-	SsvsUpdater(const SsvsParams& params, const SsvsInits& inits)
-	: ShrinkageUpdater(params, inits),
+	SsvsUpdater(int num_iter, const SsvsParams& params, const SsvsInits& inits)
+	: ShrinkageUpdater(num_iter, params, inits),
 		grid_size(params._grid_size),
 		ig_shape(params._slab_shape), ig_scl(params._slab_scl), s1(params._s1), s2(params._s2),
 		spike_scl(inits._spike_scl), dummy(inits._dummy), weight(inits._weight), slab(inits._slab),
-		slab_weight(Eigen::VectorXd::Ones(slab.size())) {}
+		slab_weight(Eigen::VectorXd::Ones(slab.size())),
+		dummy_record(Eigen::MatrixXd::Ones(num_iter + 1, dummy.size())),
+		weight_record(Eigen::MatrixXd::Zero(num_iter + 1, weight.size())) {}
 	virtual ~SsvsUpdater() = default;
 	
 	void updateCoefPrec(
@@ -238,7 +249,14 @@ public:
 		prior_chol_prec = 1 / build_ssvs_sd(spike_scl * slab, slab, dummy).array().square();
 	}
 
-	void appendRecords(LIST& list) override {}
+	void updateRecords(int id) override {
+		dummy_record.row(id) = dummy;
+		weight_record.row(id) = weight;
+	}
+
+	void appendCoefRecords(LIST& list) override {
+		list["gamma_record"] = dummy_record;
+	}
 
 private:
 	int grid_size;
@@ -249,6 +267,7 @@ private:
 	Eigen::VectorXd weight;
 	Eigen::VectorXd slab;
 	Eigen::VectorXd slab_weight; // pij vector
+	Eigen::MatrixXd dummy_record, weight_record;
 };
 
 /**
@@ -259,14 +278,18 @@ private:
 template <bool isGroup = true>
 class HorseshoeUpdater : public ShrinkageUpdater {
 public:
-	HorseshoeUpdater(const ShrinkageParams& params, const HorseshoeInits& inits)
-	: ShrinkageUpdater(params, inits),
+	HorseshoeUpdater(int num_iter, const ShrinkageParams& params, const HorseshoeInits& inits)
+	: ShrinkageUpdater(num_iter, params, inits),
 		local_lev(inits._local), group_lev(inits._group), global_lev(isGroup ? inits._global : 1.0),
 		shrink_fac(Eigen::VectorXd::Zero(local_lev.size())),
 		latent_local(Eigen::VectorXd::Zero(local_lev.size())),
 		latent_group(Eigen::VectorXd::Zero(group_lev.size())),
 		latent_global(0.0),
-		coef_var(Eigen::VectorXd::Ones(local_lev.size())) {}
+		coef_var(Eigen::VectorXd::Ones(local_lev.size())),
+		global_record(Eigen::VectorXd::Zero(num_iter + 1)),
+		local_record(Eigen::MatrixXd::Zero(num_iter + 1, local_lev.size())),
+		group_record(Eigen::MatrixXd::Zero(num_iter + 1, group_lev.size())),
+		shrink_record(Eigen::MatrixXd::Zero(num_iter + 1, shrink_fac.size())) {}
 	virtual ~HorseshoeUpdater() = default;
 
 	void updateCoefPrec(
@@ -310,7 +333,19 @@ public:
 		prior_chol_prec = 1 / (coef_var.array() * local_lev.array()).square();
 	}
 
-	void appendRecords(LIST& list) override {}
+	void updateRecords(int id) override {
+		shrink_record.row(id) = shrink_fac;
+		local_record.row(id) = local_lev;
+		group_record.row(id) = group_lev;
+		global_record[id] = global_lev;
+	}
+
+	void appendCoefRecords(LIST& list) override {
+		list["lambda_record"] = local_record;
+		list["eta_record"] = group_record;
+		list["tau_record"] = global_record;
+		list["kappa_record"] = shrink_record;
+	}
 
 private:
 	Eigen::VectorXd local_lev;
@@ -321,6 +356,8 @@ private:
 	Eigen::VectorXd latent_group;
 	double latent_global;
 	Eigen::VectorXd coef_var;
+	Eigen::VectorXd global_record;
+	Eigen::MatrixXd local_record, group_record, shrink_record;
 };
 
 /**
@@ -331,15 +368,18 @@ private:
 template <bool isGroup = true>
 class NgUpdater : public ShrinkageUpdater {
 public:
-	NgUpdater(const NgParams& params, const NgInits& inits)
-	: ShrinkageUpdater(params, inits),
+	NgUpdater(int num_iter, const NgParams& params, const NgInits& inits)
+	: ShrinkageUpdater(num_iter, params, inits),
 		mh_sd(params._mh_sd),
 		group_shape(params._group_shape), group_scl(params._group_scl),
 		global_shape(params._global_shape), global_scl(params._global_scl),
 		local_shape(inits._local_shape),
 		local_shape_fac(Eigen::VectorXd::Ones(inits._local.size())),
 		local_lev(inits._local), group_lev(inits._group), global_lev(isGroup ? inits._global : 1.0),
-		coef_var(Eigen::VectorXd::Ones(local_lev.size())) {}
+		coef_var(Eigen::VectorXd::Ones(local_lev.size())),
+		global_record(Eigen::VectorXd::Zero(num_iter + 1)),
+		local_record(Eigen::MatrixXd::Zero(num_iter + 1, local_lev.size())),
+		group_record(Eigen::MatrixXd::Zero(num_iter + 1, group_lev.size())) {}
 	virtual ~NgUpdater() = default;
 	
 	void updateCoefPrec(
@@ -381,7 +421,17 @@ public:
 		prior_chol_prec = 1 / local_lev.array().square();
 	}
 
-	void appendRecords(LIST& list) override {}
+	void updateRecords(int id) override {
+		local_record.row(id) = local_lev;
+		group_record.row(id) = group_lev;
+		global_record[id] = global_lev;
+	}
+
+	void appendCoefRecords(LIST& list) override {
+		list["lambda_record"] = local_record;
+		list["eta_record"] = group_record;
+		list["tau_record"] = global_record;
+	}
 
 private:
 	double mh_sd;
@@ -391,6 +441,8 @@ private:
 	Eigen::VectorXd group_lev;
 	double global_lev;
 	Eigen::VectorXd coef_var;
+	Eigen::VectorXd global_record;
+	Eigen::MatrixXd local_record, group_record;
 };
 
 /**
@@ -401,12 +453,14 @@ private:
 template <bool isGroup = true>
 class DlUpdater : public ShrinkageUpdater {
 public:
-	DlUpdater(const DlParams& params, const HorseshoeInits& inits)
-	: ShrinkageUpdater(params, inits),
+	DlUpdater(int num_iter, const DlParams& params, const HorseshoeInits& inits)
+	: ShrinkageUpdater(num_iter, params, inits),
 		dir_concen(0.0), shape(params._shape), scl(params._scl), grid_size(params._grid_size),
 		local_lev(inits._local), group_lev(inits._group), global_lev(isGroup ? inits._global : 1.0),
 		latent_local(Eigen::VectorXd::Zero(local_lev.size())),
-		coef_var(Eigen::VectorXd::Zero(local_lev.size())) {}
+		coef_var(Eigen::VectorXd::Zero(local_lev.size())),
+		global_record(Eigen::VectorXd::Zero(num_iter + 1)),
+		local_record(Eigen::MatrixXd::Zero(num_iter + 1, local_lev.size())) {}
 	virtual ~DlUpdater() = default;
 	
 	void updateCoefPrec(
@@ -446,7 +500,15 @@ public:
 		prior_chol_prec = 1 / ((group_lev[0] * local_lev.array()).square() * latent_local.array());
 	}
 
-	void appendRecords(LIST& list) override {}
+	void updateRecords(int id) override {
+		local_record.row(id) = local_lev;
+		global_record[id] = global_lev;
+	}
+
+	void appendCoefRecords(LIST& list) override {
+		list["lambda_record"] = local_record;
+		list["tau_record"] = global_record;
+	}
 
 private:
 	double dir_concen, shape, scl;
@@ -456,6 +518,8 @@ private:
 	double global_lev;
 	Eigen::VectorXd latent_local;
 	Eigen::VectorXd coef_var;
+	Eigen::VectorXd global_record;
+	Eigen::MatrixXd local_record;
 };
 
 /**
@@ -466,8 +530,8 @@ private:
 template <bool isGroup = true>
 class GdpUpdater : public ShrinkageUpdater {
 public:
-	GdpUpdater(const GdpParams& params, const GdpInits& inits)
-	: ShrinkageUpdater(params, inits),
+	GdpUpdater(int num_iter, const GdpParams& params, const GdpInits& inits)
+	: ShrinkageUpdater(num_iter, params, inits),
 		shape_grid(params._grid_shape), rate_grid(params._grid_rate),
 		group_rate(inits._group_rate), group_rate_fac(Eigen::VectorXd::Ones(inits._local.size())),
 		gamma_shape(inits._gamma_shape), gamma_rate(inits._gamma_rate),
@@ -507,8 +571,6 @@ public:
 		prior_chol_prec = 1 / local_lev.array();
 	}
 
-	void appendRecords(LIST& list) override {}
-
 private:
 	int shape_grid, rate_grid;
 	Eigen::VectorXd group_rate, group_rate_fac;
@@ -528,7 +590,7 @@ private:
  * @return std::unique_ptr<ShrinkageUpdater> 
  */
 template <bool isGroup = true>
-inline std::unique_ptr<ShrinkageUpdater> initialize_shrinkageupdater(LIST& param_prior, LIST& param_init, int prior_type) {
+inline std::unique_ptr<ShrinkageUpdater> initialize_shrinkageupdater(int num_iter, LIST& param_prior, LIST& param_init, int prior_type) {
 	std::unique_ptr<ShrinkageUpdater> shrinkage_ptr;
 	switch (prior_type) {
 		case 1: {
@@ -541,19 +603,19 @@ inline std::unique_ptr<ShrinkageUpdater> initialize_shrinkageupdater(LIST& param
 				params_ptr = std::make_unique<MinnParams>(param_prior, CAST_INT(param_prior["num"]));
 			}
 			ShrinkageInits inits(param_init);
-			shrinkage_ptr = std::make_unique<MinnUpdater>(*params_ptr, inits);
+			shrinkage_ptr = std::make_unique<MinnUpdater>(num_iter, *params_ptr, inits);
 			return shrinkage_ptr;
 		}
 		case 2: {
 			SsvsParams params(param_prior);
 			SsvsInits inits(param_init);
-			shrinkage_ptr = std::make_unique<SsvsUpdater>(params, inits);
+			shrinkage_ptr = std::make_unique<SsvsUpdater>(num_iter, params, inits);
 			return shrinkage_ptr;
 		}
 		case 3: {
 			ShrinkageParams params(param_prior);
 			HorseshoeInits inits(param_init);
-			shrinkage_ptr = std::make_unique<HorseshoeUpdater<isGroup>>(params, inits);
+			shrinkage_ptr = std::make_unique<HorseshoeUpdater<isGroup>>(num_iter, params, inits);
 			return shrinkage_ptr;
 		}
 		case 4: {
@@ -564,25 +626,25 @@ inline std::unique_ptr<ShrinkageUpdater> initialize_shrinkageupdater(LIST& param
 				params_ptr = std::make_unique<HierminnParams>(param_prior, CAST_INT(param_prior["num"]));
 			}
 			HierminnInits inits(param_init);
-			shrinkage_ptr = std::make_unique<HierminnUpdater>(*params_ptr, inits);
+			shrinkage_ptr = std::make_unique<HierminnUpdater>(num_iter, *params_ptr, inits);
 			return shrinkage_ptr;
 		}
 		case 5: {
 			NgParams params(param_prior);
 			NgInits inits(param_init);
-			shrinkage_ptr = std::make_unique<NgUpdater<isGroup>>(params, inits);
+			shrinkage_ptr = std::make_unique<NgUpdater<isGroup>>(num_iter, params, inits);
 			return shrinkage_ptr;
 		}
 		case 6: {
 			DlParams params(param_prior);
 			HorseshoeInits inits(param_init);
-			shrinkage_ptr = std::make_unique<DlUpdater<isGroup>>(params, inits);
+			shrinkage_ptr = std::make_unique<DlUpdater<isGroup>>(num_iter, params, inits);
 			return shrinkage_ptr;
 		}
 		case 7: {
 			GdpParams params(param_prior);
 			GdpInits inits(param_init);
-			shrinkage_ptr = std::make_unique<GdpUpdater<isGroup>>(params, inits);
+			shrinkage_ptr = std::make_unique<GdpUpdater<isGroup>>(num_iter, params, inits);
 			return shrinkage_ptr;
 		}
 	}

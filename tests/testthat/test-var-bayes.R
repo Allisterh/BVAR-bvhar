@@ -8,7 +8,8 @@ test_that("VAR-Minn-LDLT", {
     p = 1,
     num_iter = 5,
     num_burn = 0,
-    bayes_spec = set_bvar(),
+    coef_spec = set_bvar(),
+    contem_spec = set_bvar(),
     cov_spec = set_ldlt(),
     include_mean = FALSE
   )
@@ -24,7 +25,8 @@ test_that("VAR-HS-LDLT", {
     p = 1,
     num_iter = 5,
     num_burn = 0,
-    bayes_spec = set_horseshoe(),
+    coef_spec = set_horseshoe(),
+    contem_spec = set_horseshoe(),
     cov_spec = set_ldlt(),
     include_mean = FALSE
   )
@@ -41,7 +43,8 @@ test_that("VAR-SSVS-LDLT", {
     p = 1,
     num_iter = 5,
     num_burn = 0,
-    bayes_spec = set_ssvs(),
+    coef_spec = set_ssvs(),
+    contem_spec = set_ssvs(),
     cov_spec = set_ldlt(),
     include_mean = FALSE
   )
@@ -58,7 +61,8 @@ test_that("VAR-Hierminn-LDLT", {
     p = 1,
     num_iter = 5,
     num_burn = 0,
-    bayes_spec = set_bvar(lambda = set_lambda()),
+    coef_spec = set_bvar(lambda = set_lambda()),
+    contem_spec = set_bvar(lambda = set_lambda()),
     cov_spec = set_ldlt(),
     include_mean = FALSE
   )
@@ -74,7 +78,8 @@ test_that("VAR-NG-LDLT", {
     p = 1,
     num_iter = 5,
     num_burn = 0,
-    bayes_spec = set_ng(),
+    coef_spec = set_ng(),
+    contem_spec = set_ng(),
     cov_spec = set_ldlt(),
     include_mean = FALSE
   )
@@ -91,7 +96,8 @@ test_that("VAR-DL-LDLT", {
     p = 1,
     num_iter = 5,
     num_burn = 0,
-    bayes_spec = set_dl(),
+    coef_spec = set_dl(),
+    contem_spec = set_dl(),
     cov_spec = set_ldlt(),
     include_mean = FALSE
   )
@@ -108,7 +114,8 @@ test_that("VAR-GDP-LDLT", {
     p = 1,
     num_iter = 5,
     num_burn = 0,
-    bayes_spec = set_gdp(),
+    coef_spec = set_gdp(),
+    contem_spec = set_gdp(),
     cov_spec = set_ldlt(),
     include_mean = FALSE
   )
@@ -125,7 +132,8 @@ test_that("VAR-Minn-SV", {
     p = 1,
     num_iter = 5,
     num_burn = 0,
-    bayes_spec = set_bvar(),
+    coef_spec = set_bvar(),
+    contem_spec = set_bvar(),
     cov_spec = set_sv(),
     include_mean = FALSE
   )
@@ -141,7 +149,8 @@ test_that("VAR-HS-LDLT", {
     p = 1,
     num_iter = 5,
     num_burn = 0,
-    bayes_spec = set_horseshoe(),
+    coef_spec = set_horseshoe(),
+    contem_spec = set_horseshoe(),
     cov_spec = set_sv(),
     include_mean = FALSE
   )
@@ -158,7 +167,8 @@ test_that("VAR-SSVS-SV", {
     p = 1,
     num_iter = 5,
     num_burn = 0,
-    bayes_spec = set_ssvs(),
+    coef_spec = set_ssvs(),
+    contem_spec = set_ssvs(),
     cov_spec = set_sv(),
     include_mean = FALSE
   )
@@ -175,7 +185,8 @@ test_that("VAR-Hierminn-SV", {
     p = 1,
     num_iter = 5,
     num_burn = 0,
-    bayes_spec = set_bvar(lambda = set_lambda()),
+    coef_spec = set_bvar(lambda = set_lambda()),
+    contem_spec = set_bvar(lambda = set_lambda()),
     cov_spec = set_sv(),
     include_mean = FALSE
   )
@@ -191,7 +202,8 @@ test_that("VAR-NG-SV", {
     p = 1,
     num_iter = 5,
     num_burn = 0,
-    bayes_spec = set_ng(),
+    coef_spec = set_ng(),
+    contem_spec = set_ng(),
     cov_spec = set_sv(),
     include_mean = FALSE
   )
@@ -208,7 +220,8 @@ test_that("VAR-DL-SV", {
     p = 1,
     num_iter = 5,
     num_burn = 0,
-    bayes_spec = set_dl(),
+    coef_spec = set_dl(),
+    contem_spec = set_dl(),
     cov_spec = set_sv(),
     include_mean = FALSE
   )
@@ -216,7 +229,7 @@ test_that("VAR-DL-SV", {
   expect_true(all(c("lambda", "tau") %in% fit_test$param_names))
 })
 
-test_that("VAR-DL-SV", {
+test_that("VAR-GDP-SV", {
   skip_on_cran()
 
   set.seed(1)
@@ -225,7 +238,8 @@ test_that("VAR-DL-SV", {
     p = 1,
     num_iter = 5,
     num_burn = 0,
-    bayes_spec = set_gdp(),
+    coef_spec = set_gdp(),
+    contem_spec = set_gdp(),
     cov_spec = set_sv(),
     include_mean = FALSE
   )

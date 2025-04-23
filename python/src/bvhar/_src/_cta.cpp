@@ -1,4 +1,4 @@
-#include <bvhar/triangular>
+#include <bvhar/deprecated_triangular>
 
 PYBIND11_MODULE(_cta, m) {
 	py::class_<bvhar::CtaRun<bvhar::McmcReg>>(m, "McmcLdlt")

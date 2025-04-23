@@ -27,6 +27,7 @@ Rcpp::List estimate_sur(int num_chains, int num_iter, int num_burn, int thin,
                         Eigen::MatrixXd x, Eigen::MatrixXd y,
 												Rcpp::List param_reg, Rcpp::List param_prior, Rcpp::List param_intercept,
 												Rcpp::List param_init, int prior_type, bool ggl,
+												Rcpp::List contem_prior, Rcpp::List contem_init, int contem_prior_type,
                         Eigen::VectorXi grp_id, Eigen::VectorXi own_id, Eigen::VectorXi cross_id, Eigen::MatrixXi grp_mat,
                         bool include_mean, Eigen::VectorXi seed_chain, bool display_progress, int nthreads) {
 	auto mcmc_run = [&]() -> std::unique_ptr<bvhar::McmcRun> {
@@ -35,6 +36,7 @@ Rcpp::List estimate_sur(int num_chains, int num_iter, int num_burn, int thin,
 				return std::make_unique<bvhar::CtaRun<bvhar::McmcSv, true>>(
 					num_chains, num_iter, num_burn, thin, x, y,
 					param_reg, param_prior, param_intercept, param_init, prior_type,
+					contem_prior, contem_init, contem_prior_type,
 					grp_id, own_id, cross_id, grp_mat,
 					include_mean, seed_chain,
 					display_progress, nthreads
@@ -43,6 +45,7 @@ Rcpp::List estimate_sur(int num_chains, int num_iter, int num_burn, int thin,
 			return std::make_unique<bvhar::CtaRun<bvhar::McmcSv, false>>(
 				num_chains, num_iter, num_burn, thin, x, y,
 				param_reg, param_prior, param_intercept, param_init, prior_type,
+				contem_prior, contem_init, contem_prior_type,
 				grp_id, own_id, cross_id, grp_mat,
 				include_mean, seed_chain,
 				display_progress, nthreads
@@ -52,6 +55,7 @@ Rcpp::List estimate_sur(int num_chains, int num_iter, int num_burn, int thin,
 			return std::make_unique<bvhar::CtaRun<bvhar::McmcReg, true>>(
 				num_chains, num_iter, num_burn, thin, x, y,
 				param_reg, param_prior, param_intercept, param_init, prior_type,
+				contem_prior, contem_init, contem_prior_type,
 				grp_id, own_id, cross_id, grp_mat,
 				include_mean, seed_chain,
 				display_progress, nthreads
@@ -60,6 +64,7 @@ Rcpp::List estimate_sur(int num_chains, int num_iter, int num_burn, int thin,
 		return std::make_unique<bvhar::CtaRun<bvhar::McmcReg, false>>(
 			num_chains, num_iter, num_burn, thin, x, y,
 			param_reg, param_prior, param_intercept, param_init, prior_type,
+			contem_prior, contem_init, contem_prior_type,
 			grp_id, own_id, cross_id, grp_mat,
 			include_mean, seed_chain,
 			display_progress, nthreads
@@ -88,7 +93,7 @@ Rcpp::List estimate_sur(int num_chains, int num_iter, int num_burn, int thin,
 //' @noRd
 // [[Rcpp::export]]
 Rcpp::List forecast_bvarldlt(int num_chains, int var_lag, int step, Eigen::MatrixXd response_mat,
-													 	 bool sparse, double level, Rcpp::List fit_record, int prior_type,
+													 	 bool sparse, double level, Rcpp::List fit_record,
 													 	 Eigen::VectorXi seed_chain, bool include_mean, bool stable, int nthreads) {
 	auto forecaster = std::make_unique<bvhar::McmcForecastRun<bvhar::RegForecaster>>(
 		num_chains, var_lag, step, response_mat,
@@ -118,7 +123,7 @@ Rcpp::List forecast_bvarldlt(int num_chains, int var_lag, int step, Eigen::Matri
 //' @noRd
 // [[Rcpp::export]]
 Rcpp::List forecast_bvharldlt(int num_chains, int month, int step, Eigen::MatrixXd response_mat, Eigen::MatrixXd HARtrans,
-															bool sparse, double level, Rcpp::List fit_record, int prior_type,
+															bool sparse, double level, Rcpp::List fit_record,
 															Eigen::VectorXi seed_chain, bool include_mean, bool stable, int nthreads) {
 	auto forecaster = std::make_unique<bvhar::McmcForecastRun<bvhar::RegForecaster>>(
 		num_chains, month, step, response_mat, HARtrans,
@@ -159,6 +164,7 @@ Rcpp::List forecast_bvharldlt(int num_chains, int month, int step, Eigen::Matrix
 Rcpp::List roll_bvarldlt(Eigen::MatrixXd y, int lag, int num_chains, int num_iter, int num_burn, int thinning,
 											 	 bool sparse, double level, Rcpp::List fit_record, bool run_mcmc,
 											 	 Rcpp::List param_reg, Rcpp::List param_prior, Rcpp::List param_intercept, Rcpp::List param_init, int prior_type, bool ggl,
+												 Rcpp::List contem_prior, Rcpp::List contem_init, int contem_prior_type,
 											 	 Eigen::VectorXi grp_id, Eigen::VectorXi own_id, Eigen::VectorXi cross_id, Eigen::MatrixXi grp_mat,
 											 	 bool include_mean, bool stable, int step, Eigen::MatrixXd y_test,
 											 	 bool get_lpl, Eigen::MatrixXi seed_chain, Eigen::VectorXi seed_forecast, bool display_progress, int nthreads) {
@@ -166,6 +172,7 @@ Rcpp::List roll_bvarldlt(Eigen::MatrixXd y, int lag, int num_chains, int num_ite
 		y, lag, num_chains, num_iter, num_burn, thinning,
 		sparse, level, fit_record, run_mcmc,
 		param_reg, param_prior, param_intercept, param_init, prior_type, ggl,
+		contem_prior, contem_init, contem_prior_type,
 		grp_id, own_id, cross_id, grp_mat, include_mean, stable, step, y_test,
 		get_lpl, seed_chain, seed_forecast, display_progress, nthreads, true
 	);
@@ -203,6 +210,7 @@ Rcpp::List roll_bvarldlt(Eigen::MatrixXd y, int lag, int num_chains, int num_ite
 Rcpp::List roll_bvharldlt(Eigen::MatrixXd y, int week, int month, int num_chains, int num_iter, int num_burn, int thinning,
 													bool sparse, double level, Rcpp::List fit_record, bool run_mcmc,
 											  	Rcpp::List param_reg, Rcpp::List param_prior, Rcpp::List param_intercept, Rcpp::List param_init, int prior_type, bool ggl,
+													Rcpp::List contem_prior, Rcpp::List contem_init, int contem_prior_type,
 											  	Eigen::VectorXi grp_id, Eigen::VectorXi own_id, Eigen::VectorXi cross_id, Eigen::MatrixXi grp_mat,
 													bool include_mean, bool stable, int step, Eigen::MatrixXd y_test,
 											  	bool get_lpl, Eigen::MatrixXi seed_chain, Eigen::VectorXi seed_forecast, bool display_progress, int nthreads) {
@@ -210,6 +218,7 @@ Rcpp::List roll_bvharldlt(Eigen::MatrixXd y, int week, int month, int num_chains
 		y, week, month, num_chains, num_iter, num_burn, thinning,
 		sparse, level, fit_record, run_mcmc,
 		param_reg, param_prior, param_intercept, param_init, prior_type, ggl,
+		contem_prior, contem_init, contem_prior_type,
 		grp_id, own_id, cross_id, grp_mat, include_mean, stable, step, y_test,
 		get_lpl, seed_chain, seed_forecast, display_progress, nthreads, true
 	);
@@ -235,7 +244,7 @@ Rcpp::List roll_bvharldlt(Eigen::MatrixXd y, int week, int month, int num_chains
 //' @noRd
 // [[Rcpp::export]]
 Rcpp::List forecast_bvarsv(int num_chains, int var_lag, int step, Eigen::MatrixXd response_mat,
-													 bool sv, bool sparse, double level, Rcpp::List fit_record, int prior_type,
+													 bool sv, bool sparse, double level, Rcpp::List fit_record,
 													 Eigen::VectorXi seed_chain, bool include_mean, bool stable, int nthreads) {
 	auto forecaster = std::make_unique<bvhar::McmcForecastRun<bvhar::SvForecaster>>(
 		num_chains, var_lag, step, response_mat,
@@ -266,7 +275,7 @@ Rcpp::List forecast_bvarsv(int num_chains, int var_lag, int step, Eigen::MatrixX
 //' @noRd
 // [[Rcpp::export]]
 Rcpp::List forecast_bvharsv(int num_chains, int month, int step, Eigen::MatrixXd response_mat, Eigen::MatrixXd HARtrans,
-														bool sv, bool sparse, double level, Rcpp::List fit_record, int prior_type,
+														bool sv, bool sparse, double level, Rcpp::List fit_record,
 														Eigen::VectorXi seed_chain, bool include_mean, bool stable, int nthreads) {
 	auto forecaster = std::make_unique<bvhar::McmcForecastRun<bvhar::SvForecaster>>(
 		num_chains, month, step, response_mat, HARtrans,
@@ -308,6 +317,7 @@ Rcpp::List forecast_bvharsv(int num_chains, int month, int step, Eigen::MatrixXd
 Rcpp::List roll_bvarsv(Eigen::MatrixXd y, int lag, int num_chains, int num_iter, int num_burn, int thinning,
 											 bool sv, bool sparse, double level, Rcpp::List fit_record, bool run_mcmc,
 											 Rcpp::List param_sv, Rcpp::List param_prior, Rcpp::List param_intercept, Rcpp::List param_init, int prior_type, bool ggl,
+											 Rcpp::List contem_prior, Rcpp::List contem_init, int contem_prior_type,
 											 Eigen::VectorXi grp_id, Eigen::VectorXi own_id, Eigen::VectorXi cross_id, Eigen::MatrixXi grp_mat,
 											 bool include_mean, bool stable, int step, Eigen::MatrixXd y_test,
 											 bool get_lpl, Eigen::MatrixXi seed_chain, Eigen::VectorXi seed_forecast, bool display_progress, int nthreads) {
@@ -315,6 +325,7 @@ Rcpp::List roll_bvarsv(Eigen::MatrixXd y, int lag, int num_chains, int num_iter,
 		y, lag, num_chains, num_iter, num_burn, thinning,
 		sparse, level, fit_record, run_mcmc,
 		param_sv, param_prior, param_intercept, param_init, prior_type, ggl,
+		contem_prior, contem_init, contem_prior_type,
 		grp_id, own_id, cross_id, grp_mat, include_mean, stable, step, y_test,
 		get_lpl, seed_chain, seed_forecast, display_progress, nthreads, sv
 	);
@@ -352,6 +363,7 @@ Rcpp::List roll_bvarsv(Eigen::MatrixXd y, int lag, int num_chains, int num_iter,
 Rcpp::List roll_bvharsv(Eigen::MatrixXd y, int week, int month, int num_chains, int num_iter, int num_burn, int thinning,
 												bool sv, bool sparse, double level, Rcpp::List fit_record, bool run_mcmc,
 											  Rcpp::List param_sv, Rcpp::List param_prior, Rcpp::List param_intercept, Rcpp::List param_init, int prior_type, bool ggl,
+												Rcpp::List contem_prior, Rcpp::List contem_init, int contem_prior_type,
 											  Eigen::VectorXi grp_id, Eigen::VectorXi own_id, Eigen::VectorXi cross_id, Eigen::MatrixXi grp_mat,
 												bool include_mean, bool stable, int step, Eigen::MatrixXd y_test,
 											  bool get_lpl, Eigen::MatrixXi seed_chain, Eigen::VectorXi seed_forecast, bool display_progress, int nthreads) {
@@ -359,6 +371,7 @@ Rcpp::List roll_bvharsv(Eigen::MatrixXd y, int week, int month, int num_chains, 
 		y, week, month, num_chains, num_iter, num_burn, thinning,
 		sparse, level, fit_record, run_mcmc,
 		param_sv, param_prior, param_intercept, param_init, prior_type, ggl,
+		contem_prior, contem_init, contem_prior_type,
 		grp_id, own_id, cross_id, grp_mat, include_mean, stable, step, y_test,
 		get_lpl, seed_chain, seed_forecast, display_progress, nthreads, sv
 	);
@@ -396,6 +409,7 @@ Rcpp::List roll_bvharsv(Eigen::MatrixXd y, int week, int month, int num_chains, 
 Rcpp::List expand_bvarldlt(Eigen::MatrixXd y, int lag, int num_chains, int num_iter, int num_burn, int thinning,
 												 	 bool sparse, double level, Rcpp::List fit_record, bool run_mcmc,
 											 	 	 Rcpp::List param_reg, Rcpp::List param_prior, Rcpp::List param_intercept, Rcpp::List param_init, int prior_type, bool ggl,
+													 Rcpp::List contem_prior, Rcpp::List contem_init, int contem_prior_type,
 											 	 	 Eigen::VectorXi grp_id, Eigen::VectorXi own_id, Eigen::VectorXi cross_id, Eigen::MatrixXi grp_mat,
 												 	 bool include_mean, bool stable, int step, Eigen::MatrixXd y_test,
 											 	 	 bool get_lpl, Eigen::MatrixXi seed_chain, Eigen::VectorXi seed_forecast, bool display_progress, int nthreads) {
@@ -403,6 +417,7 @@ Rcpp::List expand_bvarldlt(Eigen::MatrixXd y, int lag, int num_chains, int num_i
 		y, lag, num_chains, num_iter, num_burn, thinning,
 		sparse, level, fit_record, run_mcmc,
 		param_reg, param_prior, param_intercept, param_init, prior_type, ggl,
+		contem_prior, contem_init, contem_prior_type,
 		grp_id, own_id, cross_id, grp_mat, include_mean, stable, step, y_test,
 		get_lpl, seed_chain, seed_forecast, display_progress, nthreads, true
 	);
@@ -440,6 +455,7 @@ Rcpp::List expand_bvarldlt(Eigen::MatrixXd y, int lag, int num_chains, int num_i
 Rcpp::List expand_bvharldlt(Eigen::MatrixXd y, int week, int month, int num_chains, int num_iter, int num_burn, int thinning,
 														bool sparse, double level, Rcpp::List fit_record, bool run_mcmc,
 											  		Rcpp::List param_reg, Rcpp::List param_prior, Rcpp::List param_intercept, Rcpp::List param_init, int prior_type, bool ggl,
+														Rcpp::List contem_prior, Rcpp::List contem_init, int contem_prior_type,
 											  		Eigen::VectorXi grp_id, Eigen::VectorXi own_id, Eigen::VectorXi cross_id, Eigen::MatrixXi grp_mat,
 														bool include_mean, bool stable, int step, Eigen::MatrixXd y_test,
 											  		bool get_lpl, Eigen::MatrixXi seed_chain, Eigen::VectorXi seed_forecast, bool display_progress, int nthreads) {
@@ -447,6 +463,7 @@ Rcpp::List expand_bvharldlt(Eigen::MatrixXd y, int week, int month, int num_chai
 		y, week, month, num_chains, num_iter, num_burn, thinning,
 		sparse, level, fit_record, run_mcmc,
 		param_reg, param_prior, param_intercept, param_init, prior_type, ggl,
+		contem_prior, contem_init, contem_prior_type,
 		grp_id, own_id, cross_id, grp_mat, include_mean, stable, step, y_test,
 		get_lpl, seed_chain, seed_forecast, display_progress, nthreads, true
 	);
@@ -484,6 +501,7 @@ Rcpp::List expand_bvharldlt(Eigen::MatrixXd y, int week, int month, int num_chai
 Rcpp::List expand_bvarsv(Eigen::MatrixXd y, int lag, int num_chains, int num_iter, int num_burn, int thinning,
 												 bool sv, bool sparse, double level, Rcpp::List fit_record, bool run_mcmc,
 											 	 Rcpp::List param_sv, Rcpp::List param_prior, Rcpp::List param_intercept, Rcpp::List param_init, int prior_type, bool ggl,
+												 Rcpp::List contem_prior, Rcpp::List contem_init, int contem_prior_type,
 											 	 Eigen::VectorXi grp_id, Eigen::VectorXi own_id, Eigen::VectorXi cross_id, Eigen::MatrixXi grp_mat,
 												 bool include_mean, bool stable, int step, Eigen::MatrixXd y_test,
 											 	 bool get_lpl, Eigen::MatrixXi seed_chain, Eigen::VectorXi seed_forecast, bool display_progress, int nthreads) {
@@ -491,6 +509,7 @@ Rcpp::List expand_bvarsv(Eigen::MatrixXd y, int lag, int num_chains, int num_ite
 		y, lag, num_chains, num_iter, num_burn, thinning,
 		sparse, level, fit_record, run_mcmc,
 		param_sv, param_prior, param_intercept, param_init, prior_type, ggl,
+		contem_prior, contem_init, contem_prior_type,
 		grp_id, own_id, cross_id, grp_mat, include_mean, stable, step, y_test,
 		get_lpl, seed_chain, seed_forecast, display_progress, nthreads, sv
 	);
@@ -528,6 +547,7 @@ Rcpp::List expand_bvarsv(Eigen::MatrixXd y, int lag, int num_chains, int num_ite
 Rcpp::List expand_bvharsv(Eigen::MatrixXd y, int week, int month, int num_chains, int num_iter, int num_burn, int thinning,
 													bool sv, bool sparse, double level, Rcpp::List fit_record, bool run_mcmc,
 											  	Rcpp::List param_sv, Rcpp::List param_prior, Rcpp::List param_intercept, Rcpp::List param_init, int prior_type, bool ggl,
+													Rcpp::List contem_prior, Rcpp::List contem_init, int contem_prior_type,
 											  	Eigen::VectorXi grp_id, Eigen::VectorXi own_id, Eigen::VectorXi cross_id, Eigen::MatrixXi grp_mat,
 													bool include_mean, bool stable, int step, Eigen::MatrixXd y_test,
 											  	bool get_lpl, Eigen::MatrixXi seed_chain, Eigen::VectorXi seed_forecast, bool display_progress, int nthreads) {
@@ -535,6 +555,7 @@ Rcpp::List expand_bvharsv(Eigen::MatrixXd y, int week, int month, int num_chains
 		y, week, month, num_chains, num_iter, num_burn, thinning,
 		sparse, level, fit_record, run_mcmc,
 		param_sv, param_prior, param_intercept, param_init, prior_type, ggl,
+		contem_prior, contem_init, contem_prior_type,
 		grp_id, own_id, cross_id, grp_mat, include_mean, stable, step, y_test,
 		get_lpl, seed_chain, seed_forecast, display_progress, nthreads, sv
 	);
@@ -560,11 +581,14 @@ Rcpp::List compute_vharldlt_spillover(int week, int month, int step, Rcpp::List 
 // [[Rcpp::export]]
 Rcpp::List dynamic_bvarldlt_spillover(Eigen::MatrixXd y, int window, int step, int num_chains, int num_iter, int num_burn, int thin, bool sparse,
 																			int lag, Rcpp::List param_reg, Rcpp::List param_prior, Rcpp::List param_intercept, Rcpp::List param_init,
-																			int prior_type, bool ggl, Eigen::VectorXi grp_id, Eigen::VectorXi own_id, Eigen::VectorXi cross_id, Eigen::MatrixXi grp_mat,
+																			int prior_type, bool ggl,
+																			Rcpp::List contem_prior, Rcpp::List contem_init, int contem_prior_type,
+																			Eigen::VectorXi grp_id, Eigen::VectorXi own_id, Eigen::VectorXi cross_id, Eigen::MatrixXi grp_mat,
 																			bool include_mean, Eigen::MatrixXi seed_chain, int nthreads) {
 	auto spillover = std::make_unique<bvhar::DynamicLdltSpillover>(
 		y, window, step, lag, num_chains, num_iter, num_burn, thin, sparse,
 		param_reg, param_prior, param_intercept, param_init, prior_type, ggl,
+		contem_prior, contem_init, contem_prior_type,
 		grp_id, own_id, cross_id, grp_mat,
 		include_mean, seed_chain, nthreads
 	);
@@ -574,11 +598,14 @@ Rcpp::List dynamic_bvarldlt_spillover(Eigen::MatrixXd y, int window, int step, i
 // [[Rcpp::export]]
 Rcpp::List dynamic_bvharldlt_spillover(Eigen::MatrixXd y, int window, int step, int num_chains, int num_iter, int num_burn, int thin, bool sparse,
 																			 int week, int month, Rcpp::List param_reg, Rcpp::List param_prior, Rcpp::List param_intercept, Rcpp::List param_init,
-																			 int prior_type, bool ggl, Eigen::VectorXi grp_id, Eigen::VectorXi own_id, Eigen::VectorXi cross_id, Eigen::MatrixXi grp_mat,
+																			 int prior_type, bool ggl,
+																			 Rcpp::List contem_prior, Rcpp::List contem_init, int contem_prior_type,
+																			 Eigen::VectorXi grp_id, Eigen::VectorXi own_id, Eigen::VectorXi cross_id, Eigen::MatrixXi grp_mat,
 																			 bool include_mean, Eigen::MatrixXi seed_chain, int nthreads) {
 	auto spillover = std::make_unique<bvhar::DynamicLdltSpillover>(
 		y, window, step, week, month, num_chains, num_iter, num_burn, thin, sparse,
 		param_reg, param_prior, param_intercept, param_init, prior_type, ggl,
+		contem_prior, contem_init, contem_prior_type,
 		grp_id, own_id, cross_id, grp_mat,
 		include_mean, seed_chain, nthreads
 	);

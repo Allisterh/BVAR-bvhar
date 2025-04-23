@@ -276,42 +276,47 @@ forecast_roll.ldltmod <- function(object, n_ahead, y_test,
   if (use_fit) {
     fit_ls <- get_records(object, TRUE)
   }
+  param_prior <- get_coefspec(object)
+  prior_type <- enumerate_prior(object$spec_coef$prior)
+  contem_prior <- get_contemspec(object)
+  contem_prior_type <- enumerate_prior(object$spec_contem$prior)
   res_mat <- switch(model_type,
     "bvarldlt" = {
       grp_mat <- object$group
       grp_id <- unique(c(grp_mat))
       own_id <- 2
       cross_id <- seq_len(object$p + 1)[-2]
-      if (is.bvharspec(object$spec)) {
-        param_prior <- append(object$spec, list(p = object$p))
-        if (object$spec$hierarchical) {
-          param_prior$shape <- object$spec$lambda$param[1]
-          param_prior$rate <- object$spec$lambda$param[2]
-          param_prior$grid_size <- object$spec$lambda$grid_size
-          prior_type <- 4
-        } else {
-          prior_type <- 1
-        }
-      } else if (is.ssvsinput(object$spec)) {
-        param_prior <- object$spec
-        prior_type <- 2
-      } else if (is.horseshoespec(object$spec)) {
-        param_prior <- list()
-        prior_type <- 3
-      } else if (is.ngspec(object$spec)) {
-        param_prior <- object$spec
-        prior_type <- 5
-      } else if (is.dlspec(object$spec)) {
-        param_prior <- object$spec
-        prior_type <- 6
-      } else if (is.gdpspec(object$spec)) {
-        param_prior <- object$spec
-        prior_type <- 7
-      }
+      # if (is.bvharspec(object$spec_coef)) {
+      #   param_prior <- append(object$spec_coef, list(p = object$p))
+      #   if (object$spec_coef$hierarchical) {
+      #     param_prior$shape <- object$spec_coef$lambda$param[1]
+      #     param_prior$rate <- object$spec_coef$lambda$param[2]
+      #     param_prior$grid_size <- object$spec_coef$lambda$grid_size
+      #     prior_type <- 4
+      #   } else {
+      #     prior_type <- 1
+      #   }
+      # } else if (is.ssvsinput(object$spec_coef)) {
+      #   param_prior <- object$spec_coef
+      #   prior_type <- 2
+      # } else if (is.horseshoespec(object$spec_coef)) {
+      #   param_prior <- list()
+      #   prior_type <- 3
+      # } else if (is.ngspec(object$spec_coef)) {
+      #   param_prior <- object$spec_coef
+      #   prior_type <- 5
+      # } else if (is.dlspec(object$spec_coef)) {
+      #   param_prior <- object$spec_coef
+      #   prior_type <- 6
+      # } else if (is.gdpspec(object$spec_coef)) {
+      #   param_prior <- object$spec_coef
+      #   prior_type <- 7
+      # }
       roll_bvarldlt(
         y, object$p, num_chains, object$iter, object$burn, object$thin,
         sparse, ci_lev, fit_ls, mcmc,
-        object$sv[c("shape", "scale")], param_prior, object$intercept, object$init, prior_type, object$ggl,
+        object$sv[c("shape", "scale")], param_prior, object$intercept, object$init_coef, prior_type, object$ggl,
+        contem_prior, object$init_contem, contem_prior_type,
         grp_id, own_id, cross_id, grp_mat,
         include_mean, stable, n_ahead, y_test,
         lpl,
@@ -331,36 +336,37 @@ forecast_roll.ldltmod <- function(object, n_ahead, y_test,
         cross_id <- c(1, 3, 4)
       }
       # param_init <- object$init
-      if (is.bvharspec(object$spec)) {
-        param_prior <- append(object$spec, list(p = 3))
-        if (object$spec$hierarchical) {
-          param_prior$shape <- object$spec$lambda$param[1]
-          param_prior$rate <- object$spec$lambda$param[2]
-          param_prior$grid_size <- object$spec$lambda$grid_size
-          prior_type <- 4
-        } else {
-          prior_type <- 1
-        }
-      } else if (is.ssvsinput(object$spec)) {
-        param_prior <- object$spec
-        prior_type <- 2
-      } else if (is.horseshoespec(object$spec)) {
-        param_prior <- list()
-        prior_type <- 3
-      } else if (is.ngspec(object$spec)) {
-        param_prior <- object$spec
-        prior_type <- 5
-      } else if (is.dlspec(object$spec)) {
-        param_prior <- object$spec
-        prior_type <- 6
-      } else if (is.gdpspec(object$spec)) {
-        param_prior <- object$spec
-        prior_type <- 7
-      }
+      # if (is.bvharspec(object$spec_coef)) {
+      #   param_prior <- append(object$spec_coef, list(p = 3))
+      #   if (object$spec_coef$hierarchical) {
+      #     param_prior$shape <- object$spec_coef$lambda$param[1]
+      #     param_prior$rate <- object$spec_coef$lambda$param[2]
+      #     param_prior$grid_size <- object$spec_coef$lambda$grid_size
+      #     prior_type <- 4
+      #   } else {
+      #     prior_type <- 1
+      #   }
+      # } else if (is.ssvsinput(object$spec_coef)) {
+      #   param_prior <- object$spec_coef
+      #   prior_type <- 2
+      # } else if (is.horseshoespec(object$spec)) {
+      #   param_prior <- list()
+      #   prior_type <- 3
+      # } else if (is.ngspec(object$spec_coef)) {
+      #   param_prior <- object$spec_coef
+      #   prior_type <- 5
+      # } else if (is.dlspec(object$spec_coef)) {
+      #   param_prior <- object$spec_coef
+      #   prior_type <- 6
+      # } else if (is.gdpspec(object$spec_coef)) {
+      #   param_prior <- object$spec_coef
+      #   prior_type <- 7
+      # }
       roll_bvharldlt(
         y, object$week, object$month, num_chains, object$iter, object$burn, object$thin,
         sparse, ci_lev, fit_ls, mcmc,
-        object$sv[c("shape", "scale")], param_prior, object$intercept, object$init, prior_type, object$ggl,
+        object$sv[c("shape", "scale")], param_prior, object$intercept, object$init_coef, prior_type, object$ggl,
+        contem_prior, object$init_contem, contem_prior_type,
         grp_id, own_id, cross_id, grp_mat,
         include_mean, stable, n_ahead, y_test,
         lpl,
@@ -474,6 +480,10 @@ forecast_roll.svmod <- function(object, n_ahead, y_test,
   if (use_fit) {
     fit_ls <- get_records(object, TRUE)
   }
+  param_prior <- get_coefspec(object)
+  prior_type <- enumerate_prior(object$spec_coef$prior)
+  contem_prior <- get_contemspec(object)
+  contem_prior_type <- enumerate_prior(object$spec_contem$prior)
   res_mat <- switch(model_type,
     "bvarsv" = {
       grp_mat <- object$group
@@ -481,36 +491,37 @@ forecast_roll.svmod <- function(object, n_ahead, y_test,
       own_id <- 2
       cross_id <- seq_len(object$p + 1)[-2]
       # param_init <- object$init
-      if (is.bvharspec(object$spec)) {
-        param_prior <- append(object$spec, list(p = object$p))
-        if (object$spec$hierarchical) {
-          param_prior$shape <- object$spec$lambda$param[1]
-          param_prior$rate <- object$spec$lambda$param[2]
-          param_prior$grid_size <- object$spec$lambda$grid_size
-          prior_type <- 4
-        } else {
-          prior_type <- 1
-        }
-      } else if (is.ssvsinput(object$spec)) {
-        param_prior <- object$spec
-        prior_type <- 2
-      } else if (is.horseshoespec(object$spec)) {
-        param_prior <- list()
-        prior_type <- 3
-      } else if (is.ngspec(object$spec)) {
-        param_prior <- object$spec
-        prior_type <- 5
-      } else if (is.dlspec(object$spec)) {
-        param_prior <- object$spec
-        prior_type <- 6
-      } else if (is.gdpspec(object$spec)) {
-        param_prior <- object$spec
-        prior_type <- 7
-      }
+      # if (is.bvharspec(object$spec)) {
+      #   param_prior <- append(object$spec, list(p = object$p))
+      #   if (object$spec$hierarchical) {
+      #     param_prior$shape <- object$spec$lambda$param[1]
+      #     param_prior$rate <- object$spec$lambda$param[2]
+      #     param_prior$grid_size <- object$spec$lambda$grid_size
+      #     prior_type <- 4
+      #   } else {
+      #     prior_type <- 1
+      #   }
+      # } else if (is.ssvsinput(object$spec)) {
+      #   param_prior <- object$spec
+      #   prior_type <- 2
+      # } else if (is.horseshoespec(object$spec)) {
+      #   param_prior <- list()
+      #   prior_type <- 3
+      # } else if (is.ngspec(object$spec)) {
+      #   param_prior <- object$spec
+      #   prior_type <- 5
+      # } else if (is.dlspec(object$spec)) {
+      #   param_prior <- object$spec
+      #   prior_type <- 6
+      # } else if (is.gdpspec(object$spec)) {
+      #   param_prior <- object$spec
+      #   prior_type <- 7
+      # }
       roll_bvarsv(
         y, object$p, num_chains, object$iter, object$burn, object$thin,
         use_sv, sparse, ci_lev, fit_ls, mcmc,
-        object$sv[c("shape", "scale", "initial_mean", "initial_prec")], param_prior, object$intercept, object$init, prior_type, object$ggl,
+        object$sv[c("shape", "scale", "initial_mean", "initial_prec")], param_prior, object$intercept, object$init_coef, prior_type, object$ggl,
+        contem_prior, object$init_contem, contem_prior_type,
         grp_id, own_id, cross_id, grp_mat,
         include_mean, stable, n_ahead, y_test,
         lpl,
@@ -530,36 +541,37 @@ forecast_roll.svmod <- function(object, n_ahead, y_test,
         cross_id <- c(1, 3, 4)
       }
       # param_init <- object$init
-      if (is.bvharspec(object$spec)) {
-        param_prior <- append(object$spec, list(p = 3))
-        if (object$spec$hierarchical) {
-          param_prior$shape <- object$spec$lambda$param[1]
-          param_prior$rate <- object$spec$lambda$param[2]
-          param_prior$grid_size <- object$spec$lambda$grid_size
-          prior_type <- 4
-        } else {
-          prior_type <- 1
-        }
-      } else if (is.ssvsinput(object$spec)) {
-        param_prior <- object$spec
-        prior_type <- 2
-      } else if (is.horseshoespec(object$spec)) {
-        param_prior <- list()
-        prior_type <- 3
-      } else if (is.ngspec(object$spec)) {
-        param_prior <- object$spec
-        prior_type <- 5
-      } else if (is.dlspec(object$spec)) {
-        param_prior <- object$spec
-        prior_type <- 6
-      } else if (is.gdpspec(object$spec)) {
-        param_prior <- object$spec
-        prior_type <- 7
-      }
+      # if (is.bvharspec(object$spec)) {
+      #   param_prior <- append(object$spec, list(p = 3))
+      #   if (object$spec$hierarchical) {
+      #     param_prior$shape <- object$spec$lambda$param[1]
+      #     param_prior$rate <- object$spec$lambda$param[2]
+      #     param_prior$grid_size <- object$spec$lambda$grid_size
+      #     prior_type <- 4
+      #   } else {
+      #     prior_type <- 1
+      #   }
+      # } else if (is.ssvsinput(object$spec)) {
+      #   param_prior <- object$spec
+      #   prior_type <- 2
+      # } else if (is.horseshoespec(object$spec)) {
+      #   param_prior <- list()
+      #   prior_type <- 3
+      # } else if (is.ngspec(object$spec)) {
+      #   param_prior <- object$spec
+      #   prior_type <- 5
+      # } else if (is.dlspec(object$spec)) {
+      #   param_prior <- object$spec
+      #   prior_type <- 6
+      # } else if (is.gdpspec(object$spec)) {
+      #   param_prior <- object$spec
+      #   prior_type <- 7
+      # }
       roll_bvharsv(
         y, object$week, object$month, num_chains, object$iter, object$burn, object$thin,
         use_sv, sparse, ci_lev, fit_ls, mcmc,
-        object$sv[c("shape", "scale", "initial_mean", "initial_prec")], param_prior, object$intercept, object$init, prior_type, object$ggl,
+        object$sv[c("shape", "scale", "initial_mean", "initial_prec")], param_prior, object$intercept, object$init_coef, prior_type, object$ggl,
+        contem_prior, object$init_contem, contem_prior_type,
         grp_id, own_id, cross_id, grp_mat,
         include_mean, stable, n_ahead, y_test,
         lpl,
@@ -827,6 +839,10 @@ forecast_expand.ldltmod <- function(object, n_ahead, y_test,
   if (use_fit) {
     fit_ls <- get_records(object, TRUE)
   }
+  param_prior <- get_coefspec(object)
+  prior_type <- enumerate_prior(object$spec_coef$prior)
+  contem_prior <- get_contemspec(object)
+  contem_prior_type <- enumerate_prior(object$spec_contem$prior)
   res_mat <- switch(model_type,
     "bvarldlt" = {
       grp_mat <- object$group
@@ -834,36 +850,37 @@ forecast_expand.ldltmod <- function(object, n_ahead, y_test,
       own_id <- 2
       cross_id <- seq_len(object$p + 1)[-2]
       # param_init <- object$init
-      if (is.bvharspec(object$spec)) {
-        param_prior <- append(object$spec, list(p = object$p))
-        if (object$spec$hierarchical) {
-          param_prior$shape <- object$spec$lambda$param[1]
-          param_prior$rate <- object$spec$lambda$param[2]
-          param_prior$grid_size <- object$spec$lambda$grid_size
-          prior_type <- 4
-        } else {
-          prior_type <- 1
-        }
-      } else if (is.ssvsinput(object$spec)) {
-        param_prior <- object$spec
-        prior_type <- 2
-      } else if (is.horseshoespec(object$spec)) {
-        param_prior <- list()
-        prior_type <- 3
-      } else if (is.ngspec(object$spec)) {
-        param_prior <- object$spec
-        prior_type <- 5
-      } else if (is.dlspec(object$spec)) {
-        param_prior <- object$spec
-        prior_type <- 6
-      } else if (is.gdpspec(object$spec)) {
-        param_prior <- object$spec
-        prior_type <- 7
-      }
+      # if (is.bvharspec(object$spec)) {
+      #   param_prior <- append(object$spec, list(p = object$p))
+      #   if (object$spec$hierarchical) {
+      #     param_prior$shape <- object$spec$lambda$param[1]
+      #     param_prior$rate <- object$spec$lambda$param[2]
+      #     param_prior$grid_size <- object$spec$lambda$grid_size
+      #     prior_type <- 4
+      #   } else {
+      #     prior_type <- 1
+      #   }
+      # } else if (is.ssvsinput(object$spec)) {
+      #   param_prior <- object$spec
+      #   prior_type <- 2
+      # } else if (is.horseshoespec(object$spec)) {
+      #   param_prior <- list()
+      #   prior_type <- 3
+      # } else if (is.ngspec(object$spec)) {
+      #   param_prior <- object$spec
+      #   prior_type <- 5
+      # } else if (is.dlspec(object$spec)) {
+      #   param_prior <- object$spec
+      #   prior_type <- 6
+      # } else if (is.gdpspec(object$spec)) {
+      #   param_prior <- object$spec
+      #   prior_type <- 7
+      # }
       expand_bvarldlt(
         y, object$p, num_chains, object$iter, object$burn, object$thin,
         sparse, ci_lev, fit_ls, mcmc,
-        object$sv[c("shape", "scale")], param_prior, object$intercept, object$init, prior_type, object$ggl,
+        object$sv[c("shape", "scale")], param_prior, object$intercept, object$init_coef, prior_type, object$ggl,
+        contem_prior, object$init_contem, contem_prior_type,
         grp_id, own_id, cross_id, grp_mat,
         include_mean, stable, n_ahead, y_test,
         lpl,
@@ -883,36 +900,37 @@ forecast_expand.ldltmod <- function(object, n_ahead, y_test,
         cross_id <- c(1, 3, 4)
       }
       # param_init <- object$init
-      if (is.bvharspec(object$spec)) {
-        param_prior <- append(object$spec, list(p = 3))
-        if (object$spec$hierarchical) {
-          param_prior$shape <- object$spec$lambda$param[1]
-          param_prior$rate <- object$spec$lambda$param[2]
-          param_prior$grid_size <- object$spec$lambda$grid_size
-          prior_type <- 4
-        } else {
-          prior_type <- 1
-        }
-      } else if (is.ssvsinput(object$spec)) {
-        param_prior <- object$spec
-        prior_type <- 2
-      } else if (is.horseshoespec(object$spec)) {
-        param_prior <- list()
-        prior_type <- 3
-      } else if (is.ngspec(object$spec)) {
-        param_prior <- object$spec
-        prior_type <- 5
-      } else if (is.dlspec(object$spec)) {
-        param_prior <- object$spec
-        prior_type <- 6
-      } else if (is.gdpspec(object$spec)) {
-        param_prior <- object$spec
-        prior_type <- 7
-      }
+      # if (is.bvharspec(object$spec)) {
+      #   param_prior <- append(object$spec, list(p = 3))
+      #   if (object$spec$hierarchical) {
+      #     param_prior$shape <- object$spec$lambda$param[1]
+      #     param_prior$rate <- object$spec$lambda$param[2]
+      #     param_prior$grid_size <- object$spec$lambda$grid_size
+      #     prior_type <- 4
+      #   } else {
+      #     prior_type <- 1
+      #   }
+      # } else if (is.ssvsinput(object$spec)) {
+      #   param_prior <- object$spec
+      #   prior_type <- 2
+      # } else if (is.horseshoespec(object$spec)) {
+      #   param_prior <- list()
+      #   prior_type <- 3
+      # } else if (is.ngspec(object$spec)) {
+      #   param_prior <- object$spec
+      #   prior_type <- 5
+      # } else if (is.dlspec(object$spec)) {
+      #   param_prior <- object$spec
+      #   prior_type <- 6
+      # } else if (is.gdpspec(object$spec)) {
+      #   param_prior <- object$spec
+      #   prior_type <- 7
+      # }
       expand_bvharldlt(
         y, object$week, object$month, num_chains, object$iter, object$burn, object$thin,
         sparse, ci_lev, fit_ls, mcmc,
-        object$sv[c("shape", "scale")], param_prior, object$intercept, object$init, prior_type, object$ggl,
+        object$sv[c("shape", "scale")], param_prior, object$intercept, object$init_coef, prior_type, object$ggl,
+        contem_prior, object$init_contem, contem_prior_type,
         grp_id, own_id, cross_id, grp_mat,
         include_mean, stable, n_ahead, y_test,
         lpl,
@@ -1020,6 +1038,10 @@ forecast_expand.svmod <- function(object, n_ahead, y_test,
   if (use_fit) {
     fit_ls <- get_records(object, TRUE)
   }
+  param_prior <- get_coefspec(object)
+  prior_type <- enumerate_prior(object$spec_coef$prior)
+  contem_prior <- get_contemspec(object)
+  contem_prior_type <- enumerate_prior(object$spec_contem$prior)
   res_mat <- switch(model_type,
     "bvarsv" = {
       grp_mat <- object$group
@@ -1027,36 +1049,37 @@ forecast_expand.svmod <- function(object, n_ahead, y_test,
       own_id <- 2
       cross_id <- seq_len(object$p + 1)[-2]
       # param_init <- object$init
-      if (is.bvharspec(object$spec)) {
-        param_prior <- append(object$spec, list(p = object$p))
-        if (object$spec$hierarchical) {
-          param_prior$shape <- object$spec$lambda$param[1]
-          param_prior$rate <- object$spec$lambda$param[2]
-          param_prior$grid_size <- object$spec$lambda$grid_size
-          prior_type <- 4
-        } else {
-          prior_type <- 1
-        }
-      } else if (is.ssvsinput(object$spec)) {
-        param_prior <- object$spec
-        prior_type <- 2
-      } else if (is.horseshoespec(object$spec)) {
-        param_prior <- list()
-        prior_type <- 3
-      } else if (is.ngspec(object$spec)) {
-        param_prior <- object$spec
-        prior_type <- 5
-      } else if (is.dlspec(object$spec)) {
-        param_prior <- object$spec
-        prior_type <- 6
-      } else if (is.gdpspec(object$spec)) {
-        param_prior <- object$spec
-        prior_type <- 7
-      }
+      # if (is.bvharspec(object$spec)) {
+      #   param_prior <- append(object$spec, list(p = object$p))
+      #   if (object$spec$hierarchical) {
+      #     param_prior$shape <- object$spec$lambda$param[1]
+      #     param_prior$rate <- object$spec$lambda$param[2]
+      #     param_prior$grid_size <- object$spec$lambda$grid_size
+      #     prior_type <- 4
+      #   } else {
+      #     prior_type <- 1
+      #   }
+      # } else if (is.ssvsinput(object$spec)) {
+      #   param_prior <- object$spec
+      #   prior_type <- 2
+      # } else if (is.horseshoespec(object$spec)) {
+      #   param_prior <- list()
+      #   prior_type <- 3
+      # } else if (is.ngspec(object$spec)) {
+      #   param_prior <- object$spec
+      #   prior_type <- 5
+      # } else if (is.dlspec(object$spec)) {
+      #   param_prior <- object$spec
+      #   prior_type <- 6
+      # } else if (is.gdpspec(object$spec)) {
+      #   param_prior <- object$spec
+      #   prior_type <- 7
+      # }
       expand_bvarsv(
         y, object$p, num_chains, object$iter, object$burn, object$thin,
         use_sv, sparse, ci_lev, fit_ls, mcmc,
-        object$sv[c("shape", "scale", "initial_mean", "initial_prec")], param_prior, object$intercept, object$init, prior_type, object$ggl,
+        object$sv[c("shape", "scale", "initial_mean", "initial_prec")], param_prior, object$intercept, object$init_coef, prior_type, object$ggl,
+        contem_prior, object$init_contem, contem_prior_type,
         grp_id, own_id, cross_id, grp_mat,
         include_mean, stable, n_ahead, y_test,
         lpl,
@@ -1076,36 +1099,37 @@ forecast_expand.svmod <- function(object, n_ahead, y_test,
         cross_id <- c(1, 3, 4)
       }
       # param_init <- object$init
-      if (is.bvharspec(object$spec)) {
-        param_prior <- append(object$spec, list(p = 3))
-        if (object$spec$hierarchical) {
-          param_prior$shape <- object$spec$lambda$param[1]
-          param_prior$rate <- object$spec$lambda$param[2]
-          param_prior$grid_size <- object$spec$lambda$grid_size
-          prior_type <- 4
-        } else {
-          prior_type <- 1
-        }
-      } else if (is.ssvsinput(object$spec)) {
-        param_prior <- object$spec
-        prior_type <- 2
-      } else if (is.horseshoespec(object$spec)) {
-        param_prior <- list()
-        prior_type <- 3
-      } else if (is.ngspec(object$spec)) {
-        param_prior <- object$spec
-        prior_type <- 5
-      } else if (is.dlspec(object$spec)) {
-        param_prior <- object$spec
-        prior_type <- 6
-      } else if (is.gdpspec(object$spec)) {
-        param_prior <- object$spec
-        prior_type <- 7
-      }
+      # if (is.bvharspec(object$spec)) {
+      #   param_prior <- append(object$spec, list(p = 3))
+      #   if (object$spec$hierarchical) {
+      #     param_prior$shape <- object$spec$lambda$param[1]
+      #     param_prior$rate <- object$spec$lambda$param[2]
+      #     param_prior$grid_size <- object$spec$lambda$grid_size
+      #     prior_type <- 4
+      #   } else {
+      #     prior_type <- 1
+      #   }
+      # } else if (is.ssvsinput(object$spec)) {
+      #   param_prior <- object$spec
+      #   prior_type <- 2
+      # } else if (is.horseshoespec(object$spec)) {
+      #   param_prior <- list()
+      #   prior_type <- 3
+      # } else if (is.ngspec(object$spec)) {
+      #   param_prior <- object$spec
+      #   prior_type <- 5
+      # } else if (is.dlspec(object$spec)) {
+      #   param_prior <- object$spec
+      #   prior_type <- 6
+      # } else if (is.gdpspec(object$spec)) {
+      #   param_prior <- object$spec
+      #   prior_type <- 7
+      # }
       expand_bvharsv(
         y, object$week, object$month, num_chains, object$iter, object$burn, object$thin,
         use_sv, sparse, ci_lev, fit_ls, mcmc,
-        object$sv[c("shape", "scale", "initial_mean", "initial_prec")], param_prior, object$intercept, object$init, prior_type, object$ggl,
+        object$sv[c("shape", "scale", "initial_mean", "initial_prec")], param_prior, object$intercept, object$init_coef, prior_type, object$ggl,
+        contem_prior, object$init_contem, contem_prior_type,
         grp_id, own_id, cross_id, grp_mat,
         include_mean, stable, n_ahead, y_test,
         lpl,

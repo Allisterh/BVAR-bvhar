@@ -419,25 +419,25 @@ predict.bvarldlt <- function(object, n_ahead, level = .05, stable = FALSE, num_t
   if (num_thread > num_chains && num_chains != 1) {
     warning("'num_thread' > 'num_chains' will not use every thread. Specify as 'num_thread' <= 'num_chains'.")
   }
-  prior_nm <- object$spec$prior
+  # prior_nm <- object$spec$prior
   # ci_lev <- NULL
   ci_lev <- 0
   if (is.numeric(sparse)) {
     ci_lev <- sparse
     sparse <- FALSE
-    prior_nm <- "ci"
+    # prior_nm <- "ci"
   }
   fit_ls <- get_records(object, TRUE)
-  prior_type <- switch(prior_nm,
-    "ci" = 0,
-    "Minnesota" = 1,
-    "SSVS" = 2,
-    "Horseshoe" = 3,
-    "MN_Hierarchical" = 4,
-    "NG" = 5,
-    "DL" = 6,
-    "GDP" = 7
-  )
+  # prior_type <- switch(prior_nm,
+  #   "ci" = 0,
+  #   "Minnesota" = 1,
+  #   "SSVS" = 2,
+  #   "Horseshoe" = 3,
+  #   "MN_Hierarchical" = 4,
+  #   "NG" = 5,
+  #   "DL" = 6,
+  #   "GDP" = 7
+  # )
   pred_res <- forecast_bvarldlt(
     num_chains,
     object$p,
@@ -446,7 +446,6 @@ predict.bvarldlt <- function(object, n_ahead, level = .05, stable = FALSE, num_t
     sparse,
     ci_lev,
     fit_ls,
-    prior_type,
     sample.int(.Machine$integer.max, size = num_chains),
     object$type == "const",
     stable,
@@ -530,24 +529,24 @@ predict.bvharldlt <- function(object, n_ahead, level = .05, stable = FALSE, num_
   if (num_thread > num_chains && num_chains != 1) {
     warning("'num_thread' > 'num_chains' will not use every thread. Specify as 'num_thread' <= 'num_chains'.")
   }
-  prior_nm <- object$spec$prior
+  # prior_nm <- object$spec$prior
   ci_lev <- 0
   if (is.numeric(sparse)) {
     ci_lev <- sparse
     sparse <- FALSE
-    prior_nm <- "ci"
+    # prior_nm <- "ci"
   }
   fit_ls <- get_records(object, TRUE)
-  prior_type <- switch(prior_nm,
-    "ci" = 0,
-    "Minnesota" = 1,
-    "SSVS" = 2,
-    "Horseshoe" = 3,
-    "MN_Hierarchical" = 4,
-    "NG" = 5,
-    "DL" = 6,
-    "GDP" = 7
-  )
+  # prior_type <- switch(prior_nm,
+  #   "ci" = 0,
+  #   "Minnesota" = 1,
+  #   "SSVS" = 2,
+  #   "Horseshoe" = 3,
+  #   "MN_Hierarchical" = 4,
+  #   "NG" = 5,
+  #   "DL" = 6,
+  #   "GDP" = 7
+  # )
   pred_res <- forecast_bvharldlt(
     num_chains,
     object$month,
@@ -557,7 +556,6 @@ predict.bvharldlt <- function(object, n_ahead, level = .05, stable = FALSE, num_
     sparse,
     ci_lev,
     fit_ls,
-    prior_type,
     sample.int(.Machine$integer.max, size = num_chains),
     object$type == "const",
     stable,
@@ -645,25 +643,25 @@ predict.bvarsv <- function(object, n_ahead, level = .05, stable = FALSE, num_thr
   if (num_thread > num_chains && num_chains != 1) {
     warning("'num_thread' > 'num_chains' will not use every thread. Specify as 'num_thread' <= 'num_chains'.")
   }
-  prior_nm <- object$spec$prior
+  # prior_nm <- object$spec$prior
   # ci_lev <- NULL
   ci_lev <- 0
   if (is.numeric(sparse)) {
     ci_lev <- sparse
     sparse <- FALSE
-    prior_nm <- "ci"
+    # prior_nm <- "ci"
   }
   fit_ls <- get_records(object, TRUE)
-  prior_type <- switch(prior_nm,
-    "ci" = 0,
-    "Minnesota" = 1,
-    "SSVS" = 2,
-    "Horseshoe" = 3,
-    "MN_Hierarchical" = 4,
-    "NG" = 5,
-    "DL" = 6,
-    "GDP" = 7
-  )
+  # prior_type <- switch(prior_nm,
+  #   "ci" = 0,
+  #   "Minnesota" = 1,
+  #   "SSVS" = 2,
+  #   "Horseshoe" = 3,
+  #   "MN_Hierarchical" = 4,
+  #   "NG" = 5,
+  #   "DL" = 6,
+  #   "GDP" = 7
+  # )
   pred_res <- forecast_bvarsv(
     num_chains,
     object$p,
@@ -673,7 +671,6 @@ predict.bvarsv <- function(object, n_ahead, level = .05, stable = FALSE, num_thr
     sparse,
     ci_lev,
     fit_ls,
-    prior_type,
     sample.int(.Machine$integer.max, size = num_chains),
     object$type == "const",
     stable,
@@ -758,25 +755,25 @@ predict.bvharsv <- function(object, n_ahead, level = .05, stable = FALSE, num_th
   if (num_thread > num_chains && num_chains != 1) {
     warning("'num_thread' > 'num_chains' will not use every thread. Specify as 'num_thread' <= 'num_chains'.")
   }
-  prior_nm <- object$spec$prior
+  # prior_nm <- object$spec$prior
   # ci_lev <- NULL
   ci_lev <- 0
   if (is.numeric(sparse)) {
     ci_lev <- sparse
     sparse <- FALSE
-    prior_nm <- "ci"
+    # prior_nm <- "ci"
   }
   fit_ls <- get_records(object, TRUE)
-  prior_type <- switch(prior_nm,
-    "ci" = 0,
-    "Minnesota" = 1,
-    "SSVS" = 2,
-    "Horseshoe" = 3,
-    "MN_Hierarchical" = 4,
-    "NG" = 5,
-    "DL" = 6,
-    "GDP" = 7
-  )
+  # prior_type <- switch(prior_nm,
+  #   "ci" = 0,
+  #   "Minnesota" = 1,
+  #   "SSVS" = 2,
+  #   "Horseshoe" = 3,
+  #   "MN_Hierarchical" = 4,
+  #   "NG" = 5,
+  #   "DL" = 6,
+  #   "GDP" = 7
+  # )
   pred_res <- forecast_bvharsv(
     num_chains,
     object$month,
@@ -787,7 +784,6 @@ predict.bvharsv <- function(object, n_ahead, level = .05, stable = FALSE, num_th
     sparse,
     ci_lev,
     fit_ls,
-    prior_type,
     sample.int(.Machine$integer.max, size = num_chains),
     object$type == "const",
     stable,

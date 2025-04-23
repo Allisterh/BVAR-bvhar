@@ -55,7 +55,8 @@ help_var_bayes_roll <- function(bayes_spec, cov_spec, sparse) {
     p = 1,
     num_iter = 3,
     num_burn = 0,
-    bayes_spec = bayes_spec,
+    coef_spec = bayes_spec,
+    contem_spec = bayes_spec,
     cov_spec = cov_spec,
     include_mean = TRUE
   )
@@ -72,7 +73,8 @@ help_vhar_bayes_roll <- function(bayes_spec, cov_spec, sparse) {
     etf_train,
     num_iter = 3,
     num_burn = 0,
-    bayes_spec = bayes_spec,
+    coef_spec = bayes_spec,
+    contem_spec = bayes_spec,
     cov_spec = cov_spec,
     include_mean = TRUE
   )
@@ -90,7 +92,8 @@ help_var_bayes_expand <- function(bayes_spec, cov_spec, sparse) {
     p = 1,
     num_iter = 3,
     num_burn = 0,
-    bayes_spec = bayes_spec,
+    coef_spec = bayes_spec,
+    contem_spec = bayes_spec,
     cov_spec = cov_spec,
     include_mean = TRUE
   )
@@ -107,7 +110,8 @@ help_vhar_bayes_expand <- function(bayes_spec, cov_spec, sparse) {
     etf_train,
     num_iter = 3,
     num_burn = 0,
-    bayes_spec = bayes_spec,
+    coef_spec = bayes_spec,
+    contem_spec = bayes_spec,
     cov_spec = cov_spec,
     include_mean = TRUE
   )

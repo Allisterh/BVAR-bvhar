@@ -1,5 +1,9 @@
 # bvhar (development version)
 
+* Changed `bayes_spec` argument into `coef_spec` and `contem_spec` to enable different priors
+
+* In C++, added `shrinkage` headers for strategy design pattern.
+
 * Added `mcmc` option in `forecast_roll()` and `forecast_expand()` for `ldltmod` and `svmod` classes.
 
 * In C++ side, added `McmcParams`, `McmcAlgo`, and `McmcRun` (changed original `McmcRun` to `CtaRun`) for extensibility of MCMC algorithms.

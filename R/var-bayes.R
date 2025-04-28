@@ -499,7 +499,8 @@ var_bayes <- function(y,
       cov_spec$initial_mean <- rep(cov_spec$initial_mean, dim_data)
     }
     if (length(cov_spec$initial_prec) == 1) {
-      cov_spec$initial_prec <- cov_spec$initial_prec * diag(dim_data)
+      # cov_spec$initial_prec <- cov_spec$initial_prec * diag(dim_data)
+      cov_spec$initial_prec <- rep(cov_spec$initial_prec, dim_data)
     }
     param_init <- lapply(
       param_init,

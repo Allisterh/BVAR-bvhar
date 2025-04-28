@@ -91,24 +91,20 @@ inline void varsv_sigh(Eigen::VectorXd& sv_sig, Eigen::VectorXd& shp, Eigen::Vec
 // In MCMC, this function samples h0 in VAR-SV.
 // 
 // @param prior_mean Prior mean vector of h0.
-// @param prior_prec Prior precision matrix of h0.
+// @param prior_prec Prior precision of h0.
 // @param init_sv Initial log volatility
 // @param h1 h1
-// @param sv_sig Variance of log volatility
-inline void varsv_h0(Eigen::VectorXd& h0, Eigen::VectorXd& prior_mean, Eigen::MatrixXd& prior_prec,
-              			 Eigen::VectorXd h1, Eigen::VectorXd& sv_sig, BHRNG& rng) {
+// @param sv_prec Precision of log volatility
+inline void varsv_h0(Eigen::Ref<Eigen::VectorXd> h0, Eigen::Ref<Eigen::VectorXd> prior_mean, Eigen::Ref<Eigen::VectorXd> prior_prec,
+										 Eigen::Ref<const Eigen::VectorXd> h1, Eigen::Ref<const Eigen::VectorXd> sv_prec, BHRNG& rng) {
   int dim = h1.size();
   Eigen::VectorXd res(dim);
-  for (int i = 0; i < dim; i++) {
+  for (int i = 0; i < dim; ++i) {
 		res[i] = normal_rand(rng);
   }
-  Eigen::MatrixXd post_h0_prec(dim, dim); // k_h0
-  Eigen::MatrixXd h_diagprec = Eigen::MatrixXd::Zero(dim, dim); // diag(1 / sigma_h^2)
-  h_diagprec.diagonal() = 1 / sv_sig.array();
-  Eigen::MatrixXd post_h0_sig = prior_prec + h_diagprec;
-  Eigen::LLT<Eigen::MatrixXd> lltOfscale(post_h0_sig);
-  Eigen::VectorXd post_mean = lltOfscale.solve(prior_prec * prior_mean + h_diagprec * h1);
-	h0 = post_mean + lltOfscale.matrixU().solve(res);
+	Eigen::LLT<Eigen::MatrixXd> llt_of_prec(prior_prec.asDiagonal() + sv_prec.asDiagonal());
+  Eigen::VectorXd post_mean = llt_of_prec.solve(prior_prec.cwiseProduct(prior_mean) + sv_prec.cwiseProduct(h1));
+	h0 = post_mean + llt_of_prec.matrixU().solve(res);
 }
 
 } // namespace bvhar

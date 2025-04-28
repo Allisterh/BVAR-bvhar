@@ -69,7 +69,7 @@ struct RegParams : McmcParams {
  */
 struct SvParams : public RegParams {
 	Eigen::VectorXd _init_mean;
-	Eigen::MatrixXd _init_prec;
+	Eigen::VectorXd _init_prec;
 
 	SvParams(
 		int num_iter, const Eigen::MatrixXd& x, const Eigen::MatrixXd& y,
@@ -81,7 +81,7 @@ struct SvParams : public RegParams {
 	)
 	: RegParams(num_iter, x, y, spec, own_id, cross_id, grp_id, grp_mat, intercept, include_mean),
 		_init_mean(CAST<Eigen::VectorXd>(spec["initial_mean"])),
-		_init_prec(CAST<Eigen::MatrixXd>(spec["initial_prec"])) {}
+		_init_prec(CAST<Eigen::VectorXd>(spec["initial_prec"])) {}
 };
 
 /**

@@ -399,7 +399,7 @@ protected:
 			varsv_ht(lvol_draw.col(t), lvol_init[t], lvol_sig[t], ortho_latent.col(t), rng);
 		}
 		varsv_sigh(lvol_sig, prior_sig_shp, prior_sig_scl, lvol_init, lvol_draw, rng);
-		varsv_h0(lvol_init, prior_init_mean, prior_init_prec, lvol_draw.row(0), lvol_sig, rng);
+		varsv_h0(lvol_init, prior_init_mean, prior_init_prec, lvol_draw.row(0), 1 / lvol_sig.array(), rng);
 	}
 	void updateSv() override { sqrt_sv = (lvol_draw / 2).array().exp(); }
 	void updateCoefRecords() override {
@@ -413,7 +413,7 @@ private:
 	Eigen::VectorXd lvol_init;
 	Eigen::VectorXd lvol_sig;
 	Eigen::VectorXd prior_init_mean;
-	Eigen::MatrixXd prior_init_prec;
+	Eigen::VectorXd prior_init_prec;
 };
 
 /**

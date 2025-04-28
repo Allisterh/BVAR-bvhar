@@ -64,7 +64,7 @@ public:
 		// reg_record->assignRecords(0, coef_vec, contem_coef, diag_vec);
 		sparse_record.assignRecords(0, sparse_coef, sparse_contem);
 		coef_updater->updateRecords(0);
-		// contem_updater->updateRecords(0);
+		contem_updater->updateRecords(0);
 	}
 	virtual ~McmcTriangular() = default;
 
@@ -75,7 +75,7 @@ public:
 	 */
 	void appendRecords(LIST& list) {
 		coef_updater->appendCoefRecords(list);
-		// contem_updater->appendContemRecords(list);
+		contem_updater->appendContemRecords(list);
 	}
 
 	void doWarmUp() override {
@@ -248,8 +248,8 @@ protected:
 	 */
 	void updateRecords() {
 		updateCoefRecords();
-		// coef_updater->updateRecords(mcmc_step);
-		// contem_updater->updateRecords(mcmc_step);
+		coef_updater->updateRecords(mcmc_step);
+		contem_updater->updateRecords(mcmc_step);
 	}
 	// virtual void updateRecords() = 0;
 

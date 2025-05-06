@@ -25,16 +25,9 @@ class McmcRun;
  */
 struct McmcParams {
 	int _iter;
-	Eigen::MatrixXd _x, _y;
-	bool _mean;
-	int _dim, _dim_design, _num_design, _num_lowerchol, _num_coef, _num_alpha, _nrow;
 
-	McmcParams(int num_iter, const Eigen::MatrixXd& x, const Eigen::MatrixXd& y, bool include_mean)
-	: _iter(num_iter), _x(x), _y(y),
-		_mean(include_mean),
-		_dim(y.cols()), _dim_design(x.cols()), _num_design(y.rows()),
-		_num_lowerchol(_dim * (_dim - 1) / 2), _num_coef(_dim * _dim_design),
-		_num_alpha(_mean ? _num_coef - _dim : _num_coef), _nrow(_num_alpha / _dim) {}
+	McmcParams(int num_iter)
+	: _iter(num_iter) {}
 };
 
 /**
@@ -46,10 +39,7 @@ struct McmcParams {
 class McmcAlgo {
 public:
 	McmcAlgo(const McmcParams& params, unsigned int seed)
-	: include_mean(params._mean), x(params._x), y(params._y),
-		num_iter(params._iter), dim(params._dim), dim_design(params._dim_design), num_design(params._num_design),
-		num_lowerchol(params._num_lowerchol), num_coef(params._num_coef), num_alpha(params._num_alpha), nrow_coef(params._nrow),
-		mcmc_step(0), rng(seed) {}
+	: num_iter(params._iter), mcmc_step(0), rng(seed) {}
 	virtual ~McmcAlgo() = default;
 	
 	/**
@@ -75,17 +65,7 @@ public:
 
 protected:
 	std::mutex mtx;
-	bool include_mean;
-	Eigen::MatrixXd x;
-	Eigen::MatrixXd y;
 	int num_iter;
-	int dim; // k
-  int dim_design; // kp(+1)
-  int num_design; // n = T - p
-  int num_lowerchol;
-  int num_coef;
-	int num_alpha;
-	int nrow_coef;
 	std::atomic<int> mcmc_step; // MCMC step
 	BHRNG rng; // RNG instance for multi-chain
 

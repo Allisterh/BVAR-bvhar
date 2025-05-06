@@ -34,6 +34,9 @@ public:
 		unsigned int seed
 	)
 	: McmcAlgo(params, seed),
+		include_mean(params._mean), x(params._x), y(params._y),
+		dim(params._dim), dim_design(params._dim_design), num_design(params._num_design),
+		num_lowerchol(params._num_lowerchol), num_coef(params._num_coef), num_alpha(params._num_alpha), nrow_coef(params._nrow),
 		coef_updater(std::move(coef_prior)), contem_updater(std::move(contem_prior)),
 		own_id(params._own_id), grp_id(params._grp_id), grp_vec(params._grp_vec), num_grp(grp_id.size()),
 		// reg_record(std::make_unique<RegRecords>(num_iter, dim, num_design, num_coef, num_lowerchol)),
@@ -158,6 +161,16 @@ public:
 	}
 
 protected:
+	bool include_mean;
+	Eigen::MatrixXd x;
+	Eigen::MatrixXd y;
+	int dim; // k
+  int dim_design; // kp(+1)
+  int num_design; // n = T - p
+  int num_lowerchol;
+  int num_coef;
+	int num_alpha;
+	int nrow_coef;
 	std::unique_ptr<ShrinkageUpdater> coef_updater;
 	std::unique_ptr<ShrinkageUpdater> contem_updater;
 	std::set<int> own_id;

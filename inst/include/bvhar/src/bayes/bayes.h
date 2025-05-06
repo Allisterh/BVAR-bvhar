@@ -39,7 +39,7 @@ struct McmcParams {
 class McmcAlgo {
 public:
 	McmcAlgo(const McmcParams& params, unsigned int seed)
-	: mcmc_step(0), rng(seed) {}
+	: num_iter(params._iter), mcmc_step(0), rng(seed) {}
 	virtual ~McmcAlgo() = default;
 	
 	/**

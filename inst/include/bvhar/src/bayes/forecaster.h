@@ -8,7 +8,8 @@ namespace bvhar {
 
 template <typename ReturnType, typename DataType> class BayesForecaster;
 template <typename ReturnType, typename DataType> class McmcForecastRun;
-template <typename ReturnType, typename DataType> class McmcOutforecastRun;
+class McmcOutforecastInterface;
+template <typename ReturnType, typename DataType, bool isUpdate> class McmcOutforecastRun;
 
 /**
  * @brief Base class for forecaster of Bayesian methods
@@ -168,29 +169,11 @@ protected:
 	std::vector<std::unique_ptr<BayesForecaster<ReturnType, DataType>>> forecaster;
 };
 
-/**
- * @brief Base class for pseudo out-of-sample forecasting
- * 
- * @tparam ReturnType 
- * @tparam DataType 
- */
-template <typename ReturnType = Eigen::MatrixXd, typename DataType = Eigen::VectorXd>
-class McmcOutForecastRun {
+class McmcOutforecastInterface {
 public:
-	McmcOutForecastRun(
-		int num_window, int num_test, int num_horizon, int lag,
-		int num_chains, int num_iter, int num_burn, int thin,
-		int step, const ReturnType& y_test, bool get_lpl,
-		const Eigen::MatrixXi& seed_chain, const Eigen::VectorXi& seed_forecast, bool display_progress, int nthreads
-	)
-	: num_window(num_window), num_test(num_test), num_horizon(num_horizon), step(step),
-		lag(lag), num_chains(num_chains), num_iter(num_iter), num_burn(num_burn), thin(thin), nthreads(nthreads),
-		get_lpl(get_lpl), display_progress(display_progress),
-		seed_forecast(seed_forecast),
-		model(num_horizon), forecaster(num_horizon),
-		out_forecast(num_horizon, std::vector<ReturnType>(num_chains)) {}
-	virtual ~McmcOutForecastRun() = default;
-
+	McmcOutforecastInterface() {}
+	virtual ~McmcOutforecastInterface() = default;
+	
 	/**
 	 * @brief Out-of-sample forecasting
 	 * 
@@ -203,8 +186,85 @@ public:
 	 * @return LIST `LIST` containing forecast draws. Include ALPL when `get_lpl` is `true`.
 	 */
 	virtual LIST returnForecast() = 0;
+};
+
+/**
+ * @brief Base class for pseudo out-of-sample forecasting
+ * 
+ * @tparam ReturnType 
+ * @tparam DataType 
+ */
+template <typename ReturnType = Eigen::MatrixXd, typename DataType = Eigen::VectorXd, bool isUpdate = true>
+class McmcOutForecastRun : public McmcOutforecastInterface {
+public:
+	McmcOutForecastRun(
+		int num_window, int lag,
+		int num_chains, int num_iter, int num_burn, int thin,
+		int step, const ReturnType& y_test, bool get_lpl,
+		const Eigen::MatrixXi& seed_chain, const Eigen::VectorXi& seed_forecast, bool display_progress, int nthreads
+	)
+	: num_window(num_window), num_test(y_test.rows()), num_horizon(num_test - step + 1), step(step),
+		lag(lag), num_chains(num_chains), num_iter(num_iter), num_burn(num_burn), thin(thin), nthreads(nthreads),
+		get_lpl(get_lpl), display_progress(display_progress),
+		seed_forecast(seed_forecast), roll_mat(num_horizon), roll_y0(num_horizon), y_test(y_test),
+		model(num_horizon), forecaster(num_horizon),
+		out_forecast(num_horizon, std::vector<ReturnType>(num_chains)),
+		// out_forecast(num_horizon, std::vector<DataType>(num_chains)),
+		lpl_record(Eigen::MatrixXd::Zero(num_horizon, num_chains)) {
+		for (auto &reg_chain : model) {
+			reg_chain.resize(num_chains);
+			for (auto &ptr : reg_chain) {
+				ptr = nullptr;
+			}
+		}
+		for (auto &reg_forecast : forecaster) {
+			reg_forecast.resize(num_chains);
+			for (auto &ptr : reg_forecast) {
+				ptr = nullptr;
+			}
+		}
+	}
+	virtual ~McmcOutForecastRun() = default;
+
+	/**
+	 * @brief Out-of-sample forecasting
+	 * 
+	 */
+	void forecast() override {
+		if (num_chains == 1) {
+		#ifdef _OPENMP
+			#pragma omp parallel for num_threads(nthreads)
+		#endif
+			for (int window = 0; window < num_horizon; ++window) {
+				forecastWindow(window, 0);
+			}
+		} else {
+		#ifdef _OPENMP
+			#pragma omp parallel for collapse(2) schedule(static, num_chains) num_threads(nthreads)
+		#endif
+			for (int window = 0; window < num_horizon; ++window) {
+				for (int chain = 0; chain < num_chains; ++chain) {
+					forecastWindow(window, chain);
+				}
+			}
+		}
+	}
+
+	/**
+	 * @brief Return out-of-sample forecasting draws
+	 * 
+	 * @return LIST `LIST` containing forecast draws. Include ALPL when `get_lpl` is `true`.
+	 */
+	LIST returnForecast() override {
+		forecast();
+		LIST res = CREATE_LIST(NAMED("forecast") = WRAP(out_forecast));
+		if (get_lpl) {
+			res["lpl"] = lpl_record;
+		}
+		return res;
+	}
 	
-private:
+protected:
 	int num_window, num_test, num_horizon, step;
 	int lag, num_chains, num_iter, num_burn, thin, nthreads;
 	bool get_lpl, display_progress;
@@ -215,6 +275,8 @@ private:
 	std::vector<std::vector<std::unique_ptr<McmcAlgo>>> model;
 	std::vector<std::vector<std::unique_ptr<BayesForecaster<ReturnType, DataType>>>> forecaster;
 	std::vector<std::vector<ReturnType>> out_forecast;
+	// std::vector<std::vector<DataType>> out_forecast;
+	Eigen::MatrixXd lpl_record;
 
 	/**
 	 * @brief Replace the forecast smart pointer given MCMC result
@@ -223,7 +285,9 @@ private:
 	 * @param window Window index
 	 * @param chain Chain index
 	 */
-	virtual void updateForecaster(std::vector<std::vector<std::unique_ptr<McmcAlgo>>>& model, int window, int chain) = 0;
+	virtual void updateForecaster(int window, int chain) = 0;
+
+	virtual DataType getValid() = 0;
 
 	/**
 	 * @brief Conduct MCMC and update forecast pointer
@@ -257,9 +321,29 @@ private:
 		}
 		// RecordType reg_record = model[window][chain]->template returnStructRecords<RecordType>(0, thin, sparse);
 		// updateForecaster(reg_record, window, chain);
-		model[window][chain].reset();
+		// model[window][chain].reset();
+		updateForecaster(window, chain);
 		logger->flush();
 		spdlog::drop(log_name);
+	}
+
+	/**
+	 * @brief Forecast
+	 * 
+	 * @param window Window index
+	 * @param chain Chain index
+	 */
+	void forecastWindow(int window, int chain) {
+		using is_mcmc = std::integral_constant<bool, isUpdate>;
+		if (window != 0 && is_mcmc::value) {
+			runGibbs(window, chain);
+		}
+		// Eigen::VectorXd valid_vec = y_test.row(step);
+		DataType valid_vec = getValid();
+		// out_forecast[window][chain] = forecaster[window][chain]->doForecast(valid_vec).bottomRows(1);
+		out_forecast[window][chain] = forecaster[window][chain]->getLastForecast(valid_vec);
+		lpl_record(window, chain) = forecaster[window][chain]->returnLpl();
+		forecaster[window][chain].reset(); // free the memory by making nullptr
 	}
 };
 

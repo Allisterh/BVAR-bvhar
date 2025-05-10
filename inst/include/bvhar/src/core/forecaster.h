@@ -38,6 +38,9 @@ public:
 		return pred_save;
 	}
 
+	virtual ReturnType getLastForecast() = 0;
+	virtual ReturnType getLastForecast(const DataType& valid_vec) = 0;
+
 protected:
 	int step, lag;
 	ReturnType response;

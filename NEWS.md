@@ -8,6 +8,8 @@
 
 * In C++ side, added `McmcParams`, `McmcAlgo`, and `McmcRun` (changed original `McmcRun` to `CtaRun`) for extensibility of MCMC algorithms.
 
+* Also added base forecaster classes.
+
 # bvhar 2.2.2
 
 * Fix `unlist()` error in print methods for `r-devel` (4.5.0).

@@ -21,9 +21,27 @@ class BayesForecaster : public MultistepForecaster<ReturnType, DataType> {
 public:
 	BayesForecaster(int step, const ReturnType& response, int lag, int num_sim, unsigned int seed)
 	: MultistepForecaster<ReturnType, DataType>(step, response, lag),
-		num_sim(num_sim), rng(seed) {}
+		lpl(Eigen::VectorXd::Zero(step)), num_sim(num_sim), rng(seed) {}
 	virtual ~BayesForecaster() = default;
 	// using MultistepForecaster<ReturnType, DataType>::returnForecast();
+	
+	/**
+	 * @brief Return the draws of LPL
+	 * 
+	 * @return Eigen::VectorXd LPL draws
+	 */
+	Eigen::VectorXd returnLplRecord() {
+		return lpl;
+	}
+
+	/**
+	 * @brief Return ALPL
+	 * 
+	 * @return double ALPL value
+	 */
+	double returnLpl() {
+		return lpl.mean();
+	}
 
 protected:
 	using MultistepForecaster<ReturnType, DataType>::step;
@@ -33,9 +51,7 @@ protected:
 	using MultistepForecaster<ReturnType, DataType>::point_forecast;
 	using MultistepForecaster<ReturnType, DataType>::last_pvec;
 	using MultistepForecaster<ReturnType, DataType>::tmp_vec;
-	// using MultistepForecaster<ReturnType, DataType>::setRecursion();
-	// using MultistepForecaster<ReturnType, DataType>::updateRecursion();
-	// using MultistepForecaster<ReturnType, DataType>::updatePred();
+	Eigen::VectorXd lpl;
 	std::mutex mtx;
 	int num_sim;
 	BHRNG rng;
@@ -48,6 +64,17 @@ protected:
 			updateParams(i);
 			forecastOut(i);
 		}
+	}
+
+	void forecast(const Eigen::VectorXd& valid_vec) override {
+		std::lock_guard<std::mutex> lock(mtx);
+		DataType obs_vec = last_pvec; // y_T, y_(T - 1), ... y_(T - lag + 1)
+		for (int i = 0; i < num_sim; ++i) {
+			initRecursion(obs_vec);
+			updateParams(i);
+			forecastOut(i, valid_vec);
+		}
+		lpl.array() /= num_sim;
 	}
 
 	/**
@@ -72,7 +99,24 @@ protected:
 	void forecastOut(const int i) {
 		for (int h = 0; h < step; ++h) {
 			this->setRecursion();
-			this->updatePred();
+			this->updatePred(h, i);
+			this->updateRecursion();
+		}
+	}
+
+	/**
+	 * @brief Compute LPL
+	 * 
+	 * @param h Forecast step
+	 * @param valid_vec Validation vector
+	 */
+	virtual void updateLpl(int h, const Eigen::VectorXd& valid_vec) = 0;
+
+	void forecastOut(const int i, const DataType& valid_vec) {
+		for (int h = 0; h < step; ++h) {
+			this->setRecursion();
+			this->updatePred(h, i);
+			updateLpl(h, valid_vec);
 			this->updateRecursion();
 		}
 	}
@@ -99,7 +143,7 @@ public:
 		#pragma omp parallel for num_threads(nthreads)
 	#endif
 		for (int chain = 0; chain < num_chains; ++chain) {
-			density_forecast[chain] = forecaster[chain]->returnForecast();
+			density_forecast[chain] = forecaster[chain]->doForecast();
 			forecaster[chain].reset();
 		}
 	}

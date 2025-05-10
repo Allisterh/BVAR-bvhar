@@ -28,8 +28,13 @@ public:
 	 * 
 	 * @return ReturnType 
 	 */
-	ReturnType returnForecast() {
+	ReturnType doForecast() {
 		forecast();
+		return pred_save;
+	}
+
+	ReturnType doForecast(const DataType& valid_vec) {
+		forecast(valid_vec);
 		return pred_save;
 	}
 
@@ -53,6 +58,8 @@ protected:
 	 */
 	virtual void forecast() = 0;
 
+	virtual void forecast(const DataType& valid_vec) = 0;
+
 	/**
 	 * @brief Set the initial lagged unit
 	 * 
@@ -70,8 +77,7 @@ protected:
 	 * @brief Compute Linear predictor
 	 * 
 	 */
-	virtual void updatePred() = 0;
-	// virtual void updatePredSave(const int h, const int i) = 0;
+	virtual void updatePred(const int h, const int i) = 0;
 };
 
 /**

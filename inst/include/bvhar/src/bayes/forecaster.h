@@ -287,6 +287,11 @@ protected:
 	 */
 	virtual void updateForecaster(int window, int chain) = 0;
 
+	/**
+	 * @brief Get valid_vec
+	 * 
+	 * @return DataType 
+	 */
 	virtual DataType getValid() = 0;
 
 	/**
@@ -306,6 +311,7 @@ protected:
 		if (logging_freq == 0) {
 			logging_freq = 1;
 		}
+		bvharinterrupt();
 		for (int i = 0; i < num_burn; ++i) {
 			model[window][chain]->doWarmUp();
 			if (display_progress && (i + 1) % logging_freq == 0) {
@@ -314,6 +320,10 @@ protected:
 		}
 		logger->flush();
 		for (int i = num_burn; i < num_iter; ++i) {
+			if (bvharinterrupt::is_interrupted()) {
+				logger->warn("User interrupt in {} / {}", i + 1, num_iter);
+				break;
+			}
 			model[window][chain]->doPosteriorDraws();
 			if (display_progress && (i + 1) % logging_freq == 0) {
 				logger->info("{} / {} (Sampling)", i + 1, num_iter);

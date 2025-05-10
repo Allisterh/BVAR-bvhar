@@ -131,7 +131,9 @@ protected:
 template <typename ReturnType = Eigen::MatrixXd, typename DataType = Eigen::VectorXd>
 class McmcForecastRun : public MultistepForecastRun<ReturnType, DataType> {
 public:
-	McmcForecastRun(int num_chains, int lag, int step) : num_chains(num_chains), nthreads(nthreads) {}
+	McmcForecastRun(int num_chains, int lag, int step, int nthreads)
+	: num_chains(num_chains), nthreads(nthreads),
+		density_forecast(num_chains), forecaster(num_chains) {}
 	virtual ~McmcForecastRun() = default;
 
 	/**
@@ -158,12 +160,12 @@ public:
 		return density_forecast;
 	}
 
-protected:
-	std::vector<ReturnType> density_forecast;
-	std::vector<std::unique_ptr<BayesForecaster<ReturnType, DataType>>> forecaster;
-
 private:
 	int num_chains, nthreads;
+	std::vector<ReturnType> density_forecast;
+
+protected:
+	std::vector<std::unique_ptr<BayesForecaster<ReturnType, DataType>>> forecaster;
 };
 
 /**

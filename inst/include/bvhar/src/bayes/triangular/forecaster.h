@@ -534,7 +534,7 @@ inline std::vector<std::unique_ptr<BaseForecaster>> initialize_ctaforecaster(
  * @tparam BaseForecaster `RegForecaster` or `SvForecaster`
  */
 template <typename BaseForecaster = RegForecaster>
-class CtaForecastRun {
+class CtaForecastRun : public McmcForecastRun<Eigen::MatrixXd, Eigen::VectorXd> {
 public:
 	CtaForecastRun(
 		int num_chains, int lag, int step, const Eigen::MatrixXd& response_mat,
@@ -542,12 +542,21 @@ public:
 		const Eigen::VectorXi& seed_chain, bool include_mean, bool stable, int nthreads,
 		bool sv = true
 	)
-	: num_chains(num_chains), nthreads(nthreads), density_forecast(num_chains), forecaster(num_chains) {
-		forecaster = initialize_ctaforecaster<BaseForecaster>(
+	: McmcForecastRun<Eigen::MatrixXd, Eigen::VectorXd>(num_chains, lag, step, nthreads) {
+	// : num_chains(num_chains), nthreads(nthreads), density_forecast(num_chains), forecaster(num_chains) {
+		// forecaster = initialize_ctaforecaster<BaseForecaster>(
+		// 	num_chains, lag, step, response_mat, sparse, level,
+		// 	fit_record, seed_chain, include_mean,
+		// 	stable, nthreads, sv
+		// );
+		auto temp_forecaster = initialize_ctaforecaster<BaseForecaster>(
 			num_chains, lag, step, response_mat, sparse, level,
 			fit_record, seed_chain, include_mean,
 			stable, nthreads, sv
 		);
+		for (int i = 0; i < num_chains; ++i) {
+			forecaster[i] = std::move(temp_forecaster[i]);
+		}
 	}
 	CtaForecastRun(
 		int num_chains, int week, int month, int step, const Eigen::MatrixXd& response_mat,
@@ -555,13 +564,22 @@ public:
 		const Eigen::VectorXi& seed_chain, bool include_mean, bool stable, int nthreads,
 		bool sv = true
 	)
-	: num_chains(num_chains), nthreads(nthreads), density_forecast(num_chains) {
+	: McmcForecastRun<Eigen::MatrixXd, Eigen::VectorXd>(num_chains, month, step, nthreads) {
+	// : num_chains(num_chains), nthreads(nthreads), density_forecast(num_chains) {
 		Eigen::MatrixXd har_trans = build_vhar(response_mat.cols(), week, month, include_mean);
-		forecaster = initialize_ctaforecaster<BaseForecaster>(
+		// forecaster = initialize_ctaforecaster<BaseForecaster>(
+		// 	num_chains, month, step, response_mat, sparse, level,
+		// 	fit_record, seed_chain, include_mean,
+		// 	stable, nthreads, sv, har_trans
+		// );
+		auto temp_forecaster = initialize_ctaforecaster<BaseForecaster>(
 			num_chains, month, step, response_mat, sparse, level,
 			fit_record, seed_chain, include_mean,
 			stable, nthreads, sv, har_trans
 		);
+		for (int i = 0; i < num_chains; ++i) {
+			forecaster[i] = std::move(temp_forecaster[i]);
+		}
 	}
 	CtaForecastRun(
 		int num_chains, int month, int step, const Eigen::MatrixXd& response_mat, const Eigen::MatrixXd& har_trans,
@@ -569,12 +587,21 @@ public:
 		const Eigen::VectorXi& seed_chain, bool include_mean, bool stable, int nthreads,
 		bool sv = true
 	)
-	: num_chains(num_chains), nthreads(nthreads), density_forecast(num_chains) {
-		forecaster = initialize_ctaforecaster<BaseForecaster>(
+	: McmcForecastRun<Eigen::MatrixXd, Eigen::VectorXd>(num_chains, month, step, nthreads) {
+	// : num_chains(num_chains), nthreads(nthreads), density_forecast(num_chains) {
+		// forecaster = initialize_ctaforecaster<BaseForecaster>(
+		// 	num_chains, month, step, response_mat, sparse, level,
+		// 	fit_record, seed_chain, include_mean,
+		// 	stable, nthreads, sv, har_trans
+		// );
+		auto temp_forecaster = initialize_ctaforecaster<BaseForecaster>(
 			num_chains, month, step, response_mat, sparse, level,
 			fit_record, seed_chain, include_mean,
 			stable, nthreads, sv, har_trans
 		);
+		for (int i = 0; i < num_chains; ++i) {
+			forecaster[i] = std::move(temp_forecaster[i]);
+		}
 	}
 	virtual ~CtaForecastRun() = default;
 
@@ -582,31 +609,31 @@ public:
 	 * @brief Forecast
 	 * 
 	 */
-	void forecast() {
-	#ifdef _OPENMP
-		#pragma omp parallel for num_threads(nthreads)
-	#endif
-		for (int chain = 0; chain < num_chains; ++chain) {
-			density_forecast[chain] = forecaster[chain]->forecastDensity();
-			forecaster[chain].reset(); // free the memory by making nullptr
-		}
-	}
+	// void forecast() {
+	// #ifdef _OPENMP
+	// 	#pragma omp parallel for num_threads(nthreads)
+	// #endif
+	// 	for (int chain = 0; chain < num_chains; ++chain) {
+	// 		density_forecast[chain] = forecaster[chain]->forecastDensity();
+	// 		forecaster[chain].reset(); // free the memory by making nullptr
+	// 	}
+	// }
 
 	/**
 	 * @brief Return forecast draws
 	 * 
 	 * @return std::vector<Eigen::MatrixXd> Forecast density of each chain
 	 */
-	std::vector<Eigen::MatrixXd> returnForecast() {
-		forecast();
-		return density_forecast;
-	}
+	// std::vector<Eigen::MatrixXd> returnForecast() {
+	// 	forecast();
+	// 	return density_forecast;
+	// }
 
 private:
-	int num_chains;
-	int nthreads;
-	std::vector<Eigen::MatrixXd> density_forecast;
-	std::vector<std::unique_ptr<BaseForecaster>> forecaster;
+	// int num_chains;
+	// int nthreads;
+	// std::vector<Eigen::MatrixXd> density_forecast;
+	// std::vector<std::unique_ptr<BaseForecaster>> forecaster;
 };
 
 /**

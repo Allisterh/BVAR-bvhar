@@ -20,16 +20,22 @@ template <typename ReturnType = Eigen::MatrixXd, typename DataType = Eigen::Vect
 class BayesForecaster : public MultistepForecaster<ReturnType, DataType> {
 public:
 	BayesForecaster(int step, const ReturnType& response, int lag, int num_sim, unsigned int seed)
-	: MultistepForecaster(step, response, lag),
+	: MultistepForecaster<ReturnType, DataType>(step, response, lag),
 		num_sim(num_sim), rng(seed) {}
 	virtual ~BayesForecaster() = default;
-	using MultistepForecaster<ReturnType, Datatype>::returnForecast();
+	// using MultistepForecaster<ReturnType, DataType>::returnForecast();
 
 protected:
-	using MultistepForecaster<ReturnType, Datatype>::step;
-	using MultistepForecaster<ReturnType, Datatype>::lag;
-	using MultistepForecaster<ReturnType, Datatype>::response;
-	using MultistepForecaster<ReturnType, Datatype>::pred_save; // rbind(step), cbind(sims)
+	using MultistepForecaster<ReturnType, DataType>::step;
+	using MultistepForecaster<ReturnType, DataType>::lag;
+	using MultistepForecaster<ReturnType, DataType>::response;
+	using MultistepForecaster<ReturnType, DataType>::pred_save; // rbind(step), cbind(sims)
+	using MultistepForecaster<ReturnType, DataType>::point_forecast;
+	using MultistepForecaster<ReturnType, DataType>::last_pvec;
+	using MultistepForecaster<ReturnType, DataType>::tmp_vec;
+	// using MultistepForecaster<ReturnType, DataType>::setRecursion();
+	// using MultistepForecaster<ReturnType, DataType>::updateRecursion();
+	// using MultistepForecaster<ReturnType, DataType>::updatePred();
 	std::mutex mtx;
 	int num_sim;
 	BHRNG rng;
@@ -65,9 +71,9 @@ protected:
 	 */
 	void forecastOut(const int i) {
 		for (int h = 0; h < step; ++h) {
-			setRecursion();
-			updatePred();
-			updateRecursion();
+			this->setRecursion();
+			this->updatePred();
+			this->updateRecursion();
 		}
 	}
 };
@@ -81,8 +87,7 @@ protected:
 template <typename ReturnType = Eigen::MatrixXd, typename DataType = Eigen::VectorXd>
 class McmcForecastRun : public MultistepForecastRun<ReturnType, DataType> {
 public:
-	McmcForecastRun(int num_chains, int lag, int step)
-	: MultistepForecastRun(), num_chains(num_chains), nthreads(nthreads) {}
+	McmcForecastRun(int num_chains, int lag, int step) : num_chains(num_chains), nthreads(nthreads) {}
 	virtual ~McmcForecastRun() = default;
 
 	/**
@@ -156,13 +161,13 @@ public:
 private:
 	int num_window, num_test, num_horizon, step;
 	int lag, num_chains, num_iter, num_burn, thin, nthreads;
-	boot get_lpl, display_progress;
+	bool get_lpl, display_progress;
 	Eigen::VectorXi seed_forecast;
 	std::vector<ReturnType> roll_mat;
 	std::vector<ReturnType> roll_y0;
 	ReturnType y_test;
 	std::vector<std::vector<std::unique_ptr<McmcAlgo>>> model;
-	std::vector<std::vector<std::unique_ptr<BayesForecaster>>> forecaster;
+	std::vector<std::vector<std::unique_ptr<BayesForecaster<ReturnType, DataType>>>> forecaster;
 	std::vector<std::vector<ReturnType>> out_forecast;
 
 	/**

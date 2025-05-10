@@ -5,29 +5,29 @@
 
 namespace bvhar {
 
-class McmcForecaster;
+class CtaForecaster;
 class RegForecaster;
 class SvForecaster;
-template <typename BaseForecaster> class McmcVarForecaster;
-template <typename BaseForecaster> class McmcVharForecaster;
-template <typename BaseForecaster> class McmcVarSelectForecaster;
-template <typename BaseForecaster> class McmcVharSelectForecaster;
+template <typename BaseForecaster> class CtaVarForecaster;
+template <typename BaseForecaster> class CtaVharForecaster;
+template <typename BaseForecaster> class CtaVarSelectForecaster;
+template <typename BaseForecaster> class CtaVharSelectForecaster;
 // Running forecasters
-template <typename BaseForecaster> class McmcForecastRun;
-template <typename BaseForecaster> class McmcOutforecastInterface;
-template <typename BaseForecaster, bool> class McmcOutforecastRun;
-template <typename BaseForecaster, bool, bool> class McmcRollforecastRun;
-template <typename BaseForecaster, bool, bool> class McmcExpandforecastRun;
-template <template <typename, bool, bool> class BaseOutForecast, typename BaseForecaster, bool, bool> class McmcVarforecastRun;
-template <template <typename, bool, bool> class BaseOutForecast, typename BaseForecaster, bool, bool> class McmcVharforecastRun;
+template <typename BaseForecaster> class CtaForecastRun;
+template <typename BaseForecaster> class CtaOutforecastInterface;
+template <typename BaseForecaster, bool> class CtaOutforecastRun;
+template <typename BaseForecaster, bool, bool> class CtaRollforecastRun;
+template <typename BaseForecaster, bool, bool> class CtaExpandforecastRun;
+template <template <typename, bool, bool> class BaseOutForecast, typename BaseForecaster, bool, bool> class CtaVarforecastRun;
+template <template <typename, bool, bool> class BaseOutForecast, typename BaseForecaster, bool, bool> class CtaVharforecastRun;
 
 /**
  * @brief Forecast class for `McmcTriangular`
  * 
  */
-class McmcForecaster {
+class CtaForecaster {
 public:
-	McmcForecaster(const RegRecords& records, int step, const Eigen::MatrixXd& response_mat, int ord, bool include_mean, bool filter_stable, unsigned int seed, bool sv = true)
+	CtaForecaster(const RegRecords& records, int step, const Eigen::MatrixXd& response_mat, int ord, bool include_mean, bool filter_stable, unsigned int seed, bool sv = true)
 	: rng(seed), response(response_mat), include_mean(include_mean), stable_filter(filter_stable),
 		step(step), dim(response.cols()), var_lag(ord),
 		dim_design(include_mean ? var_lag * dim + 1 : var_lag * dim),
@@ -46,7 +46,7 @@ public:
 		last_pvec[dim_design - 1] = 1.0; // valid when include_mean = true
 		last_pvec.head(var_lag * dim) = vectorize_eigen(response.colwise().reverse().topRows(var_lag).transpose().eval()); // [y_T^T, y_(T - 1)^T, ... y_(T - lag + 1)^T]
 	}
-	virtual ~McmcForecaster() = default;
+	virtual ~CtaForecaster() = default;
 
 	/**
 	 * @brief Draw density forecast
@@ -195,10 +195,10 @@ protected:
  * @brief Forecast class for `McmcReg`
  * 
  */
-class RegForecaster : public McmcForecaster {
+class RegForecaster : public CtaForecaster {
 public:
 	RegForecaster(const LdltRecords& records, int step, const Eigen::MatrixXd& response_mat, int ord, bool include_mean, bool filter_stable, unsigned int seed, bool sv = true)
-	: McmcForecaster(records, step, response_mat, ord, include_mean, filter_stable, seed, sv) {
+	: CtaForecaster(records, step, response_mat, ord, include_mean, filter_stable, seed, sv) {
 		reg_record = std::make_unique<LdltRecords>(records);
 	}
 	virtual ~RegForecaster() = default;
@@ -227,10 +227,10 @@ protected:
  * @brief Forecast class for `McmcSv`
  * 
  */
-class SvForecaster : public McmcForecaster {
+class SvForecaster : public CtaForecaster {
 public:
 	SvForecaster(const SvRecords& records, int step, const Eigen::MatrixXd& response_mat, int ord, bool include_mean, bool filter_stable, unsigned int seed, bool sv)
-	: McmcForecaster(records, step, response_mat, ord, include_mean, filter_stable, seed, sv),
+	: CtaForecaster(records, step, response_mat, ord, include_mean, filter_stable, seed, sv),
 		sv(sv), sv_sig(Eigen::VectorXd::Zero(dim)) {
 		reg_record = std::make_unique<SvRecords>(records);
 	}
@@ -273,9 +273,9 @@ private:
  * @tparam BaseForecaster `RegForecaster` or `SvForecaster`
  */
 template <typename BaseForecaster = RegForecaster>
-class McmcVarForecaster : public BaseForecaster {
+class CtaVarForecaster : public BaseForecaster {
 public:
-	McmcVarForecaster(
+	CtaVarForecaster(
 		const typename std::conditional<std::is_same<BaseForecaster, RegForecaster>::value, LdltRecords, SvRecords>::type& records,
 		int step, const Eigen::MatrixXd& response_mat, int lag, bool include_mean, bool filter_stable, unsigned int seed, bool sv = true
 	)
@@ -288,7 +288,7 @@ public:
 			}
 		}
 	}
-	virtual ~McmcVarForecaster() = default;
+	virtual ~CtaVarForecaster() = default;
 
 protected:
 	using BaseForecaster::reg_record;
@@ -309,9 +309,9 @@ protected:
  * @tparam BaseForecaster `RegForecaster` or `SvForecaster`
  */
 template <typename BaseForecaster = RegForecaster>
-class McmcVharForecaster : public BaseForecaster {
+class CtaVharForecaster : public BaseForecaster {
 public:
-	McmcVharForecaster(
+	CtaVharForecaster(
 		const typename std::conditional<std::is_same<BaseForecaster, RegForecaster>::value, LdltRecords, SvRecords>::type& records,
 		int step, const Eigen::MatrixXd& response_mat, const Eigen::MatrixXd& har_trans, int month, bool include_mean, bool filter_stable, unsigned int seed, bool sv = true
 	)
@@ -324,7 +324,7 @@ public:
 			}
 		}
 	}
-	virtual ~McmcVharForecaster() = default;
+	virtual ~CtaVharForecaster() = default;
 	
 protected:
 	using BaseForecaster::reg_record;
@@ -347,29 +347,29 @@ protected:
  * @tparam BaseForecaster `RegForecaster` or `SvForecaster`
  */
 template <typename BaseForecaster = RegForecaster>
-class McmcVarSelectForecaster : public McmcVarForecaster<BaseForecaster> {
+class CtaVarSelectForecaster : public CtaVarForecaster<BaseForecaster> {
 public:
-	McmcVarSelectForecaster(
+	CtaVarSelectForecaster(
 		const typename std::conditional<std::is_same<BaseForecaster, RegForecaster>::value, LdltRecords, SvRecords>::type& records,
 		double level, int step, const Eigen::MatrixXd& response_mat, int lag, bool include_mean, bool filter_stable, unsigned int seed, bool sv = true
 	)
-	: McmcVarForecaster<BaseForecaster>(records, step, response_mat, lag, include_mean, filter_stable, seed, sv),
+	: CtaVarForecaster<BaseForecaster>(records, step, response_mat, lag, include_mean, filter_stable, seed, sv),
 		activity_graph(unvectorize(reg_record->computeActivity(level), dim)) {}
-	McmcVarSelectForecaster(
+	CtaVarSelectForecaster(
 		const typename std::conditional<std::is_same<BaseForecaster, RegForecaster>::value, LdltRecords, SvRecords>::type& records,
 		const Eigen::MatrixXd& selection, int step, const Eigen::MatrixXd& response_mat, int lag, bool include_mean, bool filter_stable, unsigned int seed, bool sv = true
 	)
-	: McmcVarForecaster<BaseForecaster>(records, step, response_mat, lag, include_mean, filter_stable, seed, sv),
+	: CtaVarForecaster<BaseForecaster>(records, step, response_mat, lag, include_mean, filter_stable, seed, sv),
 		activity_graph(selection) {}
 	
-	virtual ~McmcVarSelectForecaster() = default;
+	virtual ~CtaVarSelectForecaster() = default;
 
 protected:
-	using McmcVarForecaster<BaseForecaster>::dim;
-	using McmcVarForecaster<BaseForecaster>::reg_record;
-	using McmcVarForecaster<BaseForecaster>::post_mean;
-	using McmcVarForecaster<BaseForecaster>::coef_mat;
-	using McmcVarForecaster<BaseForecaster>::last_pvec;
+	using CtaVarForecaster<BaseForecaster>::dim;
+	using CtaVarForecaster<BaseForecaster>::reg_record;
+	using CtaVarForecaster<BaseForecaster>::post_mean;
+	using CtaVarForecaster<BaseForecaster>::coef_mat;
+	using CtaVarForecaster<BaseForecaster>::last_pvec;
 	void computeMean() override {
 		post_mean = last_pvec.transpose() * (activity_graph.array() * coef_mat.array()).matrix();
 	}
@@ -384,30 +384,30 @@ private:
  * @tparam BaseForecaster `RegForecaster` or `SvForecaster`
  */
 template <typename BaseForecaster = RegForecaster>
-class McmcVharSelectForecaster : public McmcVharForecaster<BaseForecaster> {
+class CtaVharSelectForecaster : public CtaVharForecaster<BaseForecaster> {
 public:
-	McmcVharSelectForecaster(
+	CtaVharSelectForecaster(
 		const typename std::conditional<std::is_same<BaseForecaster, RegForecaster>::value, LdltRecords, SvRecords>::type& records,
 		double level, int step, const Eigen::MatrixXd& response_mat, const Eigen::MatrixXd& har_trans, int month, bool include_mean, bool filter_stable, unsigned int seed, bool sv = true
 	)
-	: McmcVharForecaster<BaseForecaster>(records, step, response_mat, har_trans, month, include_mean, filter_stable, seed, sv),
+	: CtaVharForecaster<BaseForecaster>(records, step, response_mat, har_trans, month, include_mean, filter_stable, seed, sv),
 		activity_graph(unvectorize(reg_record->computeActivity(level), dim)) {}
-	McmcVharSelectForecaster(
+	CtaVharSelectForecaster(
 		const typename std::conditional<std::is_same<BaseForecaster, RegForecaster>::value, LdltRecords, SvRecords>::type& records,
 		const Eigen::MatrixXd& selection, int step, const Eigen::MatrixXd& response_mat, const Eigen::MatrixXd& har_trans, int month, bool include_mean, bool filter_stable, unsigned int seed, bool sv = true
 	)
-	: McmcVharForecaster<BaseForecaster>(records, step, response_mat, har_trans, month, include_mean, filter_stable, seed, sv),
+	: CtaVharForecaster<BaseForecaster>(records, step, response_mat, har_trans, month, include_mean, filter_stable, seed, sv),
 		activity_graph(selection) {}
 	
-	virtual ~McmcVharSelectForecaster() = default;
+	virtual ~CtaVharSelectForecaster() = default;
 
 protected:
-	using McmcVharForecaster<BaseForecaster>::dim;
-	using McmcVharForecaster<BaseForecaster>::reg_record;
-	using McmcVharForecaster<BaseForecaster>::post_mean;
-	using McmcVharForecaster<BaseForecaster>::coef_mat;
-	using McmcVharForecaster<BaseForecaster>::last_pvec;
-	using McmcVharForecaster<BaseForecaster>::har_trans;
+	using CtaVharForecaster<BaseForecaster>::dim;
+	using CtaVharForecaster<BaseForecaster>::reg_record;
+	using CtaVharForecaster<BaseForecaster>::post_mean;
+	using CtaVharForecaster<BaseForecaster>::coef_mat;
+	using CtaVharForecaster<BaseForecaster>::last_pvec;
+	using CtaVharForecaster<BaseForecaster>::har_trans;
 	void computeMean() override {
 		post_mean = last_pvec.transpose() * har_trans.transpose() * (activity_graph.array() * coef_mat.array()).matrix();
 	}
@@ -436,7 +436,7 @@ private:
  * @return std::vector<std::unique_ptr<BaseForecaster>> Vector of forecast class smart pointer corresponding to each chain
  */
 template <typename BaseForecaster = RegForecaster>
-inline std::vector<std::unique_ptr<BaseForecaster>> initialize_forecaster(
+inline std::vector<std::unique_ptr<BaseForecaster>> initialize_ctaforecaster(
 	int num_chains, int ord, int step, const Eigen::MatrixXd& response_mat,
 	bool sparse, double level, LIST& fit_record,
 	Eigen::Ref<const Eigen::VectorXi> seed_chain, bool include_mean, bool stable, int nthreads,
@@ -455,28 +455,28 @@ inline std::vector<std::unique_ptr<BaseForecaster>> initialize_forecaster(
 		std::unique_ptr<Records> reg_record;
 		initialize_record(reg_record, i, fit_record, include_mean, coef_name, a_name, c_name);
 		if (har_trans && !activity) {
-			forecaster_ptr[i] = std::make_unique<McmcVharForecaster<BaseForecaster>>(
+			forecaster_ptr[i] = std::make_unique<CtaVharForecaster<BaseForecaster>>(
 				*reg_record, step, response_mat,
 				*har_trans, ord,
 				include_mean, stable, static_cast<unsigned int>(seed_chain[i]),
 				sv
 			);
 		} else if (!har_trans && !activity) {
-			forecaster_ptr[i] = std::make_unique<McmcVarForecaster<BaseForecaster>>(
+			forecaster_ptr[i] = std::make_unique<CtaVarForecaster<BaseForecaster>>(
 				*reg_record, step, response_mat,
 				ord,
 				include_mean, stable, static_cast<unsigned int>(seed_chain[i]),
 				sv
 			);
 		} else if (har_trans && activity) {
-			forecaster_ptr[i] = std::make_unique<McmcVharSelectForecaster<BaseForecaster>>(
+			forecaster_ptr[i] = std::make_unique<CtaVharSelectForecaster<BaseForecaster>>(
 				*reg_record, level, step, response_mat,
 				*har_trans, ord,
 				include_mean, stable, static_cast<unsigned int>(seed_chain[i]),
 				sv
 			);
 		} else {
-			forecaster_ptr[i] = std::make_unique<McmcVarSelectForecaster<BaseForecaster>>(
+			forecaster_ptr[i] = std::make_unique<CtaVarSelectForecaster<BaseForecaster>>(
 				*reg_record, level, step, response_mat,
 				ord,
 				include_mean, stable, static_cast<unsigned int>(seed_chain[i]),
@@ -493,22 +493,22 @@ inline std::vector<std::unique_ptr<BaseForecaster>> initialize_forecaster(
  * @tparam BaseForecaster `RegForecaster` or `SvForecaster`
  */
 template <typename BaseForecaster = RegForecaster>
-class McmcForecastRun {
+class CtaForecastRun {
 public:
-	McmcForecastRun(
+	CtaForecastRun(
 		int num_chains, int lag, int step, const Eigen::MatrixXd& response_mat,
 		bool sparse, double level, LIST& fit_record,
 		const Eigen::VectorXi& seed_chain, bool include_mean, bool stable, int nthreads,
 		bool sv = true
 	)
 	: num_chains(num_chains), nthreads(nthreads), density_forecast(num_chains), forecaster(num_chains) {
-		forecaster = initialize_forecaster<BaseForecaster>(
+		forecaster = initialize_ctaforecaster<BaseForecaster>(
 			num_chains, lag, step, response_mat, sparse, level,
 			fit_record, seed_chain, include_mean,
 			stable, nthreads, sv
 		);
 	}
-	McmcForecastRun(
+	CtaForecastRun(
 		int num_chains, int week, int month, int step, const Eigen::MatrixXd& response_mat,
 		bool sparse, double level, LIST& fit_record,
 		const Eigen::VectorXi& seed_chain, bool include_mean, bool stable, int nthreads,
@@ -516,26 +516,26 @@ public:
 	)
 	: num_chains(num_chains), nthreads(nthreads), density_forecast(num_chains) {
 		Eigen::MatrixXd har_trans = build_vhar(response_mat.cols(), week, month, include_mean);
-		forecaster = initialize_forecaster<BaseForecaster>(
+		forecaster = initialize_ctaforecaster<BaseForecaster>(
 			num_chains, month, step, response_mat, sparse, level,
 			fit_record, seed_chain, include_mean,
 			stable, nthreads, sv, har_trans
 		);
 	}
-	McmcForecastRun(
+	CtaForecastRun(
 		int num_chains, int month, int step, const Eigen::MatrixXd& response_mat, const Eigen::MatrixXd& har_trans,
 		bool sparse, double level, LIST& fit_record,
 		const Eigen::VectorXi& seed_chain, bool include_mean, bool stable, int nthreads,
 		bool sv = true
 	)
 	: num_chains(num_chains), nthreads(nthreads), density_forecast(num_chains) {
-		forecaster = initialize_forecaster<BaseForecaster>(
+		forecaster = initialize_ctaforecaster<BaseForecaster>(
 			num_chains, month, step, response_mat, sparse, level,
 			fit_record, seed_chain, include_mean,
 			stable, nthreads, sv, har_trans
 		);
 	}
-	virtual ~McmcForecastRun() = default;
+	virtual ~CtaForecastRun() = default;
 
 	/**
 	 * @brief Forecast
@@ -574,9 +574,9 @@ private:
  * @tparam BaseForecaster 
  */
 template <typename BaseForecaster = RegForecaster>
-class McmcOutforecastInterface {
+class CtaOutforecastInterface {
 public:
-	virtual ~McmcOutforecastInterface() = default;
+	virtual ~CtaOutforecastInterface() = default;
 
 	/**
 	 * @brief Out-of-sample forecasting
@@ -599,9 +599,9 @@ public:
  * @tparam isUpdate MCMC again in the new window
  */
 template <typename BaseForecaster = RegForecaster, bool isUpdate = true>
-class McmcOutforecastRun : public McmcOutforecastInterface<BaseForecaster> {
+class CtaOutforecastRun : public CtaOutforecastInterface<BaseForecaster> {
 public:
-	McmcOutforecastRun(
+	CtaOutforecastRun(
 		const Eigen::MatrixXd& y, int lag, int num_chains, int num_iter, int num_burn, int thin,
 		bool sparse, double level, LIST& fit_record,
 		LIST& param_reg, LIST& param_prior, LIST& param_intercept, LIST_OF_LIST& param_init, int prior_type,
@@ -634,7 +634,7 @@ public:
 			sparse = false;
 		}
 	}
-	virtual ~McmcOutforecastRun() = default;
+	virtual ~CtaOutforecastRun() = default;
 
 	void forecast() override {
 		if (num_chains == 1) {
@@ -736,7 +736,7 @@ protected:
 	virtual void updateForecaster(RecordType& reg_record, int window, int chain) = 0;
 
 	/**
-	 * @brief Initialize every member of `McmcOutforecastRun`
+	 * @brief Initialize every member of `CtaOutforecastRun`
 	 * 
 	 * @param y Response matrix
 	 * @param fit_record `LIST` of MCMC draws
@@ -839,9 +839,9 @@ protected:
  * @tparam isUpdate MCMC again in the new window
  */
 template <typename BaseForecaster = RegForecaster, bool isGroup = true, bool isUpdate = true>
-class McmcRollforecastRun : public McmcOutforecastRun<BaseForecaster, isUpdate> {
+class CtaRollforecastRun : public CtaOutforecastRun<BaseForecaster, isUpdate> {
 public:
-	McmcRollforecastRun(
+	CtaRollforecastRun(
 		const Eigen::MatrixXd& y, int lag, int num_chains, int num_iter, int num_burn, int thin,
 		bool sparse, double level, LIST& fit_record,
 		LIST& param_reg, LIST& param_prior, LIST& param_intercept, LIST_OF_LIST& param_init, int prior_type,
@@ -850,32 +850,32 @@ public:
 		bool include_mean, bool stable, int step, const Eigen::MatrixXd& y_test, bool get_lpl,
 		const Eigen::MatrixXi& seed_chain, const Eigen::VectorXi& seed_forecast, bool display_progress, int nthreads, bool sv = true
 	)
-	: McmcOutforecastRun<BaseForecaster, isUpdate>(
+	: CtaOutforecastRun<BaseForecaster, isUpdate>(
 			y, lag, num_chains, num_iter, num_burn, thin, sparse, level, fit_record,
 			param_reg, param_prior, param_intercept, param_init, prior_type,
 			contem_prior, contem_init, contem_prior_type,
 			grp_id, own_id, cross_id, grp_mat, include_mean, stable, step, y_test, get_lpl,
 			seed_chain, seed_forecast, display_progress, nthreads, sv
 		) {}
-	virtual ~McmcRollforecastRun() = default;
+	virtual ~CtaRollforecastRun() = default;
 
 protected:
-	using typename McmcOutforecastRun<BaseForecaster, isUpdate>::BaseMcmc;
-	using McmcOutforecastRun<BaseForecaster, isUpdate>::num_window;
-	using McmcOutforecastRun<BaseForecaster, isUpdate>::dim;
-	using McmcOutforecastRun<BaseForecaster, isUpdate>::num_test;
-	using McmcOutforecastRun<BaseForecaster, isUpdate>::num_horizon;
-	using McmcOutforecastRun<BaseForecaster, isUpdate>::lag;
-	using McmcOutforecastRun<BaseForecaster, isUpdate>::num_chains;
-	using McmcOutforecastRun<BaseForecaster, isUpdate>::num_iter;
-	using McmcOutforecastRun<BaseForecaster, isUpdate>::num_burn;
-	using McmcOutforecastRun<BaseForecaster, isUpdate>::include_mean;
-	using McmcOutforecastRun<BaseForecaster, isUpdate>::roll_mat;
-	using McmcOutforecastRun<BaseForecaster, isUpdate>::roll_y0;
-	using McmcOutforecastRun<BaseForecaster, isUpdate>::y_test;
-	using McmcOutforecastRun<BaseForecaster, isUpdate>::model;
-	using McmcOutforecastRun<BaseForecaster, isUpdate>::buildDesign;
-	using McmcOutforecastRun<BaseForecaster, isUpdate>::initialize;
+	using typename CtaOutforecastRun<BaseForecaster, isUpdate>::BaseMcmc;
+	using CtaOutforecastRun<BaseForecaster, isUpdate>::num_window;
+	using CtaOutforecastRun<BaseForecaster, isUpdate>::dim;
+	using CtaOutforecastRun<BaseForecaster, isUpdate>::num_test;
+	using CtaOutforecastRun<BaseForecaster, isUpdate>::num_horizon;
+	using CtaOutforecastRun<BaseForecaster, isUpdate>::lag;
+	using CtaOutforecastRun<BaseForecaster, isUpdate>::num_chains;
+	using CtaOutforecastRun<BaseForecaster, isUpdate>::num_iter;
+	using CtaOutforecastRun<BaseForecaster, isUpdate>::num_burn;
+	using CtaOutforecastRun<BaseForecaster, isUpdate>::include_mean;
+	using CtaOutforecastRun<BaseForecaster, isUpdate>::roll_mat;
+	using CtaOutforecastRun<BaseForecaster, isUpdate>::roll_y0;
+	using CtaOutforecastRun<BaseForecaster, isUpdate>::y_test;
+	using CtaOutforecastRun<BaseForecaster, isUpdate>::model;
+	using CtaOutforecastRun<BaseForecaster, isUpdate>::buildDesign;
+	using CtaOutforecastRun<BaseForecaster, isUpdate>::initialize;
 	void initData(const Eigen::MatrixXd& y) override {
 		Eigen::MatrixXd tot_mat(num_window + num_test, dim);
 		tot_mat << y,
@@ -913,9 +913,9 @@ protected:
  * @tparam isUpdate MCMC again in the new window
  */
 template <typename BaseForecaster = RegForecaster, bool isGroup = true, bool isUpdate = true>
-class McmcExpandforecastRun : public McmcOutforecastRun<BaseForecaster, isUpdate> {
+class CtaExpandforecastRun : public CtaOutforecastRun<BaseForecaster, isUpdate> {
 public:
-	McmcExpandforecastRun(
+	CtaExpandforecastRun(
 		const Eigen::MatrixXd& y, int lag, int num_chains, int num_iter, int num_burn, int thin,
 		bool sparse, double level, LIST& fit_record,
 		LIST& param_reg, LIST& param_prior, LIST& param_intercept, LIST_OF_LIST& param_init, int prior_type,
@@ -924,32 +924,32 @@ public:
 		bool include_mean, bool stable, int step, const Eigen::MatrixXd& y_test, bool get_lpl,
 		const Eigen::MatrixXi& seed_chain, const Eigen::VectorXi& seed_forecast, bool display_progress, int nthreads, bool sv = true
 	)
-	: McmcOutforecastRun<BaseForecaster, isUpdate>(
+	: CtaOutforecastRun<BaseForecaster, isUpdate>(
 			y, lag, num_chains, num_iter, num_burn, thin, sparse, level, fit_record,
 			param_reg, param_prior, param_intercept, param_init, prior_type,
 			contem_prior, contem_init, contem_prior_type,
 			grp_id, own_id, cross_id, grp_mat, include_mean, stable, step, y_test, get_lpl,
 			seed_chain, seed_forecast, display_progress, nthreads, sv
 		) {}
-	virtual ~McmcExpandforecastRun() = default;
+	virtual ~CtaExpandforecastRun() = default;
 
 protected:
-	using typename McmcOutforecastRun<BaseForecaster, isUpdate>::BaseMcmc;
-	using McmcOutforecastRun<BaseForecaster, isUpdate>::num_window;
-	using McmcOutforecastRun<BaseForecaster, isUpdate>::dim;
-	using McmcOutforecastRun<BaseForecaster, isUpdate>::num_test;
-	using McmcOutforecastRun<BaseForecaster, isUpdate>::num_horizon;
-	using McmcOutforecastRun<BaseForecaster, isUpdate>::lag;
-	using McmcOutforecastRun<BaseForecaster, isUpdate>::num_chains;
-	using McmcOutforecastRun<BaseForecaster, isUpdate>::num_iter;
-	using McmcOutforecastRun<BaseForecaster, isUpdate>::num_burn;
-	using McmcOutforecastRun<BaseForecaster, isUpdate>::include_mean;
-	using McmcOutforecastRun<BaseForecaster, isUpdate>::roll_mat;
-	using McmcOutforecastRun<BaseForecaster, isUpdate>::roll_y0;
-	using McmcOutforecastRun<BaseForecaster, isUpdate>::y_test;
-	using McmcOutforecastRun<BaseForecaster, isUpdate>::model;
-	using McmcOutforecastRun<BaseForecaster, isUpdate>::buildDesign;
-	using McmcOutforecastRun<BaseForecaster, isUpdate>::initialize;
+	using typename CtaOutforecastRun<BaseForecaster, isUpdate>::BaseMcmc;
+	using CtaOutforecastRun<BaseForecaster, isUpdate>::num_window;
+	using CtaOutforecastRun<BaseForecaster, isUpdate>::dim;
+	using CtaOutforecastRun<BaseForecaster, isUpdate>::num_test;
+	using CtaOutforecastRun<BaseForecaster, isUpdate>::num_horizon;
+	using CtaOutforecastRun<BaseForecaster, isUpdate>::lag;
+	using CtaOutforecastRun<BaseForecaster, isUpdate>::num_chains;
+	using CtaOutforecastRun<BaseForecaster, isUpdate>::num_iter;
+	using CtaOutforecastRun<BaseForecaster, isUpdate>::num_burn;
+	using CtaOutforecastRun<BaseForecaster, isUpdate>::include_mean;
+	using CtaOutforecastRun<BaseForecaster, isUpdate>::roll_mat;
+	using CtaOutforecastRun<BaseForecaster, isUpdate>::roll_y0;
+	using CtaOutforecastRun<BaseForecaster, isUpdate>::y_test;
+	using CtaOutforecastRun<BaseForecaster, isUpdate>::model;
+	using CtaOutforecastRun<BaseForecaster, isUpdate>::buildDesign;
+	using CtaOutforecastRun<BaseForecaster, isUpdate>::initialize;
 	void initData(const Eigen::MatrixXd& y) override {
 		Eigen::MatrixXd tot_mat(num_window + num_test, dim);
 		tot_mat << y,
@@ -995,15 +995,15 @@ protected:
 /**
  * @brief Out-of-sample forecast class for Bayesian VAR
  * 
- * @tparam BaseOutForecast `McmcRollforecastRun` or `McmcExpandforecastRun`
+ * @tparam BaseOutForecast `CtaRollforecastRun` or `CtaExpandforecastRun`
  * @tparam BaseForecaster `RegForecaster` or `SvForecaster`
  * @tparam isGroup If `true`, use group shrinkage parameter
  * @tparam isUpdate MCMC again in the new window
  */
-template <template <typename, bool, bool> class BaseOutForecast = McmcRollforecastRun, typename BaseForecaster = RegForecaster, bool isGroup = true, bool isUpdate = true>
-class McmcVarforecastRun : public BaseOutForecast<BaseForecaster, isGroup, isUpdate> {
+template <template <typename, bool, bool> class BaseOutForecast = CtaRollforecastRun, typename BaseForecaster = RegForecaster, bool isGroup = true, bool isUpdate = true>
+class CtaVarforecastRun : public BaseOutForecast<BaseForecaster, isGroup, isUpdate> {
 public:
-	McmcVarforecastRun(
+	CtaVarforecastRun(
 		const Eigen::MatrixXd& y, int lag, int num_chains, int num_iter, int num_burn, int thin,
 		bool sparse, double level, LIST& fit_record,
 		LIST& param_reg, LIST& param_prior, LIST& param_intercept, LIST_OF_LIST& param_init, int prior_type,
@@ -1025,7 +1025,7 @@ public:
 			grp_id, own_id, cross_id, grp_mat, seed_chain
 		);
 	}
-	virtual ~McmcVarforecastRun() = default;
+	virtual ~CtaVarforecastRun() = default;
 
 protected:
 	using typename BaseOutForecast<BaseForecaster, isGroup, isUpdate>::BaseMcmc;
@@ -1054,14 +1054,14 @@ protected:
 	void initForecaster(LIST& fit_record) override {
 		using is_mcmc = std::integral_constant<bool, isUpdate>;
 		if (is_mcmc::value) {
-			forecaster[0] = initialize_forecaster<BaseForecaster>(
+			forecaster[0] = initialize_ctaforecaster<BaseForecaster>(
 				num_chains, lag, step, roll_y0[0], sparse, level,
 				fit_record, seed_forecast, include_mean,
 				stable_filter, nthreads, sv
 			);
 		} else {
 			for (int i = 0; i < num_horizon; ++i) {
-				forecaster[i] = initialize_forecaster<BaseForecaster>(
+				forecaster[i] = initialize_ctaforecaster<BaseForecaster>(
 					num_chains, lag, step, roll_y0[i], sparse, level,
 					fit_record, seed_forecast, include_mean,
 					stable_filter, nthreads, sv
@@ -1074,12 +1074,12 @@ protected:
 	}
 	void updateForecaster(RecordType& reg_record, int window, int chain) override {
 		if (level > 0) {
-			forecaster[window][chain] = std::make_unique<McmcVarSelectForecaster<BaseForecaster>>(
+			forecaster[window][chain] = std::make_unique<CtaVarSelectForecaster<BaseForecaster>>(
 				reg_record, level, step, roll_y0[window], lag, include_mean,
 				stable_filter, static_cast<unsigned int>(seed_forecast[chain]), sv
 			);
 		} else {
-			forecaster[window][chain] = std::make_unique<McmcVarForecaster<BaseForecaster>>(
+			forecaster[window][chain] = std::make_unique<CtaVarForecaster<BaseForecaster>>(
 				reg_record, step, roll_y0[window], lag, include_mean,
 				stable_filter, static_cast<unsigned int>(seed_forecast[chain]), sv
 			);
@@ -1090,15 +1090,15 @@ protected:
 /**
  * @brief Out-of-sample forecast class for Bayesian VHAR
  * 
- * @tparam BaseOutForecast `McmcRollforecastRun` or `McmcExpandforecastRun`
+ * @tparam BaseOutForecast `CtaRollforecastRun` or `CtaExpandforecastRun`
  * @tparam BaseForecaster `RegForecaster` or `SvForecaster`
  * @tparam isGroup If `true`, use group shrinkage parameter
  * @tparam isUpdate MCMC again in the new window
  */
-template <template <typename, bool, bool> class BaseOutForecast = McmcRollforecastRun, typename BaseForecaster = RegForecaster, bool isGroup = true, bool isUpdate = true>
-class McmcVharforecastRun : public BaseOutForecast<BaseForecaster, isGroup, isUpdate> {
+template <template <typename, bool, bool> class BaseOutForecast = CtaRollforecastRun, typename BaseForecaster = RegForecaster, bool isGroup = true, bool isUpdate = true>
+class CtaVharforecastRun : public BaseOutForecast<BaseForecaster, isGroup, isUpdate> {
 public:
-	McmcVharforecastRun(
+	CtaVharforecastRun(
 		const Eigen::MatrixXd& y, int week, int month, int num_chains, int num_iter, int num_burn, int thin,
 		bool sparse, double level, LIST& fit_record,
 		LIST& param_reg, LIST& param_prior, LIST& param_intercept, LIST_OF_LIST& param_init, int prior_type,
@@ -1121,7 +1121,7 @@ public:
 			grp_id, own_id, cross_id, grp_mat, seed_chain
 		);
 	}
-	virtual ~McmcVharforecastRun() = default;
+	virtual ~CtaVharforecastRun() = default;
 
 protected:
 	using typename BaseOutForecast<BaseForecaster, isGroup, isUpdate>::BaseMcmc;
@@ -1152,7 +1152,7 @@ protected:
 	void initForecaster(LIST& fit_record) override {
 		using is_mcmc = std::integral_constant<bool, isUpdate>;
 		if (is_mcmc::value) {
-			forecaster[0] = initialize_forecaster<BaseForecaster>(
+			forecaster[0] = initialize_ctaforecaster<BaseForecaster>(
 				num_chains, lag, step, roll_y0[0], sparse, level,
 				fit_record, seed_forecast, include_mean,
 				stable_filter, nthreads, sv,
@@ -1160,7 +1160,7 @@ protected:
 			);
 		} else {
 			for (int i = 0; i < num_horizon; ++i) {
-				forecaster[i] = initialize_forecaster<BaseForecaster>(
+				forecaster[i] = initialize_ctaforecaster<BaseForecaster>(
 					num_chains, lag, step, roll_y0[i], sparse, level,
 					fit_record, seed_forecast, include_mean,
 					stable_filter, nthreads, sv,
@@ -1174,12 +1174,12 @@ protected:
 	}
 	void updateForecaster(RecordType& reg_record, int window, int chain) override {
 		if (level > 0) {
-			forecaster[window][chain] = std::make_unique<McmcVharSelectForecaster<BaseForecaster>>(
+			forecaster[window][chain] = std::make_unique<CtaVharSelectForecaster<BaseForecaster>>(
 				reg_record, level, step, roll_y0[window], har_trans, lag, include_mean,
 				stable_filter, static_cast<unsigned int>(seed_forecast[chain]), sv
 			);
 		} else {
-			forecaster[window][chain] = std::make_unique<McmcVharForecaster<BaseForecaster>>(
+			forecaster[window][chain] = std::make_unique<CtaVharForecaster<BaseForecaster>>(
 				reg_record, step, roll_y0[window], har_trans, lag, include_mean,
 				stable_filter, static_cast<unsigned int>(seed_forecast[chain]), sv
 			);
@@ -1187,8 +1187,8 @@ protected:
 	}
 };
 
-template <template <typename, bool, bool> class BaseOutForecast = McmcRollforecastRun, typename BaseForecaster = RegForecaster>
-inline std::unique_ptr<McmcOutforecastInterface<BaseForecaster>> initialize_outforecaster(
+template <template <typename, bool, bool> class BaseOutForecast = CtaRollforecastRun, typename BaseForecaster = RegForecaster>
+inline std::unique_ptr<CtaOutforecastInterface<BaseForecaster>> initialize_ctaoutforecaster(
 	const Eigen::MatrixXd& y, int lag, int num_chains, int num_iter, int num_burn, int thinning,
 	bool sparse, double level, LIST& fit_record, bool run_mcmc,
 	LIST& param_reg, LIST& param_prior, LIST& param_intercept, LIST_OF_LIST& param_init, int prior_type, bool ggl,
@@ -1199,7 +1199,7 @@ inline std::unique_ptr<McmcOutforecastInterface<BaseForecaster>> initialize_outf
 	const bool sv
 ) {
 	if (ggl && run_mcmc) {
-		return std::make_unique<McmcVarforecastRun<BaseOutForecast, BaseForecaster, true, true>>(
+		return std::make_unique<CtaVarforecastRun<BaseOutForecast, BaseForecaster, true, true>>(
 			y, lag, num_chains, num_iter, num_burn, thinning,
 			sparse, level, fit_record,
 			param_reg, param_prior, param_intercept, param_init, prior_type,
@@ -1208,7 +1208,7 @@ inline std::unique_ptr<McmcOutforecastInterface<BaseForecaster>> initialize_outf
 			get_lpl, seed_chain, seed_forecast, display_progress, nthreads, sv
 		);
 	} else if (ggl && !run_mcmc) {
-		return std::make_unique<McmcVarforecastRun<BaseOutForecast, BaseForecaster, true, false>>(
+		return std::make_unique<CtaVarforecastRun<BaseOutForecast, BaseForecaster, true, false>>(
 			y, lag, num_chains, num_iter, num_burn, thinning,
 			sparse, level, fit_record,
 			param_reg, param_prior, param_intercept, param_init, prior_type,
@@ -1217,7 +1217,7 @@ inline std::unique_ptr<McmcOutforecastInterface<BaseForecaster>> initialize_outf
 			get_lpl, seed_chain, seed_forecast, display_progress, nthreads, sv
 		);
 	} else if (!ggl && run_mcmc) {
-		return std::make_unique<McmcVarforecastRun<BaseOutForecast, BaseForecaster, false, true>>(
+		return std::make_unique<CtaVarforecastRun<BaseOutForecast, BaseForecaster, false, true>>(
 			y, lag, num_chains, num_iter, num_burn, thinning,
 			sparse, level, fit_record,
 			param_reg, param_prior, param_intercept, param_init, prior_type,
@@ -1226,7 +1226,7 @@ inline std::unique_ptr<McmcOutforecastInterface<BaseForecaster>> initialize_outf
 			get_lpl, seed_chain, seed_forecast, display_progress, nthreads, sv
 		);
 	}
-	return std::make_unique<McmcVarforecastRun<BaseOutForecast, BaseForecaster, false, false>>(
+	return std::make_unique<CtaVarforecastRun<BaseOutForecast, BaseForecaster, false, false>>(
 		y, lag, num_chains, num_iter, num_burn, thinning,
 		sparse, level, fit_record,
 		param_reg, param_prior, param_intercept, param_init, prior_type,
@@ -1236,8 +1236,8 @@ inline std::unique_ptr<McmcOutforecastInterface<BaseForecaster>> initialize_outf
 	);
 }
 
-template <template <typename, bool, bool> class BaseOutForecast = McmcRollforecastRun, typename BaseForecaster = RegForecaster>
-inline std::unique_ptr<McmcOutforecastInterface<BaseForecaster>> initialize_outforecaster(
+template <template <typename, bool, bool> class BaseOutForecast = CtaRollforecastRun, typename BaseForecaster = RegForecaster>
+inline std::unique_ptr<CtaOutforecastInterface<BaseForecaster>> initialize_ctaoutforecaster(
 	const Eigen::MatrixXd& y, int week, int month, int num_chains, int num_iter, int num_burn, int thinning,
 	bool sparse, double level, LIST& fit_record, bool run_mcmc,
 	LIST& param_reg, LIST& param_prior, LIST& param_intercept, LIST_OF_LIST& param_init, int prior_type, bool ggl,
@@ -1248,7 +1248,7 @@ inline std::unique_ptr<McmcOutforecastInterface<BaseForecaster>> initialize_outf
 	const bool sv
 ) {
 	if (ggl && run_mcmc) {
-		return std::make_unique<McmcVharforecastRun<BaseOutForecast, BaseForecaster, true, true>>(
+		return std::make_unique<CtaVharforecastRun<BaseOutForecast, BaseForecaster, true, true>>(
 			y, week, month, num_chains, num_iter, num_burn, thinning,
 			sparse, level, fit_record,
 			param_reg, param_prior, param_intercept, param_init, prior_type,
@@ -1257,7 +1257,7 @@ inline std::unique_ptr<McmcOutforecastInterface<BaseForecaster>> initialize_outf
 			get_lpl, seed_chain, seed_forecast, display_progress, nthreads, sv
 		);
 	} else if (ggl && !run_mcmc) {
-		return std::make_unique<McmcVharforecastRun<BaseOutForecast, BaseForecaster, true, false>>(
+		return std::make_unique<CtaVharforecastRun<BaseOutForecast, BaseForecaster, true, false>>(
 			y, week, month, num_chains, num_iter, num_burn, thinning,
 			sparse, level, fit_record,
 			param_reg, param_prior, param_intercept, param_init, prior_type,
@@ -1266,7 +1266,7 @@ inline std::unique_ptr<McmcOutforecastInterface<BaseForecaster>> initialize_outf
 			get_lpl, seed_chain, seed_forecast, display_progress, nthreads, sv
 		);
 	} else if (!ggl && run_mcmc) {
-		return std::make_unique<McmcVharforecastRun<BaseOutForecast, BaseForecaster, false, true>>(
+		return std::make_unique<CtaVharforecastRun<BaseOutForecast, BaseForecaster, false, true>>(
 			y, week, month, num_chains, num_iter, num_burn, thinning,
 			sparse, level, fit_record,
 			param_reg, param_prior, param_intercept, param_init, prior_type,
@@ -1275,7 +1275,7 @@ inline std::unique_ptr<McmcOutforecastInterface<BaseForecaster>> initialize_outf
 			get_lpl, seed_chain, seed_forecast, display_progress, nthreads, sv
 		);
 	}
-	return std::make_unique<McmcVharforecastRun<BaseOutForecast, BaseForecaster, false, false>>(
+	return std::make_unique<CtaVharforecastRun<BaseOutForecast, BaseForecaster, false, false>>(
 		y, week, month, num_chains, num_iter, num_burn, thinning,
 		sparse, level, fit_record,
 		param_reg, param_prior, param_intercept, param_init, prior_type,

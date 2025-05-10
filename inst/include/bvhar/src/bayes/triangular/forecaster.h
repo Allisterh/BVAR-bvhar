@@ -325,6 +325,7 @@ public:
 			if (num_sim == 0) {
 				STOP("No stable MCMC draws");
 			}
+			// Resize pred_save
 		}
 	}
 	virtual ~CtaVarForecaster() = default;
@@ -361,6 +362,7 @@ public:
 			if (num_sim == 0) {
 				STOP("No stable MCMC draws");
 			}
+			// Resize pred_save
 		}
 	}
 	virtual ~CtaVharForecaster() = default;

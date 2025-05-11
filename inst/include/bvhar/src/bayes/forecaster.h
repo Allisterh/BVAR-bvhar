@@ -6,22 +6,24 @@
 
 namespace bvhar {
 
-template <typename ReturnType, typename DataType> class BayesForecaster;
-template <typename ReturnType, typename DataType> class McmcForecastRun;
+template <typename ReturnType, typename InputType, typename DataType, typename XType> class BayesForecaster;
+template <typename ReturnType, typename InputType, typename DataType, typename XType> class McmcForecastRun;
 class McmcOutforecastInterface;
-template <typename ReturnType, typename DataType, bool isUpdate> class McmcOutforecastRun;
+template <typename ReturnType, typename InputType, typename DataType, typename XType, bool isUpdate> class McmcOutforecastRun;
 
 /**
  * @brief Base class for forecaster of Bayesian methods
  * 
  * @tparam ReturnType 
+ * @tparam InputType 
  * @tparam DataType 
+ * @tparam XType 
  */
-template <typename ReturnType = Eigen::MatrixXd, typename DataType = Eigen::VectorXd>
-class BayesForecaster : public MultistepForecaster<ReturnType, DataType> {
+template <typename ReturnType = Eigen::MatrixXd, typename InputType = ReturnType, typename DataType = Eigen::VectorXd, typename XType = DataType>
+class BayesForecaster : public MultistepForecaster<ReturnType, InputType, DataType, XType> {
 public:
-	BayesForecaster(int step, const ReturnType& response, int lag, int num_sim, unsigned int seed)
-	: MultistepForecaster<ReturnType, DataType>(step, response, lag),
+	BayesForecaster(int step, const InputType& response, int lag, int num_sim, unsigned int seed)
+	: MultistepForecaster<ReturnType, InputType, DataType, XType>(step, response, lag),
 		lpl(Eigen::VectorXd::Zero(step)), num_sim(num_sim), rng(seed) {}
 	virtual ~BayesForecaster() = default;
 	// using MultistepForecaster<ReturnType, DataType>::returnForecast();
@@ -45,13 +47,13 @@ public:
 	}
 
 protected:
-	using MultistepForecaster<ReturnType, DataType>::step;
-	using MultistepForecaster<ReturnType, DataType>::lag;
-	using MultistepForecaster<ReturnType, DataType>::response;
-	using MultistepForecaster<ReturnType, DataType>::pred_save; // rbind(step), cbind(sims)
-	using MultistepForecaster<ReturnType, DataType>::point_forecast;
-	using MultistepForecaster<ReturnType, DataType>::last_pvec;
-	using MultistepForecaster<ReturnType, DataType>::tmp_vec;
+	using MultistepForecaster<ReturnType, InputType, DataType, XType>::step;
+	using MultistepForecaster<ReturnType, InputType, DataType, XType>::lag;
+	using MultistepForecaster<ReturnType, InputType, DataType, XType>::response;
+	using MultistepForecaster<ReturnType, InputType, DataType, XType>::pred_save; // rbind(step), cbind(sims)
+	using MultistepForecaster<ReturnType, InputType, DataType, XType>::point_forecast;
+	using MultistepForecaster<ReturnType, InputType, DataType, XType>::last_pvec;
+	using MultistepForecaster<ReturnType, InputType, DataType, XType>::tmp_vec;
 	Eigen::VectorXd lpl;
 	std::mutex mtx;
 	int num_sim;
@@ -127,10 +129,12 @@ protected:
  * @brief Base runner class for MCMC forecaster
  * 
  * @tparam ReturnType 
+ * @tparam InputType 
  * @tparam DataType 
+ * @tparam XType 
  */
-template <typename ReturnType = Eigen::MatrixXd, typename DataType = Eigen::VectorXd>
-class McmcForecastRun : public MultistepForecastRun<ReturnType, DataType> {
+template <typename ReturnType = Eigen::MatrixXd, typename InputType = ReturnType, typename DataType = Eigen::VectorXd, typename XType = DataType>
+class McmcForecastRun : public MultistepForecastRun<ReturnType, InputType, DataType> {
 public:
 	McmcForecastRun(int num_chains, int lag, int step, int nthreads)
 	: num_chains(num_chains), nthreads(nthreads),
@@ -166,7 +170,7 @@ private:
 	std::vector<ReturnType> density_forecast;
 
 protected:
-	std::vector<std::unique_ptr<BayesForecaster<ReturnType, DataType>>> forecaster;
+	std::vector<std::unique_ptr<BayesForecaster<ReturnType, InputType, DataType, XType>>> forecaster;
 };
 
 class McmcOutforecastInterface {
@@ -192,15 +196,17 @@ public:
  * @brief Base class for pseudo out-of-sample forecasting
  * 
  * @tparam ReturnType 
+ * @tparam InputType 
  * @tparam DataType 
+ * @tparam XType 
  */
-template <typename ReturnType = Eigen::MatrixXd, typename DataType = Eigen::VectorXd, bool isUpdate = true>
+template <typename ReturnType = Eigen::MatrixXd, typename InputType = ReturnType, typename DataType = Eigen::VectorXd, typename XType = DataType, bool isUpdate = true>
 class McmcOutForecastRun : public McmcOutforecastInterface {
 public:
 	McmcOutForecastRun(
 		int num_window, int lag,
 		int num_chains, int num_iter, int num_burn, int thin,
-		int step, const ReturnType& y_test, bool get_lpl,
+		int step, const InputType& y_test, bool get_lpl,
 		const Eigen::MatrixXi& seed_chain, const Eigen::VectorXi& seed_forecast, bool display_progress, int nthreads
 	)
 	: num_window(num_window), num_test(y_test.rows()), num_horizon(num_test - step + 1), step(step),
@@ -208,8 +214,7 @@ public:
 		get_lpl(get_lpl), display_progress(display_progress),
 		seed_forecast(seed_forecast), roll_mat(num_horizon), roll_y0(num_horizon), y_test(y_test),
 		model(num_horizon), forecaster(num_horizon),
-		out_forecast(num_horizon, std::vector<ReturnType>(num_chains)),
-		// out_forecast(num_horizon, std::vector<DataType>(num_chains)),
+		out_forecast(num_horizon, std::vector<DataType>(num_chains)),
 		lpl_record(Eigen::MatrixXd::Zero(num_horizon, num_chains)) {
 		for (auto &reg_chain : model) {
 			reg_chain.resize(num_chains);
@@ -273,9 +278,8 @@ protected:
 	std::vector<ReturnType> roll_y0;
 	ReturnType y_test;
 	std::vector<std::vector<std::unique_ptr<McmcAlgo>>> model;
-	std::vector<std::vector<std::unique_ptr<BayesForecaster<ReturnType, DataType>>>> forecaster;
-	std::vector<std::vector<ReturnType>> out_forecast;
-	// std::vector<std::vector<DataType>> out_forecast;
+	std::vector<std::vector<std::unique_ptr<BayesForecaster<ReturnType, InputType, DataType, XType>>>> forecaster;
+	std::vector<std::vector<DataType>> out_forecast;
 	Eigen::MatrixXd lpl_record;
 
 	/**

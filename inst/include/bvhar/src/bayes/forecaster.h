@@ -67,7 +67,7 @@ protected:
 		}
 	}
 
-	void forecast(const Eigen::VectorXd& valid_vec) override {
+	void forecast(const DataType& valid_vec) override {
 		std::lock_guard<std::mutex> lock(mtx);
 		DataType obs_vec = last_pvec; // y_T, y_(T - 1), ... y_(T - lag + 1)
 		for (int i = 0; i < num_sim; ++i) {
@@ -111,7 +111,7 @@ protected:
 	 * @param h Forecast step
 	 * @param valid_vec Validation vector
 	 */
-	virtual void updateLpl(int h, const Eigen::VectorXd& valid_vec) = 0;
+	virtual void updateLpl(int h, const DataType& valid_vec) = 0;
 
 	void forecastOut(const int i, const DataType& valid_vec) {
 		for (int h = 0; h < step; ++h) {

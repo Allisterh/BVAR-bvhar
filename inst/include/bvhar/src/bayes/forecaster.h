@@ -208,8 +208,8 @@ public:
 		get_lpl(get_lpl), display_progress(display_progress),
 		seed_forecast(seed_forecast), roll_mat(num_horizon), roll_y0(num_horizon), y_test(y_test),
 		model(num_horizon), forecaster(num_horizon),
-		out_forecast(num_horizon, std::vector<ReturnType>(num_chains)),
-		// out_forecast(num_horizon, std::vector<DataType>(num_chains)),
+		// out_forecast(num_horizon, std::vector<ReturnType>(num_chains)),
+		out_forecast(num_horizon, std::vector<DataType>(num_chains)),
 		lpl_record(Eigen::MatrixXd::Zero(num_horizon, num_chains)) {
 		for (auto &reg_chain : model) {
 			reg_chain.resize(num_chains);
@@ -274,8 +274,8 @@ protected:
 	ReturnType y_test;
 	std::vector<std::vector<std::unique_ptr<McmcAlgo>>> model;
 	std::vector<std::vector<std::unique_ptr<BayesForecaster<ReturnType, DataType>>>> forecaster;
-	std::vector<std::vector<ReturnType>> out_forecast;
-	// std::vector<std::vector<DataType>> out_forecast;
+	// std::vector<std::vector<ReturnType>> out_forecast;
+	std::vector<std::vector<DataType>> out_forecast;
 	Eigen::MatrixXd lpl_record;
 
 	/**

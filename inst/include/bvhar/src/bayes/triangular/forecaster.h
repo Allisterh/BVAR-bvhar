@@ -93,12 +93,12 @@ public:
 		return this->doForecast(valid_vec);
 	}
 
-	Eigen::MatrixXd getLastForecast() override {
-		return this->doForecast().bottomRows(1);
+	Eigen::VectorXd getLastForecast() override {
+		return this->doForecast().bottomRows<1>();
 	}
 
-	Eigen::MatrixXd getLastForecast(const Eigen::VectorXd& valid_vec) override {
-		return this->doForecast(valid_vec).bottomRows(1);
+	Eigen::VectorXd getLastForecast(const Eigen::VectorXd& valid_vec) override {
+		return this->doForecast(valid_vec).bottomRows<1>();
 	}
 
 	/**

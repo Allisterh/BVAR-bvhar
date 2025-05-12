@@ -6,21 +6,19 @@
 
 namespace bvhar {
 
-template <typename ReturnType, typename InputType, typename DataType, typename XType> class MultistepForecaster;
-template <typename ReturnType, typename InputType, typename DataType, typename XType> class MultistepForecastRun;
+template <typename ReturnType, typename DataType> class MultistepForecaster;
+template <typename ReturnType, typename DataType> class MultistepForecastRun;
 
 /**
  * @brief Base class for Recursive multi-step forecasting
  * 
  * @tparam ReturnType Type of forecasting result.
- * @tparam InputType Type of input data.
  * @tparam DataType Type of one unit.
- * @tparam XType Type of predictor.
  */
-template <typename ReturnType = Eigen::MatrixXd, typename InputType = ReturnType, typename DataType = Eigen::VectorXd, typename XType = DataType>
+template <typename ReturnType = Eigen::MatrixXd, typename DataType = Eigen::VectorXd>
 class MultistepForecaster {
 public:
-	MultistepForecaster(int step, const InputType& response, int lag)
+	MultistepForecaster(int step, const ReturnType& response, int lag)
 	: step(step), lag(lag), response(response) {}
 	virtual ~MultistepForecaster() = default;
 
@@ -40,16 +38,16 @@ public:
 		return pred_save;
 	}
 
-	virtual DataType getLastForecast() = 0;
-	virtual DataType getLastForecast(const DataType& valid_vec) = 0;
+	virtual ReturnType getLastForecast() = 0;
+	virtual ReturnType getLastForecast(const DataType& valid_vec) = 0;
 
 protected:
 	int step, lag;
-	InputType response;
+	ReturnType response;
 	ReturnType pred_save; // when Point: rbind(step) or when Density: rbind(step), cbind(sims)
 	DataType point_forecast; // y_(T + h - 1)
-	XType last_pvec; // [ y_(T + h - 1)^T, y_(T + h - 2)^T, ..., y_(T + h - p)^T, 1 ] (1 when constant term)
-	XType tmp_vec; // y_(T + h - 2), ... y_(T + h - lag)
+	DataType last_pvec; // [ y_(T + h - 1)^T, y_(T + h - 2)^T, ..., y_(T + h - p)^T, 1 ] (1 when constant term)
+	DataType tmp_vec; // y_(T + h - 2), ... y_(T + h - lag)
 
 	/**
 	 * @brief Initialize lagged predictors 'point_forecast', 'last_pvec' and 'tmp_vec'.
@@ -89,11 +87,9 @@ protected:
  * @brief Base class for multi-step forecasting runner
  * 
  * @tparam ReturnType 
- * @tparam InputType 
  * @tparam DataType 
- * @tparam XType 
  */
-template <typename ReturnType = Eigen::MatrixXd, typename InputType = ReturnType, typename DataType = Eigen::VectorXd, typename XType = DataType>
+template <typename ReturnType = Eigen::MatrixXd, typename DataType = Eigen::VectorXd>
 class MultistepForecastRun {
 public:
 	MultistepForecastRun() {}

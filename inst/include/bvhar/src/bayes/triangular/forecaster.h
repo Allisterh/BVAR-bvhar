@@ -26,10 +26,10 @@ template <template <typename, bool, bool> class BaseOutForecast, typename BaseFo
  * @brief Forecast class for `McmcTriangular`
  * 
  */
-class CtaForecaster : public BayesForecaster<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd> {
+class CtaForecaster : public BayesForecaster<Eigen::MatrixXd, Eigen::VectorXd> {
 public:
 	CtaForecaster(const RegRecords& records, int step, const Eigen::MatrixXd& response_mat, int ord, bool include_mean, bool filter_stable, unsigned int seed, bool sv = true)
-	: BayesForecaster<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd>(step, response_mat, ord, records.coef_record.rows(), seed),
+	: BayesForecaster<Eigen::MatrixXd, Eigen::VectorXd>(step, response_mat, ord, records.coef_record.rows(), seed),
 		// rng(seed), response(response_mat),
 		include_mean(include_mean), stable_filter(filter_stable),
 		// step(step),
@@ -93,12 +93,12 @@ public:
 		return this->doForecast(valid_vec);
 	}
 
-	Eigen::VectorXd getLastForecast() override {
-		return this->doForecast().bottomRows<1>();
+	Eigen::MatrixXd getLastForecast() override {
+		return this->doForecast().bottomRows(1);
 	}
 
-	Eigen::VectorXd getLastForecast(const Eigen::VectorXd& valid_vec) override {
-		return this->doForecast(valid_vec).bottomRows<1>();
+	Eigen::MatrixXd getLastForecast(const Eigen::VectorXd& valid_vec) override {
+		return this->doForecast(valid_vec).bottomRows(1);
 	}
 
 	/**
@@ -542,7 +542,7 @@ inline std::vector<std::unique_ptr<BaseForecaster>> initialize_ctaforecaster(
  * @tparam BaseForecaster `RegForecaster` or `SvForecaster`
  */
 template <typename BaseForecaster = RegForecaster>
-class CtaForecastRun : public McmcForecastRun<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd> {
+class CtaForecastRun : public McmcForecastRun<Eigen::MatrixXd, Eigen::VectorXd> {
 public:
 	CtaForecastRun(
 		int num_chains, int lag, int step, const Eigen::MatrixXd& response_mat,
@@ -550,7 +550,7 @@ public:
 		const Eigen::VectorXi& seed_chain, bool include_mean, bool stable, int nthreads,
 		bool sv = true
 	)
-	: McmcForecastRun<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd>(num_chains, lag, step, nthreads) {
+	: McmcForecastRun<Eigen::MatrixXd, Eigen::VectorXd>(num_chains, lag, step, nthreads) {
 	// : num_chains(num_chains), nthreads(nthreads), density_forecast(num_chains), forecaster(num_chains) {
 		// forecaster = initialize_ctaforecaster<BaseForecaster>(
 		// 	num_chains, lag, step, response_mat, sparse, level,
@@ -572,7 +572,7 @@ public:
 		const Eigen::VectorXi& seed_chain, bool include_mean, bool stable, int nthreads,
 		bool sv = true
 	)
-	: McmcForecastRun<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd>(num_chains, month, step, nthreads) {
+	: McmcForecastRun<Eigen::MatrixXd, Eigen::VectorXd>(num_chains, month, step, nthreads) {
 	// : num_chains(num_chains), nthreads(nthreads), density_forecast(num_chains) {
 		Eigen::MatrixXd har_trans = build_vhar(response_mat.cols(), week, month, include_mean);
 		// forecaster = initialize_ctaforecaster<BaseForecaster>(
@@ -595,7 +595,7 @@ public:
 		const Eigen::VectorXi& seed_chain, bool include_mean, bool stable, int nthreads,
 		bool sv = true
 	)
-	: McmcForecastRun<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd>(num_chains, month, step, nthreads) {
+	: McmcForecastRun<Eigen::MatrixXd, Eigen::VectorXd>(num_chains, month, step, nthreads) {
 	// : num_chains(num_chains), nthreads(nthreads), density_forecast(num_chains) {
 		// forecaster = initialize_ctaforecaster<BaseForecaster>(
 		// 	num_chains, month, step, response_mat, sparse, level,
@@ -668,7 +668,7 @@ public:
  * @tparam isUpdate MCMC again in the new window
  */
 template <typename BaseForecaster = RegForecaster, bool isUpdate = true>
-class CtaOutforecastRun : public McmcOutForecastRun<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd, isUpdate> {
+class CtaOutforecastRun : public McmcOutForecastRun<Eigen::MatrixXd, Eigen::VectorXd, isUpdate> {
 public:
 	CtaOutforecastRun(
 		const Eigen::MatrixXd& y, int lag, int num_chains, int num_iter, int num_burn, int thin,
@@ -679,7 +679,7 @@ public:
 		bool include_mean, bool stable, int step, const Eigen::MatrixXd& y_test, bool get_lpl,
 		const Eigen::MatrixXi& seed_chain, const Eigen::VectorXi& seed_forecast, bool display_progress, int nthreads, bool sv = true
 	)
-	: McmcOutForecastRun<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd, isUpdate>(
+	: McmcOutForecastRun<Eigen::MatrixXd, Eigen::VectorXd, isUpdate>(
 			y.rows(), lag,
 			num_chains, num_iter, num_burn, thin, step, y_test, get_lpl,
 			seed_chain, seed_forecast, display_progress, nthreads
@@ -695,28 +695,28 @@ protected:
 	using BaseMcmc = typename std::conditional<std::is_same<BaseForecaster, RegForecaster>::value, McmcReg, McmcSv>::type;
 	using RecordType = typename std::conditional<std::is_same<BaseForecaster, RegForecaster>::value, LdltRecords, SvRecords>::type;
 	int dim;
-	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd, isUpdate>::num_window;
-	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd, isUpdate>::num_test;
-	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd, isUpdate>::num_horizon;
-	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd, isUpdate>::step;
-	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd, isUpdate>::lag;
-	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd, isUpdate>::num_chains;
-	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd, isUpdate>::num_iter;
-	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd, isUpdate>::num_burn;
-	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd, isUpdate>::thin;
-	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd, isUpdate>::nthreads;
-	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd, isUpdate>::get_lpl;
-	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd, isUpdate>::display_progress;
+	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::VectorXd, isUpdate>::num_window;
+	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::VectorXd, isUpdate>::num_test;
+	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::VectorXd, isUpdate>::num_horizon;
+	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::VectorXd, isUpdate>::step;
+	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::VectorXd, isUpdate>::lag;
+	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::VectorXd, isUpdate>::num_chains;
+	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::VectorXd, isUpdate>::num_iter;
+	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::VectorXd, isUpdate>::num_burn;
+	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::VectorXd, isUpdate>::thin;
+	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::VectorXd, isUpdate>::nthreads;
+	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::VectorXd, isUpdate>::get_lpl;
+	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::VectorXd, isUpdate>::display_progress;
 	bool include_mean, stable_filter, sparse, sv;
 	double level;
-	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd, isUpdate>::seed_forecast;
-	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd, isUpdate>::roll_mat;
-	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd, isUpdate>::roll_y0;
-	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd, isUpdate>::y_test;
-	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd, isUpdate>::model;
-	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd, isUpdate>::forecaster;
-	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd, isUpdate>::out_forecast;
-	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd, isUpdate>::lpl_record;
+	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::VectorXd, isUpdate>::seed_forecast;
+	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::VectorXd, isUpdate>::roll_mat;
+	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::VectorXd, isUpdate>::roll_y0;
+	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::VectorXd, isUpdate>::y_test;
+	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::VectorXd, isUpdate>::model;
+	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::VectorXd, isUpdate>::forecaster;
+	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::VectorXd, isUpdate>::out_forecast;
+	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::VectorXd, isUpdate>::lpl_record;
 
 	/**
 	 * @brief Define input in each window

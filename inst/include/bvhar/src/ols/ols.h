@@ -157,6 +157,22 @@ public:
 			break;
 		}
 	}
+	OlsVar(const Eigen::MatrixXd& y, const Eigen::MatrixXd& exogen, int lag, int exogen_lag, const bool include_mean, int method)
+	: lag(lag), const_term(include_mean), data(y) {
+		response = build_y0(data, lag, lag + 1);
+		design = build_x0(data, exogen, lag, exogen_lag, const_term);
+		switch (method) {
+		case 1:
+			_ols = std::unique_ptr<MultiOls>(new MultiOls(design, response));
+			break;
+		case 2:
+			_ols = std::unique_ptr<MultiOls>(new LltOls(design, response));
+			break;
+		case 3:
+			_ols = std::unique_ptr<MultiOls>(new QrOls(design, response));
+			break;
+		}
+	}
 	virtual ~OlsVar() = default;
 	LIST returnOlsRes() {
 		LIST ols_res = _ols->returnOlsRes();

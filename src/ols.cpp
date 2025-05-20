@@ -15,7 +15,15 @@
 //' @noRd
 // [[Rcpp::export]]
 Rcpp::List estimate_var(Eigen::MatrixXd y, int lag, bool include_mean, int method) {
-	std::unique_ptr<bvhar::OlsVar> ols_obj(new bvhar::OlsVar(y, lag, include_mean, method));
+	// std::unique_ptr<bvhar::OlsVar> ols_obj(new bvhar::OlsVar(y, lag, include_mean, method));
+	auto ols_obj = std::make_unique<bvhar::OlsVar>(y, lag, include_mean, method);
+	return ols_obj->returnOlsRes();
+}
+
+//' @noRd
+// [[Rcpp::export]]
+Rcpp::List estimate_varx(Eigen::MatrixXd y, Eigen::MatrixXd exogen, int lag, int exogen_lag, bool include_mean, int method) {
+	auto ols_obj = std::make_unique<bvhar::OlsVar>(y, exogen, lag, exogen_lag, include_mean, method);
 	return ols_obj->returnOlsRes();
 }
 

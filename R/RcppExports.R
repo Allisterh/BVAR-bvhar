@@ -280,6 +280,11 @@ estimate_var <- function(y, lag, include_mean, method) {
     .Call(`_bvhar_estimate_var`, y, lag, include_mean, method)
 }
 
+#' @noRd
+estimate_varx <- function(y, exogen, lag, exogen_lag, include_mean, method) {
+    .Call(`_bvhar_estimate_varx`, y, exogen, lag, exogen_lag, include_mean, method)
+}
+
 #' Compute Vector HAR Coefficient Matrices and Fitted Values
 #' 
 #' This function fits VHAR given response and design matrices of multivariate time series.

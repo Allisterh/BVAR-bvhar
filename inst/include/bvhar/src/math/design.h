@@ -76,6 +76,28 @@ inline Eigen::MatrixXd build_vhar(int dim, int week, int month, bool include_mea
   return HARtrans.block(0, 0, 3 * dim, month * dim);
 }
 
+inline Eigen::MatrixXd build_vhar(int dim_endog, int dim_exogen, int week, int month, bool include_mean) {
+  Eigen::MatrixXd HAR = Eigen::MatrixXd::Zero(3, month);
+  Eigen::MatrixXd HARtrans = Eigen::MatrixXd::Zero(3 * (dim_endog + dim_exogen) + 1, month * (dim_endog + dim_exogen) + 1);
+  // Eigen::MatrixXd Im = Eigen::MatrixXd::Identity(dim, dim);
+  HAR(0, 0) = 1.0;
+  for (int i = 0; i < week; i++) {
+    HAR(1, i) = 1.0 / week;
+  }
+  for (int i = 0; i < month; i++) {
+    HAR(2, i) = 1.0 / month;
+  }
+  // T otimes Im
+  // HARtrans.block(0, 0, 3 * dim, month * dim) = Eigen::kroneckerProduct(HAR, Im).eval();
+	HARtrans.topLeftCorner(3 * dim_endog, month * dim_endog) = Eigen::kroneckerProduct(HAR, Eigen::MatrixXd::Identity(dim_endog, dim_endog)).eval();
+	HARtrans.block(3 * dim_endog, month * dim_endog, 3 * dim_exogen, month * dim_exogen) = Eigen::kroneckerProduct(HAR, Eigen::MatrixXd::Identity(dim_exogen, dim_exogen)).eval();
+  HARtrans(3 * (dim_endog + dim_exogen), month * (dim_endog + dim_exogen)) = 1.0;
+  if (include_mean) {
+    return HARtrans;
+  }
+  return HARtrans.topLeftCorner(3 * (dim_endog + dim_exogen), month * (dim_endog + dim_exogen));
+}
+
 inline Eigen::MatrixXd build_ydummy(int p, const Eigen::VectorXd& sigma, double lambda,
 																		const Eigen::VectorXd& daily, const Eigen::VectorXd& weekly, const Eigen::VectorXd& monthly,
 																		bool include_mean) {

@@ -10,19 +10,33 @@ print.varlse <- function(x, digits = max(3L, getOption("digits") - 3L), ...) {
     paste(deparse(x$call), sep="\n", collapse = "\n"), "\n\n", sep = ""
   )
   # split the matrix for the print: B1, ..., Bp
-  bhat_mat <- split_coef(x)
+  # bhat_mat <- split_coef(x)
+  ols_coef <- split_edog_coef(x$coefficients[-x$exogen_id,], x$p, x$m)
   cat(sprintf("VAR(%i) Estimation using least squares\n", x$p))
   cat("====================================================\n\n")
   for (i in 1:(x$p)) {
     cat(sprintf("LSE for A%i:\n", i))
     # B1, ..., Bp--------------------
     print.default(
-      bhat_mat[[i]],
+      ols_coef[[i]],
       digits = digits,
       print.gap = 2L,
       quote = FALSE
     )
     cat("\n\n")
+  }
+  if (x$exogen) {
+    exog_coef <- split_exogen_coef(x$coefficients, x$exogen_id, x$s, x$exogen_m)
+    for (i in seq_len(x$s)) {
+      cat(sprintf("LSE for exogenous B%i:\n", i))
+      print.default(
+        exog_coef[[i]],
+        digits = digits,
+        print.gap = 2L,
+        quote = FALSE
+      )
+      cat("\n\n")
+    }
   }
   # const term----------------------
   if (x$type == "const") {

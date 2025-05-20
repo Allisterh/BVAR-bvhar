@@ -94,6 +94,8 @@ var_lm <- function(y, p = 1, exogen = NULL, s = p, include_mean = TRUE, method =
       )
     }
     res <- estimate_varx(y, exogen, p, s, include_mean, method_fit)
+    res$s <- s
+    res$exogen_m <- ncol(exogen)
     res$exogen <- TRUE
     res$exogen_id <- p * ncol(y) + 1:(s * ncol(exogen)) # row index for exogen in coefficient
   } else {

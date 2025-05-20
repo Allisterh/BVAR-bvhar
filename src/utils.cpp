@@ -69,6 +69,12 @@ Eigen::MatrixXd build_design(Eigen::MatrixXd y, int var_lag, bool include_mean) 
 	return bvhar::build_x0(y, var_lag, include_mean);
 }
 
+//' @noRd
+// [[Rcpp::export]]
+Eigen::MatrixXd build_exogen_design(Eigen::MatrixXd y, Eigen::MatrixXd exogen, int var_lag, int exogen_lag, bool include_mean) {
+	return bvhar::build_x0(y, exogen, var_lag, exogen_lag, include_mean);
+}
+
 //' Building a Linear Transformation Matrix for Vector HAR
 //' 
 //' This function produces a linear transformation matrix for VHAR for given dimension.

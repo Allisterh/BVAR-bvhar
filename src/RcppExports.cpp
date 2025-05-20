@@ -1155,6 +1155,21 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// build_exogen_design
+Eigen::MatrixXd build_exogen_design(Eigen::MatrixXd y, Eigen::MatrixXd exogen, int var_lag, int exogen_lag, bool include_mean);
+RcppExport SEXP _bvhar_build_exogen_design(SEXP ySEXP, SEXP exogenSEXP, SEXP var_lagSEXP, SEXP exogen_lagSEXP, SEXP include_meanSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type y(ySEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type exogen(exogenSEXP);
+    Rcpp::traits::input_parameter< int >::type var_lag(var_lagSEXP);
+    Rcpp::traits::input_parameter< int >::type exogen_lag(exogen_lagSEXP);
+    Rcpp::traits::input_parameter< bool >::type include_mean(include_meanSEXP);
+    rcpp_result_gen = Rcpp::wrap(build_exogen_design(y, exogen, var_lag, exogen_lag, include_mean));
+    return rcpp_result_gen;
+END_RCPP
+}
 // scale_har
 Eigen::MatrixXd scale_har(int dim, int week, int month, bool include_mean);
 RcppExport SEXP _bvhar_scale_har(SEXP dimSEXP, SEXP weekSEXP, SEXP monthSEXP, SEXP include_meanSEXP) {
@@ -1740,6 +1755,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_bvhar_is_omp", (DL_FUNC) &_bvhar_is_omp, 0},
     {"_bvhar_build_response", (DL_FUNC) &_bvhar_build_response, 3},
     {"_bvhar_build_design", (DL_FUNC) &_bvhar_build_design, 3},
+    {"_bvhar_build_exogen_design", (DL_FUNC) &_bvhar_build_exogen_design, 5},
     {"_bvhar_scale_har", (DL_FUNC) &_bvhar_scale_har, 4},
     {"_bvhar_build_ydummy_export", (DL_FUNC) &_bvhar_build_ydummy_export, 7},
     {"_bvhar_build_xdummy_export", (DL_FUNC) &_bvhar_build_xdummy_export, 5},

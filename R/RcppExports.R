@@ -951,6 +951,11 @@ build_design <- function(y, var_lag, include_mean) {
     .Call(`_bvhar_build_design`, y, var_lag, include_mean)
 }
 
+#' @noRd
+build_exogen_design <- function(y, exogen, var_lag, exogen_lag, include_mean) {
+    .Call(`_bvhar_build_exogen_design`, y, exogen, var_lag, exogen_lag, include_mean)
+}
+
 #' Building a Linear Transformation Matrix for Vector HAR
 #' 
 #' This function produces a linear transformation matrix for VHAR for given dimension.

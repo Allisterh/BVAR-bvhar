@@ -32,6 +32,25 @@ inline Eigen::MatrixXd build_x0(const Eigen::MatrixXd& y, int var_lag, bool incl
   return res;
 }
 
+inline Eigen::MatrixXd build_x0(const Eigen::MatrixXd& y, const Eigen::MatrixXd& exogen, int var_lag, int exogen_lag, bool include_mean) {
+  int num_design = y.rows() - var_lag; // n = T - p
+  int dim = y.cols();
+	int x_dim = exogen.cols();
+  int dim_design = dim * var_lag + x_dim * exogen_lag + 1;
+	Eigen::MatrixXd res(num_design, dim_design); // X0 = [Yp, ... Y1, Xq, ..., X1, 1]: n x (dim * lag + x_dim * x_lag + 1)
+  for (int t = 0; t < var_lag; ++t) {
+		res.middleCols(t * dim, dim) = y.middleRows(var_lag - t - 1, num_design); // Yp to Y1
+  }
+	for (int t = 0; t < exogen_lag; ++t) {
+		res.middleCols(dim * var_lag + t * x_dim, x_dim) = exogen.middleRows(var_lag - t, num_design); // X(p + 1) to X(p - s)
+  }
+  if (!include_mean) {
+    return res.leftCols(dim_design - 1);
+  }
+	res.col(dim_design - 1) = Eigen::VectorXd::Ones(num_design); // the last column for constant term
+  return res;
+}
+
 inline Eigen::MatrixXd build_vhar(int dim, int week, int month, bool include_mean) {
   // if (week > month) {
   //   Rcpp::stop("'month' should be larger than 'week'.");

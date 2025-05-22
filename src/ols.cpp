@@ -187,9 +187,11 @@ Eigen::MatrixXd forecast_var(Rcpp::List object, int step) {
   Eigen::MatrixXd coef_mat = object["coefficients"]; // bhat
   int var_lag = object["p"]; // VAR(p)
 	bool include_mean = Rcpp::as<std::string>(object["type"]) == "const";
-	bvhar::OlsFit ols_fit(coef_mat, var_lag);
-	std::unique_ptr<bvhar::VarForecaster> forecaster(new bvhar::VarForecaster(ols_fit, step, response_mat, include_mean));
-	return forecaster->forecastPoint();
+	// bvhar::OlsFit ols_fit(coef_mat, var_lag);
+	// std::unique_ptr<bvhar::VarForecaster> forecaster(new bvhar::VarForecaster(ols_fit, step, response_mat, include_mean));
+	// return forecaster->forecastPoint();
+	auto forecaster = std::make_unique<bvhar::OlsForecastRun>(var_lag, step, response_mat, coef_mat, include_mean);
+	return forecaster->returnForecast();
 }
 
 //' Forecasting Vector HAR
@@ -207,12 +209,15 @@ Eigen::MatrixXd forecast_vhar(Rcpp::List object, int step) {
   }
   Eigen::MatrixXd response_mat = object["y0"]; // Y0
   Eigen::MatrixXd coef_mat = object["coefficients"]; // bhat
-  Eigen::MatrixXd HARtrans = object["HARtrans"]; // HAR transformation
+  // Eigen::MatrixXd HARtrans = object["HARtrans"]; // HAR transformation
+	int week = object["week"];
   int month = object["month"];
 	bool include_mean = Rcpp::as<std::string>(object["type"]) == "const";
-	bvhar::OlsFit ols_fit(coef_mat, month);
-	std::unique_ptr<bvhar::VharForecaster> forecaster(new bvhar::VharForecaster(ols_fit, step, response_mat, HARtrans, include_mean));
-	return forecaster->forecastPoint();
+	// bvhar::OlsFit ols_fit(coef_mat, month);
+	// std::unique_ptr<bvhar::VharForecaster> forecaster(new bvhar::VharForecaster(ols_fit, step, response_mat, HARtrans, include_mean));
+	// return forecaster->forecastPoint();
+	auto forecaster = std::make_unique<bvhar::OlsForecastRun>(week, month, step, response_mat, coef_mat, include_mean);
+	return forecaster->returnForecast();
 }
 
 //' Out-of-Sample Forecasting of VAR based on Rolling Window

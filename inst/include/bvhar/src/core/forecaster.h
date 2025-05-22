@@ -105,7 +105,7 @@ public:
 	 * @brief Forecast
 	 * 
 	 */
-	virtual void forecast() = 0;
+	virtual void forecast() {}
 };
 
 } // namespace bvhar

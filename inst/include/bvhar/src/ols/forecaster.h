@@ -10,6 +10,7 @@ namespace bvhar {
 class OlsForecaster;
 class VarForecaster;
 class VharForecaster;
+class OlsForecastRun;
 
 class OlsForecaster : public MultistepForecaster<Eigen::MatrixXd, Eigen::VectorXd> {
 public:
@@ -85,6 +86,27 @@ protected:
 
 private:
 	Eigen::MatrixXd har_trans;
+};
+
+class OlsForecastRun : public MultistepForecastRun<Eigen::MatrixXd, Eigen::VectorXd> {
+public:
+	OlsForecastRun(int lag, int step, const Eigen::MatrixXd& response_mat, const Eigen::MatrixXd& coef_mat, bool include_mean) {
+		bvhar::OlsFit ols_fit(coef_mat, lag);
+		forecaster = std::make_unique<VarForecaster>(ols_fit, step, response_mat, include_mean);
+	}
+	OlsForecastRun(int week, int month, int step, const Eigen::MatrixXd& response_mat, const Eigen::MatrixXd& coef_mat, bool include_mean) {
+		Eigen::MatrixXd har_trans = build_vhar(response_mat.cols(), week, month, include_mean);
+		bvhar::OlsFit ols_fit(coef_mat, month);
+		forecaster = std::make_unique<VharForecaster>(ols_fit, step, response_mat, har_trans, include_mean);
+	}
+	virtual ~OlsForecastRun() = default;
+	
+	Eigen::MatrixXd returnForecast() {
+		return forecaster->doForecast();
+	}
+
+protected:
+	std::unique_ptr<OlsForecaster> forecaster;
 };
 
 } // namespace bvhar

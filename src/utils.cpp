@@ -411,7 +411,7 @@ Eigen::MatrixXd sim_var_eigen(int num_sim,
     for (int t = 1; t < var_lag; t++) {
       obs_p.block(0, t * dim, 1, dim) = obs_p.block(0, (t - 1) * dim, 1, dim);
     }
-    obs_p.block(0, 0, 1, dim) = res.row(i - 1);
+    obs_p.topLeftCorner(1, dim) = res.row(i - 1);
     res.row(i) = obs_p * var_coef + error_term.row(i); // yi = [y(i-1), ..., y(i-p), 1] A + eps(i)
   }
   return res.bottomRows(num_rand - num_burn);
@@ -467,7 +467,7 @@ Eigen::MatrixXd sim_var_chol(int num_sim,
     for (int t = 1; t < var_lag; t++) {
       obs_p.block(0, t * dim, 1, dim) = obs_p.block(0, (t - 1) * dim, 1, dim);
     }
-    obs_p.block(0, 0, 1, dim) = res.row(i - 1);
+    obs_p.topLeftCorner(1, dim) = res.row(i - 1);
     res.row(i) = obs_p * var_coef + error_term.row(i);
   }
   return res.bottomRows(num_rand - num_burn);
@@ -507,7 +507,7 @@ Eigen::MatrixXd sim_vhar_eigen(int num_sim,
     include_mean = false;
   } // 22m (none)
   int num_rand = num_sim + num_burn; // sim + burnin
-  Eigen::MatrixXd hartrans_mat = bvhar::build_vhar(dim, week, month, include_mean).block(0, 0, num_har, dim_har);
+  Eigen::MatrixXd hartrans_mat = bvhar::build_vhar(dim, week, month, include_mean).topLeftCorner(num_har, dim_har);
   Eigen::MatrixXd obs_p(1, dim_har); // row vector of X0: y22^T, ..., y1^T, 1
   obs_p(0, dim_har - 1) = 1.0; // for constant term if exists
   for (int i = 0; i < month; i++) {
@@ -533,7 +533,7 @@ Eigen::MatrixXd sim_vhar_eigen(int num_sim,
     for (int t = 1; t < month; t++) {
       obs_p.block(0, t * dim, 1, dim) = obs_p.block(0, (t - 1) * dim, 1, dim);
     }
-    obs_p.block(0, 0, 1, dim) = res.row(i - 1);
+    obs_p.topLeftCorner(1, dim) = res.row(i - 1);
     res.row(i) = obs_p * hartrans_mat.transpose() * vhar_coef + error_term.row(i);
   }
   return res.bottomRows(num_rand - num_burn);
@@ -581,7 +581,7 @@ Eigen::MatrixXd sim_vhar_chol(int num_sim,
     include_mean = false;
   } // 22m (none)
   int num_rand = num_sim + num_burn; // sim + burnin
-  Eigen::MatrixXd hartrans_mat = bvhar::build_vhar(dim, week, month, include_mean).block(0, 0, num_har, dim_har);
+  Eigen::MatrixXd hartrans_mat = bvhar::build_vhar(dim, week, month, include_mean).topLeftCorner(num_har, dim_har);
   Eigen::MatrixXd obs_p(1, dim_har); // row vector of X0: y22^T, ..., y1^T, 1
   obs_p(0, dim_har - 1) = 1.0; // for constant term if exists
   for (int i = 0; i < month; i++) {
@@ -607,7 +607,7 @@ Eigen::MatrixXd sim_vhar_chol(int num_sim,
     for (int t = 1; t < month; t++) {
       obs_p.block(0, t * dim, 1, dim) = obs_p.block(0, (t - 1) * dim, 1, dim);
     }
-    obs_p.block(0, 0, 1, dim) = res.row(i - 1);
+    obs_p.topLeftCorner(1, dim) = res.row(i - 1);
     res.row(i) = obs_p * hartrans_mat.transpose() * vhar_coef + error_term.row(i);
   }
   return res.bottomRows(num_rand - num_burn);
@@ -748,7 +748,7 @@ Eigen::MatrixXd compute_vhar_mse(Eigen::MatrixXd cov_mat,
   int dim = cov_mat.cols(); // dimension of time series
   Eigen::MatrixXd vma_mat = bvhar::convert_vhar_to_vma(vhar_coef, har_trans, month, step);
   Eigen::MatrixXd mse(dim * step, dim);
-  mse.block(0, 0, dim, dim) = cov_mat; // sig(y) = sig
+  mse.topLeftCorner(dim, dim) = cov_mat; // sig(y) = sig
   for (int i = 1; i < step; i++) {
     mse.block(i * dim, 0, dim, dim) = mse.block((i - 1) * dim, 0, dim, dim) + 
       vma_mat.block(i * dim, 0, dim, dim).transpose() * cov_mat * vma_mat.block(i * dim, 0, dim, dim);
@@ -908,8 +908,8 @@ Eigen::MatrixXd compute_var_stablemat(Eigen::MatrixXd coef_mat, int var_lag) {
 	int dim = coef_mat.cols();
   // int var_lag = object["p"]; // p
   // Eigen::MatrixXd coef_mat = object["coefficients"]; // Ahat
-  Eigen::MatrixXd coef_without_const = coef_mat.block(0, 0, dim * var_lag, dim);
-  Eigen::MatrixXd res = compute_stablemat(coef_without_const);
+  Eigen::MatrixXd coef_without_const = coef_mat.topLeftCorner(dim * var_lag, dim);
+  Eigen::MatrixXd res = bvhar::build_companion(coef_without_const);
   return res;
 }
 
@@ -933,9 +933,9 @@ Eigen::MatrixXd compute_vhar_stablemat(Eigen::MatrixXd coef_mat, Eigen::MatrixXd
 	int dim = coef_mat.cols();
   // Eigen::MatrixXd coef_mat = object["coefficients"]; // Phihat
   // Eigen::MatrixXd hartrans_mat = object["HARtrans"]; // HAR transformation: (3m + 1, 22m + 1)
-  Eigen::MatrixXd coef_without_const = coef_mat.block(0, 0, 3 * dim, dim);
-  Eigen::MatrixXd hartrans_without_const = hartrans_mat.block(0, 0, 3 * dim, 22 * dim); // 3m x 22m
-  Eigen::MatrixXd res = compute_stablemat(hartrans_without_const.transpose() * coef_without_const);
+  Eigen::MatrixXd coef_without_const = coef_mat.topLeftCorner(3 * dim, dim);
+  Eigen::MatrixXd hartrans_without_const = hartrans_mat.topLeftCorner(3 * dim, 22 * dim); // 3m x 22m
+  Eigen::MatrixXd res = bvhar::build_companion(hartrans_without_const.transpose() * coef_without_const);
   return res;
 }
 

@@ -39,7 +39,7 @@ public:
 	}
 
 	virtual DataType getLastForecast() = 0;
-	virtual DataType getLastForecast(const DataType& valid_vec) = 0;
+	virtual DataType getLastForecast(const DataType& valid_vec) { getLastForecast(); }
 
 protected:
 	int step, lag;
@@ -59,9 +59,15 @@ protected:
 	 * @brief Multi-step forecasting
 	 * 
 	 */
-	virtual void forecast() = 0;
+	virtual void forecast() {
+		for (int h = 0; h < step; ++h) {
+			setRecursion();
+			updatePred(h, 0);
+			updateRecursion();
+		}
+	}
 
-	virtual void forecast(const DataType& valid_vec) = 0;
+	virtual void forecast(const DataType& valid_vec) { forecast(); }
 
 	/**
 	 * @brief Set the initial lagged unit

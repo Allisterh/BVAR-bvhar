@@ -21,20 +21,39 @@ print.vharlse <- function(x, digits = max(3L, getOption("digits") - 3L), ...) {
   #       lapply(t)
   #   }
   # )
-  phihat_mat <- split_coef(x)
-  names(phihat_mat) <- c("day", "week", "month")
+  # phihat_mat <- split_coef(x)
+  if (x$exogen) {
+    ols_coef <- split_endog_coef(x$coefficients[-x$exogen_id, ], x$p, x$m)
+  } else {
+    ols_coef <- split_endog_coef(x$coefficients, x$p, x$m)
+  }
+  names(ols_coef) <- c("day", "week", "month")
   cat("VHAR Estimation")
   cat("====================================================\n\n")
   for (i in 1:x$p) {
-    cat(paste0("LSE for ", names(phihat_mat)[i], ":\n"))
+    cat(paste0("LSE for ", names(ols_coef)[i], ":\n"))
     # Phi(d), Phi(w), Phi(m)---------
     print.default(
-      phihat_mat[[i]],
+      ols_coef[[i]],
       digits = digits,
       print.gap = 2L,
       quote = FALSE
     )
     cat("\n\n")
+  }
+  if (x$exogen) {
+    exog_coef <- split_exogen_coef(x$coefficients, x$exogen_id, x$s, x$exogen_m)
+    names(exog_coef) <- c("day", "week", "month")
+    for (i in seq_len(x$s)) {
+      cat(sprintf("LSE for exogenous %s:\n", names(exog_coef)[i]))
+      print.default(
+        exog_coef[[i]],
+        digits = digits,
+        print.gap = 2L,
+        quote = FALSE
+      )
+      cat("\n\n")
+    }
   }
   # const term----------------------
   if (x$type == "const") {

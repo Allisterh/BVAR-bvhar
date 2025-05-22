@@ -70,8 +70,8 @@ split_coef <- function(object, ...) {
 }
 
 #' @noRd
-split_edog_coef <- function(coef_mat, p, dim_data, ...) {
-  include_mean <- nrow(coef_mat) != p * dim_data
+split_endog_coef <- function(coef_mat, p, dim_data, ...) {
+  # include_mean <- nrow(coef_mat) != p * dim_data
   split.data.frame(coef_mat[-nrow(coef_mat),], gl(p, dim_data)) |>
     lapply(t)
 }

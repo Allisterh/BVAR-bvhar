@@ -53,4 +53,28 @@ test_that("Computation Methods", {
     fit_test_qr$coefficients
   )
 })
+
+test_that("VARX", {
+  skip_on_cran()
+
+  test_lag <- 3
+  test_lag_exogen <- 2
+  
+  endog_y <- etf_vix[, 1:3]
+  exogen <- etf_vix[,4:5]
+  
+  fit_test_nor <- var_lm(y = endog_y, p = test_lag, exogen = exogen, s = test_lag_exogen)
+  fit_test_llt <- var_lm(y = endog_y, p = test_lag, exogen = exogen, s = test_lag_exogen, method = "chol")
+  fit_test_qr <- var_lm(y = endog_y, p = test_lag, exogen = exogen, s = test_lag_exogen, method = "qr")
+
+  expect_equal(
+    fit_test_nor$coefficients,
+    fit_test_llt$coefficients
+  )
+
+  expect_equal(
+    fit_test_nor$coefficients,
+    fit_test_qr$coefficients
+  )
+})
 #> Test passed 🌈

@@ -139,39 +139,38 @@ private:
 	Eigen::HouseholderQR<Eigen::MatrixXd> qr_design;
 };
 
+inline std::unique_ptr<MultiOls> initialize_ols(const Eigen::MatrixXd& design, const Eigen::MatrixXd& response, int method) {
+	std::unique_ptr<MultiOls> ols_ptr;
+	switch (method) {
+		case 1: {
+			ols_ptr = std::make_unique<MultiOls>(design, response);
+			return ols_ptr;
+		}
+		case 2: {
+			ols_ptr = std::make_unique<LltOls>(design, response);
+			return ols_ptr;
+		}
+		case 3: {
+			ols_ptr = std::make_unique<QrOls>(design, response);
+			return ols_ptr;
+		}
+	}
+	return ols_ptr;
+}
+
 class OlsVar {
 public:
 	OlsVar(const Eigen::MatrixXd& y, int lag, const bool include_mean, int method)
 	: lag(lag), const_term(include_mean), data(y) {
 		response = build_y0(data, lag, lag + 1);
 		design = build_x0(data, lag, const_term);
-		switch (method) {
-		case 1:
-			_ols = std::unique_ptr<MultiOls>(new MultiOls(design, response));
-			break;
-		case 2:
-			_ols = std::unique_ptr<MultiOls>(new LltOls(design, response));
-			break;
-		case 3:
-			_ols = std::unique_ptr<MultiOls>(new QrOls(design, response));
-			break;
-		}
+		_ols = initialize_ols(design, response, method);
 	}
 	OlsVar(const Eigen::MatrixXd& y, const Eigen::MatrixXd& exogen, int lag, int exogen_lag, const bool include_mean, int method)
 	: lag(lag), const_term(include_mean), data(y) {
 		response = build_y0(data, lag, lag + 1);
 		design = build_x0(data, exogen, lag, exogen_lag, const_term);
-		switch (method) {
-		case 1:
-			_ols = std::make_unique<MultiOls>(design, response);
-			break;
-		case 2:
-			_ols = std::make_unique<LltOls>(design, response);
-			break;
-		case 3:
-			_ols = std::make_unique<QrOls>(design, response);
-			break;
-		}
+		_ols = initialize_ols(design, response, method);
 	}
 	virtual ~OlsVar() = default;
 	LIST returnOlsRes() {
@@ -209,17 +208,7 @@ public:
 		har_trans = bvhar::build_vhar(response.cols(), week, month, const_term);
 		var_design = build_x0(data, month, const_term);
 		design = var_design * har_trans.transpose();
-		switch (method) {
-		case 1:
-			_ols = std::unique_ptr<MultiOls>(new MultiOls(design, response));
-			break;
-		case 2:
-			_ols = std::unique_ptr<MultiOls>(new LltOls(design, response));
-			break;
-		case 3:
-			_ols = std::unique_ptr<MultiOls>(new QrOls(design, response));
-			break;
-		}
+		_ols = initialize_ols(design, response, method);
 	}
 	OlsVhar(const Eigen::MatrixXd& y, const Eigen::MatrixXd& exogen, int week, int month, const bool include_mean, int method)
 	: week(week), month(month), const_term(include_mean), data(y),
@@ -227,17 +216,7 @@ public:
 		har_trans = bvhar::build_vhar(response.cols(), exogen.cols(), week, month, const_term);
 		var_design = build_x0(data, exogen, month, month, const_term);
 		design = var_design * har_trans.transpose();
-		switch (method) {
-		case 1:
-			_ols = std::make_unique<MultiOls>(design, response);
-			break;
-		case 2:
-			_ols = std::make_unique<LltOls>(design, response);
-			break;
-		case 3:
-			_ols = std::make_unique<QrOls>(design, response);
-			break;
-		}
+		_ols = initialize_ols(design, response, method);
 	}
 	virtual ~OlsVhar() = default;
 	LIST returnOlsRes() {

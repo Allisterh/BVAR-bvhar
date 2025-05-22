@@ -340,6 +340,22 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// estimate_harx
+Rcpp::List estimate_harx(Eigen::MatrixXd y, Eigen::MatrixXd exogen, int week, int month, bool include_mean, int method);
+RcppExport SEXP _bvhar_estimate_harx(SEXP ySEXP, SEXP exogenSEXP, SEXP weekSEXP, SEXP monthSEXP, SEXP include_meanSEXP, SEXP methodSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type y(ySEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type exogen(exogenSEXP);
+    Rcpp::traits::input_parameter< int >::type week(weekSEXP);
+    Rcpp::traits::input_parameter< int >::type month(monthSEXP);
+    Rcpp::traits::input_parameter< bool >::type include_mean(include_meanSEXP);
+    Rcpp::traits::input_parameter< int >::type method(methodSEXP);
+    rcpp_result_gen = Rcpp::wrap(estimate_harx(y, exogen, week, month, include_mean, method));
+    return rcpp_result_gen;
+END_RCPP
+}
 // compute_cov
 Eigen::MatrixXd compute_cov(Eigen::MatrixXd z, int num_design, int dim_design);
 RcppExport SEXP _bvhar_compute_cov(SEXP zSEXP, SEXP num_designSEXP, SEXP dim_designSEXP) {
@@ -1614,24 +1630,26 @@ BEGIN_RCPP
 END_RCPP
 }
 // compute_var_stablemat
-Eigen::MatrixXd compute_var_stablemat(Rcpp::List object);
-RcppExport SEXP _bvhar_compute_var_stablemat(SEXP objectSEXP) {
+Eigen::MatrixXd compute_var_stablemat(Eigen::MatrixXd coef_mat, int var_lag);
+RcppExport SEXP _bvhar_compute_var_stablemat(SEXP coef_matSEXP, SEXP var_lagSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::List >::type object(objectSEXP);
-    rcpp_result_gen = Rcpp::wrap(compute_var_stablemat(object));
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type coef_mat(coef_matSEXP);
+    Rcpp::traits::input_parameter< int >::type var_lag(var_lagSEXP);
+    rcpp_result_gen = Rcpp::wrap(compute_var_stablemat(coef_mat, var_lag));
     return rcpp_result_gen;
 END_RCPP
 }
 // compute_vhar_stablemat
-Eigen::MatrixXd compute_vhar_stablemat(Rcpp::List object);
-RcppExport SEXP _bvhar_compute_vhar_stablemat(SEXP objectSEXP) {
+Eigen::MatrixXd compute_vhar_stablemat(Eigen::MatrixXd coef_mat, Eigen::MatrixXd hartrans_mat);
+RcppExport SEXP _bvhar_compute_vhar_stablemat(SEXP coef_matSEXP, SEXP hartrans_matSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::List >::type object(objectSEXP);
-    rcpp_result_gen = Rcpp::wrap(compute_vhar_stablemat(object));
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type coef_mat(coef_matSEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type hartrans_mat(hartrans_matSEXP);
+    rcpp_result_gen = Rcpp::wrap(compute_vhar_stablemat(coef_mat, hartrans_mat));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -1736,6 +1754,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_bvhar_estimate_var", (DL_FUNC) &_bvhar_estimate_var, 4},
     {"_bvhar_estimate_varx", (DL_FUNC) &_bvhar_estimate_varx, 6},
     {"_bvhar_estimate_har", (DL_FUNC) &_bvhar_estimate_har, 5},
+    {"_bvhar_estimate_harx", (DL_FUNC) &_bvhar_estimate_harx, 6},
     {"_bvhar_compute_cov", (DL_FUNC) &_bvhar_compute_cov, 3},
     {"_bvhar_infer_var", (DL_FUNC) &_bvhar_infer_var, 1},
     {"_bvhar_infer_vhar", (DL_FUNC) &_bvhar_infer_vhar, 1},
@@ -1804,8 +1823,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_bvhar_compute_tot_spillover", (DL_FUNC) &_bvhar_compute_tot_spillover, 1},
     {"_bvhar_compute_net_spillover", (DL_FUNC) &_bvhar_compute_net_spillover, 1},
     {"_bvhar_compute_stablemat", (DL_FUNC) &_bvhar_compute_stablemat, 1},
-    {"_bvhar_compute_var_stablemat", (DL_FUNC) &_bvhar_compute_var_stablemat, 1},
-    {"_bvhar_compute_vhar_stablemat", (DL_FUNC) &_bvhar_compute_vhar_stablemat, 1},
+    {"_bvhar_compute_var_stablemat", (DL_FUNC) &_bvhar_compute_var_stablemat, 2},
+    {"_bvhar_compute_vhar_stablemat", (DL_FUNC) &_bvhar_compute_vhar_stablemat, 2},
     {"_bvhar_log_mgammafn", (DL_FUNC) &_bvhar_log_mgammafn, 2},
     {"_bvhar_logml_stable", (DL_FUNC) &_bvhar_logml_stable, 1},
     {"_bvhar_compute_aic", (DL_FUNC) &_bvhar_compute_aic, 1},

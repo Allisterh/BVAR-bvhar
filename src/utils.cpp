@@ -900,13 +900,14 @@ Eigen::MatrixXd compute_stablemat(Eigen::MatrixXd x) {
 //' @references Lütkepohl, H. (2007). *New Introduction to Multiple Time Series Analysis*. Springer Publishing. doi:[10.1007/978-3-540-27752-1](https://doi.org/10.1007/978-3-540-27752-1)
 //' @noRd
 // [[Rcpp::export]]
-Eigen::MatrixXd compute_var_stablemat(Rcpp::List object) {
-  if (!object.inherits("varlse") && !object.inherits("bvarmn") && !object.inherits("bvarflat")) {
-    Rcpp::stop("'object' must be varlse object.");
-  }
-  int dim = object["m"]; // m
-  int var_lag = object["p"]; // p
-  Eigen::MatrixXd coef_mat = object["coefficients"]; // Ahat
+Eigen::MatrixXd compute_var_stablemat(Eigen::MatrixXd coef_mat, int var_lag) {
+  // if (!object.inherits("varlse") && !object.inherits("bvarmn") && !object.inherits("bvarflat")) {
+  //   Rcpp::stop("'object' must be varlse object.");
+  // }
+  // int dim = object["m"]; // m
+	int dim = coef_mat.cols();
+  // int var_lag = object["p"]; // p
+  // Eigen::MatrixXd coef_mat = object["coefficients"]; // Ahat
   Eigen::MatrixXd coef_without_const = coef_mat.block(0, 0, dim * var_lag, dim);
   Eigen::MatrixXd res = compute_stablemat(coef_without_const);
   return res;
@@ -924,13 +925,14 @@ Eigen::MatrixXd compute_var_stablemat(Rcpp::List object) {
 //' @references Lütkepohl, H. (2007). *New Introduction to Multiple Time Series Analysis*. Springer Publishing. doi:[10.1007/978-3-540-27752-1](https://doi.org/10.1007/978-3-540-27752-1)
 //' @noRd
 // [[Rcpp::export]]
-Eigen::MatrixXd compute_vhar_stablemat(Rcpp::List object) {
-  if (!object.inherits("vharlse") && !object.inherits("bvharmn")) {
-    Rcpp::stop("'object' must be varlse object.");
-  }
-  int dim = object["m"]; // m
-  Eigen::MatrixXd coef_mat = object["coefficients"]; // Phihat
-  Eigen::MatrixXd hartrans_mat = object["HARtrans"]; // HAR transformation: (3m + 1, 22m + 1)
+Eigen::MatrixXd compute_vhar_stablemat(Eigen::MatrixXd coef_mat, Eigen::MatrixXd hartrans_mat) {
+  // if (!object.inherits("vharlse") && !object.inherits("bvharmn")) {
+  //   Rcpp::stop("'object' must be varlse object.");
+  // }
+  // int dim = object["m"]; // m
+	int dim = coef_mat.cols();
+  // Eigen::MatrixXd coef_mat = object["coefficients"]; // Phihat
+  // Eigen::MatrixXd hartrans_mat = object["HARtrans"]; // HAR transformation: (3m + 1, 22m + 1)
   Eigen::MatrixXd coef_without_const = coef_mat.block(0, 0, 3 * dim, dim);
   Eigen::MatrixXd hartrans_without_const = hartrans_mat.block(0, 0, 3 * dim, 22 * dim); // 3m x 22m
   Eigen::MatrixXd res = compute_stablemat(hartrans_without_const.transpose() * coef_without_const);

@@ -48,7 +48,14 @@ Rcpp::List estimate_varx(Eigen::MatrixXd y, Eigen::MatrixXd exogen, int lag, int
 //' @noRd
 // [[Rcpp::export]]
 Rcpp::List estimate_har(Eigen::MatrixXd y, int week, int month, bool include_mean, int method) {
-	std::unique_ptr<bvhar::OlsVhar> ols_obj(new bvhar::OlsVhar(y, week, month, include_mean, method));
+	auto ols_obj = std::make_unique<bvhar::OlsVhar>(y, week, month, include_mean, method);
+	return ols_obj->returnOlsRes();
+}
+
+//' @noRd
+// [[Rcpp::export]]
+Rcpp::List estimate_harx(Eigen::MatrixXd y, Eigen::MatrixXd exogen, int week, int month, bool include_mean, int method) {
+	auto ols_obj = std::make_unique<bvhar::OlsVhar>(y, exogen, week, month, include_mean, method);
 	return ols_obj->returnOlsRes();
 }
 

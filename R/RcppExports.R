@@ -308,6 +308,11 @@ estimate_har <- function(y, week, month, include_mean, method) {
     .Call(`_bvhar_estimate_har`, y, week, month, include_mean, method)
 }
 
+#' @noRd
+estimate_harx <- function(y, exogen, week, month, include_mean, method) {
+    .Call(`_bvhar_estimate_harx`, y, exogen, week, month, include_mean, method)
+}
+
 #' Covariance Estimate for Residual Covariance Matrix
 #' 
 #' Compute ubiased estimator for residual covariance.
@@ -1457,8 +1462,8 @@ compute_stablemat <- function(x) {
 #' 
 #' @references Lütkepohl, H. (2007). *New Introduction to Multiple Time Series Analysis*. Springer Publishing. doi:[10.1007/978-3-540-27752-1](https://doi.org/10.1007/978-3-540-27752-1)
 #' @noRd
-compute_var_stablemat <- function(object) {
-    .Call(`_bvhar_compute_var_stablemat`, object)
+compute_var_stablemat <- function(coef_mat, var_lag) {
+    .Call(`_bvhar_compute_var_stablemat`, coef_mat, var_lag)
 }
 
 #' VAR(1) Representation of VHAR
@@ -1472,8 +1477,8 @@ compute_var_stablemat <- function(object) {
 #'
 #' @references Lütkepohl, H. (2007). *New Introduction to Multiple Time Series Analysis*. Springer Publishing. doi:[10.1007/978-3-540-27752-1](https://doi.org/10.1007/978-3-540-27752-1)
 #' @noRd
-compute_vhar_stablemat <- function(object) {
-    .Call(`_bvhar_compute_vhar_stablemat`, object)
+compute_vhar_stablemat <- function(coef_mat, hartrans_mat) {
+    .Call(`_bvhar_compute_vhar_stablemat`, coef_mat, hartrans_mat)
 }
 
 #' Log of Multivariate Gamma Function

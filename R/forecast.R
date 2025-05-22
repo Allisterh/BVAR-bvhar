@@ -110,6 +110,11 @@ predict.varlse <- function(object, n_ahead, level = .05, ...) {
 #' @order 1
 #' @export
 predict.vharlse <- function(object, n_ahead, level = .05, ...) {
+  if (object$exogen) {
+    # temporarily remove exogen part until adding newx
+    object$coefficients <- object$coefficients[-object$exogen_id, ]
+    object$HARtrans <- object$HARtrans[-object$exogen_id, -object$exogen_colid]
+  }
   pred_res <- forecast_vhar(object, n_ahead)
   colnames(pred_res) <- colnames(object$y0)
   SE <- 

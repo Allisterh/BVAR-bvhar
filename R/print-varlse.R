@@ -11,7 +11,11 @@ print.varlse <- function(x, digits = max(3L, getOption("digits") - 3L), ...) {
   )
   # split the matrix for the print: B1, ..., Bp
   # bhat_mat <- split_coef(x)
-  ols_coef <- split_edog_coef(x$coefficients[-x$exogen_id,], x$p, x$m)
+  if (x$exogen) {
+    ols_coef <- split_endog_coef(x$coefficients[-x$exogen_id, ], x$p, x$m)
+  } else {
+    ols_coef <- split_endog_coef(x$coefficients, x$p, x$m)
+  }
   cat(sprintf("VAR(%i) Estimation using least squares\n", x$p))
   cat("====================================================\n\n")
   for (i in 1:(x$p)) {

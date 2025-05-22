@@ -2,6 +2,7 @@
 #define BVHAR_BAYES_MISC_DEPRECATED_DRAW_H
 
 #include "../../../math/random.h"
+#include "../../../math/structural.h"
 
 namespace bvhar {
 

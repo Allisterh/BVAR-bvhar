@@ -2,6 +2,7 @@
 #define BVHAR_BAYES_MISC_HELPER_H_H
 
 #include "../../math/random.h"
+#include "../../math/structural.h"
 #include <set>
 #include <limits>
 

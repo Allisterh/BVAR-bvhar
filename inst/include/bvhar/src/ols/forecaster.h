@@ -20,17 +20,9 @@ public:
 	OlsExogenForecaster(int lag, const Eigen::MatrixXd& exogen, const Eigen::MatrixXd& exogen_coef)
 	: ExogenForecaster<Eigen::MatrixXd, Eigen::VectorXd>(lag, exogen),
 		coef_mat(exogen_coef) {
-		// last_pvec = Eigen::VectorXd::Zero((lag + 1) * exogen.cols());
 		last_pvec = vectorize_eigen(exogen.topRows(lag + 1).colwise().reverse().transpose().eval()); // x_(T + h), ..., x_(T + h - s)
 	}
 	virtual ~OlsExogenForecaster() = default;
-	// void updateX(Eigen::VectorXd& last_pvec, const int h) override {
-	// 	last_pvec.tail(dim_exogen_design) = vectorize_eigen(exogen.middleRows(h, lag + 1).colwise().reverse().transpose().eval()); // x_(T + h), ..., x_(T + h - s)
-	// }
-
-	// int getSize() {
-	// 	return dim_exogen_design;
-	// }
 
 	void appendForecast(Eigen::VectorXd& point_forecast, const int h) override {
 		last_pvec = vectorize_eigen(exogen.middleRows(h, lag + 1).colwise().reverse().transpose().eval()); // x_(T + h), ..., x_(T + h - s)
@@ -97,11 +89,7 @@ protected:
 	}
 
 	void updatePred(const int h, const int i) override {
-		// exogen_updater->updateX(last_pvec, h);
 		computeMean();
-		// if (std::integral_constant<bool, isExogen>::value) {
-		// 	last_pvec.head(dim) = response.colwise().reverse().row(h); // x_(T + h)
-		// }
 		if (exogen_updater) {
 			exogen_updater->appendForecast(point_forecast, h);
 		}
@@ -166,6 +154,15 @@ public:
 		Eigen::MatrixXd har_trans = build_vhar(response_mat.cols(), week, month, include_mean);
 		bvhar::OlsFit ols_fit(coef_mat, month);
 		forecaster = std::make_unique<VharForecaster>(ols_fit, step, response_mat, har_trans, include_mean);
+	}
+	OlsForecastRun(
+		int week, int month, int step, const Eigen::MatrixXd& response_mat, const Eigen::MatrixXd& coef_mat, bool include_mean,
+		int exogen_lag, const Eigen::MatrixXd& exogen, const Eigen::MatrixXd& exogen_coef
+	) {
+		Eigen::MatrixXd har_trans = build_vhar(response_mat.cols(), week, month, include_mean);
+		bvhar::OlsFit ols_fit(coef_mat, month);
+		auto exogen_updater = std::make_unique<OlsExogenForecaster>(exogen_lag, exogen, exogen_coef);
+		forecaster = std::make_unique<VharForecaster>(ols_fit, exogen_updater, step, response_mat, har_trans, include_mean);
 	}
 	virtual ~OlsForecastRun() = default;
 	

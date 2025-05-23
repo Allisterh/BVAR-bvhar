@@ -123,7 +123,6 @@ public:
 	: lag(lag), exogen(exogen) {}
 	virtual ~ExogenForecaster() = default;
 
-	// virtual void updateX(DataType& last_pvec, const int h) {}
 	/**
 	 * @brief Add point forecast by exogenous terms
 	 * 

@@ -229,6 +229,14 @@ Eigen::MatrixXd forecast_vhar(Rcpp::List object, int step) {
 	return forecaster->returnForecast();
 }
 
+//' @noRd
+// [[Rcpp::export]]
+Eigen::MatrixXd forecast_harx(Eigen::MatrixXd response, Eigen::MatrixXd coef_mat, int week, int month, int step,
+															bool include_mean, Eigen::MatrixXd exogen, Eigen::MatrixXd exogen_coef, int exogen_lag) {
+	auto forecaster = std::make_unique<bvhar::OlsForecastRun>(week, month, step, response, coef_mat, include_mean, exogen_lag, exogen, exogen_coef);
+	return forecaster->returnForecast();
+}
+
 //' Out-of-Sample Forecasting of VAR based on Rolling Window
 //' 
 //' This function conducts an rolling window forecasting of VAR.

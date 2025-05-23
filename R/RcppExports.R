@@ -398,6 +398,11 @@ forecast_vhar <- function(object, step) {
     .Call(`_bvhar_forecast_vhar`, object, step)
 }
 
+#' @noRd
+forecast_harx <- function(response, coef_mat, week, month, step, include_mean, exogen, exogen_coef, exogen_lag) {
+    .Call(`_bvhar_forecast_harx`, response, coef_mat, week, month, step, include_mean, exogen, exogen_coef, exogen_lag)
+}
+
 #' Out-of-Sample Forecasting of VAR based on Rolling Window
 #' 
 #' This function conducts an rolling window forecasting of VAR.

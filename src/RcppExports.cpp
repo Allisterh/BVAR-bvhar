@@ -434,6 +434,25 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// forecast_harx
+Eigen::MatrixXd forecast_harx(Eigen::MatrixXd response, Eigen::MatrixXd coef_mat, int week, int month, int step, bool include_mean, Eigen::MatrixXd exogen, Eigen::MatrixXd exogen_coef, int exogen_lag);
+RcppExport SEXP _bvhar_forecast_harx(SEXP responseSEXP, SEXP coef_matSEXP, SEXP weekSEXP, SEXP monthSEXP, SEXP stepSEXP, SEXP include_meanSEXP, SEXP exogenSEXP, SEXP exogen_coefSEXP, SEXP exogen_lagSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type response(responseSEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type coef_mat(coef_matSEXP);
+    Rcpp::traits::input_parameter< int >::type week(weekSEXP);
+    Rcpp::traits::input_parameter< int >::type month(monthSEXP);
+    Rcpp::traits::input_parameter< int >::type step(stepSEXP);
+    Rcpp::traits::input_parameter< bool >::type include_mean(include_meanSEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type exogen(exogenSEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type exogen_coef(exogen_coefSEXP);
+    Rcpp::traits::input_parameter< int >::type exogen_lag(exogen_lagSEXP);
+    rcpp_result_gen = Rcpp::wrap(forecast_harx(response, coef_mat, week, month, step, include_mean, exogen, exogen_coef, exogen_lag));
+    return rcpp_result_gen;
+END_RCPP
+}
 // roll_var
 Eigen::MatrixXd roll_var(Eigen::MatrixXd y, int lag, bool include_mean, int step, Eigen::MatrixXd y_test, int method, int nthreads);
 RcppExport SEXP _bvhar_roll_var(SEXP ySEXP, SEXP lagSEXP, SEXP include_meanSEXP, SEXP stepSEXP, SEXP y_testSEXP, SEXP methodSEXP, SEXP nthreadsSEXP) {
@@ -1780,6 +1799,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_bvhar_forecast_var", (DL_FUNC) &_bvhar_forecast_var, 2},
     {"_bvhar_forecast_varx", (DL_FUNC) &_bvhar_forecast_varx, 8},
     {"_bvhar_forecast_vhar", (DL_FUNC) &_bvhar_forecast_vhar, 2},
+    {"_bvhar_forecast_harx", (DL_FUNC) &_bvhar_forecast_harx, 9},
     {"_bvhar_roll_var", (DL_FUNC) &_bvhar_roll_var, 7},
     {"_bvhar_roll_vhar", (DL_FUNC) &_bvhar_roll_vhar, 8},
     {"_bvhar_expand_var", (DL_FUNC) &_bvhar_expand_var, 7},

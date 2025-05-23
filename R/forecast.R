@@ -139,18 +139,36 @@ predict.varlse <- function(object, n_ahead, level = .05, newxreg = NULL, ...) {
 predict.vharlse <- function(object, n_ahead, level = .05, newxreg = NULL, ...) {
   if (!is.null(eval(object$call$exogen))) {
     if (!is.null(newxreg)) {
-      # append to last_pvec
+      if (!is.matrix(newxreg)) {
+        newxreg <- as.matrix(newxreg)
+      }
+      if (nrow(newxreg) != n_ahead) {
+        stop("Wrong row number of 'newxreg'")
+      }
+      pred_res <- forecast_harx(
+        response = object$y0,
+        coef_mat = object$coefficients[-object$exogen_id, ],
+        week = object$week,
+        month = object$month,
+        step = n_ahead,
+        include_mean = object$type == "const",
+        exogen = rbind(tail(object$exogen_data, object$s), newxreg),
+        exogen_coef = object$coefficients[object$exogen_id, ],
+        exogen_lag = object$s
+      )
     } else {
       object$coefficients <- object$coefficients[-object$exogen_id,]
       # object$HARtrans <- object$HARtrans[-object$exogen_id, -object$exogen_colid]
+      pred_res <- forecast_vhar(object, n_ahead)
     }
+  } else {
+    pred_res <- forecast_vhar(object, n_ahead)
   }
-  pred_res <- forecast_vhar(object, n_ahead)
   colnames(pred_res) <- colnames(object$y0)
-  SE <- 
+  SE <-
     compute_covmse_har(object, n_ahead) |> # concatenated matrix
     split.data.frame(gl(n_ahead, object$m)) |> # list of forecast MSE covariance matrix
-    sapply(diag) |> 
+    sapply(diag) |>
     t() # extract only diagonal element to compute CIs
   SE <- sqrt(SE)
   colnames(SE) <- colnames(object$y0)

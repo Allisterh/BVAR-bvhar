@@ -87,37 +87,6 @@ inline Eigen::MatrixXd build_vhar(int dim, int week, int month, bool include_mea
   return HARtrans.topLeftCorner(3 * dim, month * dim);
 }
 
-inline Eigen::MatrixXd build_vhar(int dim_endog, int dim_exogen, int week, int month, bool include_mean) {
-  Eigen::MatrixXd HAR = Eigen::MatrixXd::Zero(3, month);
-	int dim_design = include_mean ? 3 * dim_endog + 1 : 3 * dim_endog;
-	int dim_month = include_mean ? month * dim_endog + 1 : month * dim_endog;
-  // Eigen::MatrixXd HARtrans = Eigen::MatrixXd::Zero(3 * (dim_endog + dim_exogen) + 1, month * (dim_endog + dim_exogen) + 1);
-	Eigen::MatrixXd HARtrans = Eigen::MatrixXd::Zero(dim_design + 3 * dim_exogen, dim_month + month * dim_exogen);
-  // Eigen::MatrixXd Im = Eigen::MatrixXd::Identity(dim, dim);
-  // HAR(0, 0) = 1.0;
-  // for (int i = 0; i < week; i++) {
-  //   HAR(1, i) = 1.0 / week;
-  // }
-  // for (int i = 0; i < month; i++) {
-  //   HAR(2, i) = 1.0 / month;
-  // }
-  // T otimes Im
-  // HARtrans.block(0, 0, 3 * dim, month * dim) = Eigen::kroneckerProduct(HAR, Im).eval();
-	// HARtrans.topLeftCorner(3 * dim_endog, month * dim_endog) = Eigen::kroneckerProduct(HAR, Eigen::MatrixXd::Identity(dim_endog, dim_endog)).eval();
-	HARtrans.topLeftCorner(dim_design, dim_month) = build_vhar(dim_endog, week, month, include_mean);
-	// HARtrans.block(3 * dim_endog, month * dim_endog, 3 * dim_exogen, month * dim_exogen) = Eigen::kroneckerProduct(HAR, Eigen::MatrixXd::Identity(dim_exogen, dim_exogen)).eval();
-	HARtrans.block(dim_design, dim_month, 3 * dim_exogen, month * dim_exogen) = Eigen::kroneckerProduct(
-		build_har_matrix(week, month).eval(),
-		Eigen::MatrixXd::Identity(dim_exogen, dim_exogen)
-	).eval();
-	return HARtrans;
-  // HARtrans(3 * (dim_endog + dim_exogen), month * (dim_endog + dim_exogen)) = 1.0;
-  // if (include_mean) {
-  //   return HARtrans;
-  // }
-  // return HARtrans.topLeftCorner(3 * (dim_endog + dim_exogen), month * (dim_endog + dim_exogen));
-}
-
 inline Eigen::MatrixXd build_ydummy(int p, const Eigen::VectorXd& sigma, double lambda,
 																		const Eigen::VectorXd& daily, const Eigen::VectorXd& weekly, const Eigen::VectorXd& monthly,
 																		bool include_mean) {

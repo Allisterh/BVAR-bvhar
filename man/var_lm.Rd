@@ -16,7 +16,7 @@ var_lm(
   y,
   p = 1,
   exogen = NULL,
-  s = p,
+  s = 0,
   include_mean = TRUE,
   method = c("nor", "chol", "qr")
 )
@@ -42,7 +42,7 @@ is.bvharmod(x)
 
 \item{exogen}{Exogenous variables}
 
-\item{s}{Lag of exogeneous variables in VARX(p, s). By default, \code{s = p}.}
+\item{s}{Lag of exogeneous variables in VARX(p, s). By default, \code{s = 0}.}
 
 \item{include_mean}{Add constant term (Default: \code{TRUE}) or not (\code{FALSE})}
 

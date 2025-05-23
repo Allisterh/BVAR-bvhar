@@ -31,8 +31,8 @@ print.varlse <- function(x, digits = max(3L, getOption("digits") - 3L), ...) {
   }
   if (!is.null(eval(x$call$exogen))) {
     exog_coef <- split_exogen_coef(x$coefficients, x$exogen_id, x$s, x$exogen_m)
-    for (i in seq_len(x$s)) {
-      cat(sprintf("LSE for exogenous B%i:\n", i))
+    for (i in seq_len(x$s + 1)) {
+      cat(sprintf("LSE for exogenous B%i:\n", i - 1))
       print.default(
         exog_coef[[i]],
         digits = digits,

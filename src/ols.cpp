@@ -54,8 +54,8 @@ Rcpp::List estimate_har(Eigen::MatrixXd y, int week, int month, bool include_mea
 
 //' @noRd
 // [[Rcpp::export]]
-Rcpp::List estimate_harx(Eigen::MatrixXd y, Eigen::MatrixXd exogen, int week, int month, bool include_mean, int method) {
-	auto ols_obj = std::make_unique<bvhar::OlsVhar>(y, exogen, week, month, include_mean, method);
+Rcpp::List estimate_harx(Eigen::MatrixXd y, Eigen::MatrixXd exogen, int week, int month, int exogen_lag, bool include_mean, int method) {
+	auto ols_obj = std::make_unique<bvhar::OlsVhar>(y, exogen, week, month, exogen_lag, include_mean, method);
 	return ols_obj->returnOlsRes();
 }
 
@@ -193,6 +193,13 @@ Eigen::MatrixXd forecast_var(Rcpp::List object, int step) {
 	auto forecaster = std::make_unique<bvhar::OlsForecastRun>(var_lag, step, response_mat, coef_mat, include_mean);
 	return forecaster->returnForecast();
 }
+
+
+// Eigen::MatrixXd forecast_varx(Eigen::MatrixXd response, Eigen::MatrixXd coef_mat, int lag, int step,
+// 															bool include_mean, Eigen::MatrixXd exogen, Eigen::MatrixXd exogen_coef, int exogen_lag) {
+// 	auto forecaster = std::make_unique<bvhar::OlsForecastRun>(lag, step, response, coef_mat, include_mean, exogen_lag, exogen, exogen_coef);
+// 	return forecaster->returnForecast();
+// }
 
 //' Forecasting Vector HAR
 //' 

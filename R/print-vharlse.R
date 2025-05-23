@@ -43,9 +43,10 @@ print.vharlse <- function(x, digits = max(3L, getOption("digits") - 3L), ...) {
   }
   if (!is.null(eval(x$call$exogen))) {
     exog_coef <- split_exogen_coef(x$coefficients, x$exogen_id, x$s, x$exogen_m)
-    names(exog_coef) <- c("day", "week", "month")
-    for (i in seq_len(x$s)) {
-      cat(sprintf("LSE for exogenous %s:\n", names(exog_coef)[i]))
+    # names(exog_coef) <- c(0, "day", "week", "month")
+    for (i in seq_len(x$s + 1)) {
+      # cat(sprintf("LSE for exogenous %s:\n", names(exog_coef)[i]))
+      cat(sprintf("LSE for exogenous B%i:\n", i - 1))
       print.default(
         exog_coef[[i]],
         digits = digits,

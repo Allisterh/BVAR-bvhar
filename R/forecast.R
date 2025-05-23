@@ -65,11 +65,21 @@ predict.varlse <- function(object, n_ahead, level = .05, newxreg = NULL, ...) {
       if (nrow(newxreg) != n_ahead) {
         stop("Wrong row number of 'newxreg'")
       }
+      stop("Not defined")
+      # pred_res <- forecast_varx(
+      #   response = object$y0, coef_mat = object$coefficients[-object$exogen_id,],
+      #   lag = object$p, step = n_ahead, include_mean = object$type == "const",
+      #   exogen = newxreg,
+      #   exogen_coef = object$coefficients[object$exogen_id,],
+      #   exogen_lag = object$s
+      # )
     } else {
       object$coefficients <- object$coefficients[-object$exogen_id,]
+      pred_res <- forecast_var(object, n_ahead)
     }
+  } else {
+    pred_res <- forecast_var(object, n_ahead)
   }
-  pred_res <- forecast_var(object, n_ahead)
   colnames(pred_res) <- colnames(object$y0)
   SE <- 
     compute_covmse(object, n_ahead) |> # concatenated matrix
@@ -130,7 +140,7 @@ predict.vharlse <- function(object, n_ahead, level = .05, newxreg = NULL, ...) {
       # append to last_pvec
     } else {
       object$coefficients <- object$coefficients[-object$exogen_id,]
-      object$HARtrans <- object$HARtrans[-object$exogen_id, -object$exogen_colid]
+      # object$HARtrans <- object$HARtrans[-object$exogen_id, -object$exogen_colid]
     }
   }
   pred_res <- forecast_vhar(object, n_ahead)

@@ -210,12 +210,20 @@ public:
 		design = var_design * har_trans.transpose();
 		_ols = initialize_ols(design, response, method);
 	}
-	OlsVhar(const Eigen::MatrixXd& y, const Eigen::MatrixXd& exogen, int week, int month, const bool include_mean, int method)
+	OlsVhar(const Eigen::MatrixXd& y, const Eigen::MatrixXd& exogen, int week, int month, int exogen_lag, const bool include_mean, int method)
 	: week(week), month(month), const_term(include_mean), data(y),
 		response(build_y0(data, month, month + 1)) {
-		har_trans = bvhar::build_vhar(response.cols(), exogen.cols(), week, month, const_term);
-		var_design = build_x0(data, exogen, month, month, const_term);
-		design = var_design * har_trans.transpose();
+		// har_trans = build_vhar(response.cols(), exogen.cols(), week, month, const_term);
+		har_trans = build_vhar(response.cols(), week, month, const_term);
+		// var_design = build_x0(data, exogen, month, month, const_term);
+		// design = var_design * har_trans.transpose();
+		var_design = build_x0(data, exogen, month, exogen_lag, const_term);
+		int dim_design = include_mean ? month * response.cols() + 1 : month * response.cols();
+		int dim_har = include_mean ? 3 * response.cols() + 1 : 3 * response.cols();
+		int dim_exogen = (exogen_lag + 1) * exogen.cols();
+		design = Eigen::MatrixXd::Zero(data.rows() - month, dim_har + (exogen_lag + 1) * exogen.cols());
+		design.leftCols(dim_har) = var_design.leftCols(dim_design) * har_trans.transpose();
+		design.rightCols(dim_exogen) = var_design.rightCols(dim_exogen);
 		_ols = initialize_ols(design, response, method);
 	}
 	virtual ~OlsVhar() = default;

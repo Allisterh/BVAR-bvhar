@@ -309,8 +309,8 @@ estimate_har <- function(y, week, month, include_mean, method) {
 }
 
 #' @noRd
-estimate_harx <- function(y, exogen, week, month, include_mean, method) {
-    .Call(`_bvhar_estimate_harx`, y, exogen, week, month, include_mean, method)
+estimate_harx <- function(y, exogen, week, month, exogen_lag, include_mean, method) {
+    .Call(`_bvhar_estimate_harx`, y, exogen, week, month, exogen_lag, include_mean, method)
 }
 
 #' Covariance Estimate for Residual Covariance Matrix

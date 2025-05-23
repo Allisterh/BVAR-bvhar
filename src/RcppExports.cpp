@@ -341,8 +341,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // estimate_harx
-Rcpp::List estimate_harx(Eigen::MatrixXd y, Eigen::MatrixXd exogen, int week, int month, bool include_mean, int method);
-RcppExport SEXP _bvhar_estimate_harx(SEXP ySEXP, SEXP exogenSEXP, SEXP weekSEXP, SEXP monthSEXP, SEXP include_meanSEXP, SEXP methodSEXP) {
+Rcpp::List estimate_harx(Eigen::MatrixXd y, Eigen::MatrixXd exogen, int week, int month, int exogen_lag, bool include_mean, int method);
+RcppExport SEXP _bvhar_estimate_harx(SEXP ySEXP, SEXP exogenSEXP, SEXP weekSEXP, SEXP monthSEXP, SEXP exogen_lagSEXP, SEXP include_meanSEXP, SEXP methodSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -350,9 +350,10 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< Eigen::MatrixXd >::type exogen(exogenSEXP);
     Rcpp::traits::input_parameter< int >::type week(weekSEXP);
     Rcpp::traits::input_parameter< int >::type month(monthSEXP);
+    Rcpp::traits::input_parameter< int >::type exogen_lag(exogen_lagSEXP);
     Rcpp::traits::input_parameter< bool >::type include_mean(include_meanSEXP);
     Rcpp::traits::input_parameter< int >::type method(methodSEXP);
-    rcpp_result_gen = Rcpp::wrap(estimate_harx(y, exogen, week, month, include_mean, method));
+    rcpp_result_gen = Rcpp::wrap(estimate_harx(y, exogen, week, month, exogen_lag, include_mean, method));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -1754,7 +1755,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_bvhar_estimate_var", (DL_FUNC) &_bvhar_estimate_var, 4},
     {"_bvhar_estimate_varx", (DL_FUNC) &_bvhar_estimate_varx, 6},
     {"_bvhar_estimate_har", (DL_FUNC) &_bvhar_estimate_har, 5},
-    {"_bvhar_estimate_harx", (DL_FUNC) &_bvhar_estimate_harx, 6},
+    {"_bvhar_estimate_harx", (DL_FUNC) &_bvhar_estimate_harx, 7},
     {"_bvhar_compute_cov", (DL_FUNC) &_bvhar_compute_cov, 3},
     {"_bvhar_infer_var", (DL_FUNC) &_bvhar_infer_var, 1},
     {"_bvhar_infer_vhar", (DL_FUNC) &_bvhar_infer_vhar, 1},

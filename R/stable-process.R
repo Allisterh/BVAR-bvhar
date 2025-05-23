@@ -62,7 +62,7 @@ stableroot.vharlse <- function(x, ...) {
   if (!is.null(eval(x$call$exogen))) {
     # temporarily remove exogen part until adding newx
     x$coefficients <- x$coefficients[-x$exogen_id, ]
-    x$HARtrans <- x$HARtrans[-x$exogen_id, -x$exogen_colid]
+    # x$HARtrans <- x$HARtrans[-x$exogen_id, -x$exogen_colid]
   }
   eigen_vals <-
     compute_vhar_stablemat(x$coefficients, x$HARtrans) |>

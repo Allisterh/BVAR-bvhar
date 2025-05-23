@@ -5,6 +5,7 @@
 #' @param y Time series data of which columns indicate the variables
 #' @param har Numeric vector for weekly and monthly order. By default, `c(5, 22)`.
 #' @param exogen Exogenous variables
+#' @param s Lag of exogeneous variables in VHARX. By default, `s = 0`.
 #' @param include_mean Add constant term (Default: `TRUE`) or not (`FALSE`)
 #' @param method Method to solve linear equation system.
 #' (`nor`: normal equation (default), `chol`: Cholesky, and `qr`: HouseholderQR)
@@ -60,7 +61,7 @@
 #' head(fitted(fit))
 #' @order 1
 #' @export
-vhar_lm <- function(y, har = c(5, 22), exogen = NULL, include_mean = TRUE, method = c("nor", "chol", "qr")) {
+vhar_lm <- function(y, har = c(5, 22), exogen = NULL, s = 0, include_mean = TRUE, method = c("nor", "chol", "qr")) {
   if (!all(apply(y, 2, is.numeric))) {
     stop("Every column must be numeric class.")
   }
@@ -107,17 +108,19 @@ vhar_lm <- function(y, har = c(5, 22), exogen = NULL, include_mean = TRUE, metho
     #     concatenate_colnames(name_exogen, c("day", "week", "month"), FALSE)
     #   )
     # }
-    res <- estimate_harx(y, exogen, week, month, include_mean, method_fit)
-    res$exogen_id <- length(name_har) + 1:(3 * ncol(exogen)) # row index for exogen in coefficient
-    res$exogen_colid <- res$month * ncol(y) + 1:(res$month * ncol(exogen)) # col index for exogen in har transformation matrix
-    if (include_mean) {
-      res$exogen_colid <- res$exogen_colid + 1
-    }
+    res <- estimate_harx(y, exogen, week, month, s, include_mean, method_fit)
+    # res$exogen_id <- length(name_har) + 1:(3 * ncol(exogen)) # row index for exogen in coefficient
+    res$exogen_id <- length(name_har) + 1:((s + 1) * ncol(exogen)) # row index for exogen in coefficient
+    # res$exogen_colid <- res$month * ncol(y) + 1:(res$month * ncol(exogen)) # col index for exogen in har transformation matrix
+    # if (include_mean) {
+    #   res$exogen_colid <- res$exogen_colid + 1
+    # }
     name_har <- c(
       name_har,
-      concatenate_colnames(name_exogen, c("day", "week", "month"), FALSE)
+      concatenate_colnames(name_exogen, 0:s, FALSE)
     )
-    res$s <- 3
+    res$exogen_data <- exogen
+    res$s <- s
     res$exogen_m <- ncol(exogen)
     # res$exogen <- TRUE
     # res$exogen_id <- 3 * ncol(y) + 1:(3 * ncol(exogen)) # row index for exogen in coefficient

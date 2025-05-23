@@ -78,7 +78,7 @@ split_endog_coef <- function(coef_mat, p, dim_data, ...) {
 
 #' @noRd
 split_exogen_coef <- function(coef_mat, exogen_id, s, dim_exogen, ...) {
-  split.data.frame(coef_mat[exogen_id,], gl(s, dim_exogen)) |>
+  split.data.frame(coef_mat[exogen_id,], gl(s + 1, dim_exogen)) |>
     lapply(t)
 }
 

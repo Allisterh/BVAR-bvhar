@@ -11,7 +11,7 @@ print.varlse <- function(x, digits = max(3L, getOption("digits") - 3L), ...) {
   )
   # split the matrix for the print: B1, ..., Bp
   # bhat_mat <- split_coef(x)
-  if (x$exogen) {
+  if (!is.null(eval(x$call$exogen))) {
     ols_coef <- split_endog_coef(x$coefficients[-x$exogen_id, ], x$p, x$m)
   } else {
     ols_coef <- split_endog_coef(x$coefficients, x$p, x$m)
@@ -29,7 +29,7 @@ print.varlse <- function(x, digits = max(3L, getOption("digits") - 3L), ...) {
     )
     cat("\n\n")
   }
-  if (x$exogen) {
+  if (!is.null(eval(x$call$exogen))) {
     exog_coef <- split_exogen_coef(x$coefficients, x$exogen_id, x$s, x$exogen_m)
     for (i in seq_len(x$s)) {
       cat(sprintf("LSE for exogenous B%i:\n", i))

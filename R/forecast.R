@@ -53,7 +53,7 @@
 #' @order 1
 #' @export
 predict.varlse <- function(object, n_ahead, level = .05, ...) {
-  if (object$exogen) {
+  if (!is.null(eval(object$call$exogen))) {
     # temporarily remove exogen part until adding newx
     object$coefficients <- object$coefficients[-object$exogen_id,]
   }
@@ -110,7 +110,7 @@ predict.varlse <- function(object, n_ahead, level = .05, ...) {
 #' @order 1
 #' @export
 predict.vharlse <- function(object, n_ahead, level = .05, ...) {
-  if (object$exogen) {
+  if (!is.null(eval(object$call$exogen))) {
     # temporarily remove exogen part until adding newx
     object$coefficients <- object$coefficients[-object$exogen_id, ]
     object$HARtrans <- object$HARtrans[-object$exogen_id, -object$exogen_colid]

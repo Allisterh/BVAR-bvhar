@@ -110,12 +110,12 @@ vhar_lm <- function(y, har = c(5, 22), exogen = NULL, include_mean = TRUE, metho
     res <- estimate_harx(y, exogen, week, month, include_mean, method_fit)
     res$s <- 3
     res$exogen_m <- ncol(exogen)
-    res$exogen <- TRUE
+    # res$exogen <- TRUE
     res$exogen_id <- 3 * ncol(y) + 1:(3 * ncol(exogen)) # row index for exogen in coefficient
     res$exogen_colid <- res$month * ncol(y) + 1:(res$month * ncol(exogen)) # col index for exogen in har transformation matrix
   } else {
     res <- estimate_har(y, week, month, include_mean, method_fit)
-    res$exogen <- FALSE
+    # res$exogen <- FALSE
   }
   colnames(res$y) <- name_var
   colnames(res$y0) <- name_var

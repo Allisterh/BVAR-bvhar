@@ -32,7 +32,7 @@ is.stable <- function(x, ...) {
 #' where \eqn{A} is VAR(1) coefficient matrix representation.
 #' @export
 stableroot.varlse <- function(x, ...) {
-  if (x$exogen) {
+  if (!is.null(eval(x$call$exogen))) {
     # temporarily remove exogen part until adding newx
     x$coefficients <- x$coefficients[-x$exogen_id, ]
   }
@@ -59,7 +59,7 @@ is.stable.varlse <- function(x, ...) {
 #' @rdname stableroot
 #' @export
 stableroot.vharlse <- function(x, ...) {
-  if (x$exogen) {
+  if (!is.null(eval(x$call$exogen))) {
     # temporarily remove exogen part until adding newx
     x$coefficients <- x$coefficients[-x$exogen_id, ]
     x$HARtrans <- x$HARtrans[-x$exogen_id, -x$exogen_colid]

@@ -194,12 +194,14 @@ Eigen::MatrixXd forecast_var(Rcpp::List object, int step) {
 	return forecaster->returnForecast();
 }
 
-
-// Eigen::MatrixXd forecast_varx(Eigen::MatrixXd response, Eigen::MatrixXd coef_mat, int lag, int step,
-// 															bool include_mean, Eigen::MatrixXd exogen, Eigen::MatrixXd exogen_coef, int exogen_lag) {
-// 	auto forecaster = std::make_unique<bvhar::OlsForecastRun>(lag, step, response, coef_mat, include_mean, exogen_lag, exogen, exogen_coef);
-// 	return forecaster->returnForecast();
-// }
+//' @noRd
+// [[Rcpp::export]]
+Eigen::MatrixXd forecast_varx(Eigen::MatrixXd response, Eigen::MatrixXd coef_mat, int lag, int step,
+															bool include_mean, Eigen::MatrixXd exogen, Eigen::MatrixXd exogen_coef, int exogen_lag) {
+	auto forecaster = std::make_unique<bvhar::OlsForecastRun>(lag, step, response, coef_mat, include_mean, exogen_lag, exogen, exogen_coef);
+	// auto forecaster = std::make_unique<bvhar::OlsForecastRun>(lag, step, response, coef_mat, include_mean, exogen, exogen_lag);
+	return forecaster->returnForecast();
+}
 
 //' Forecasting Vector HAR
 //' 
@@ -279,7 +281,7 @@ Eigen::MatrixXd roll_var(Eigen::MatrixXd y, int lag, bool include_mean, int step
 		}
 	}
 	}
-	std::vector<std::unique_ptr<bvhar::VarForecaster<false>>> forecaster(num_horizon);
+	std::vector<std::unique_ptr<bvhar::VarForecaster>> forecaster(num_horizon);
 	std::vector<Eigen::MatrixXd> res(num_horizon);
 #ifdef _OPENMP
 	#pragma omp parallel for num_threads(nthreads)
@@ -287,7 +289,7 @@ Eigen::MatrixXd roll_var(Eigen::MatrixXd y, int lag, bool include_mean, int step
 	for (int window = 0; window < num_horizon; window++) {
 		bvhar::OlsFit ols_fit = ols_objs[window]->returnOlsFit(lag);
 		// forecaster[window].reset(new bvhar::VarForecaster(ols_fit, step, roll_y0[window], include_mean));
-		forecaster[window] = std::make_unique<bvhar::VarForecaster<false>>(ols_fit, step, roll_y0[window], include_mean);
+		forecaster[window] = std::make_unique<bvhar::VarForecaster>(ols_fit, step, roll_y0[window], include_mean);
 		res[window] = forecaster[window]->forecastPoint().bottomRows(1);
 		ols_objs[window].reset(); // free the memory by making nullptr
 		forecaster[window].reset(); // free the memory by making nullptr
@@ -357,7 +359,7 @@ Eigen::MatrixXd roll_vhar(Eigen::MatrixXd y, int week, int month, bool include_m
 		}
 	}
 	}
-	std::vector<std::unique_ptr<bvhar::VharForecaster<false>>> forecaster(num_horizon);
+	std::vector<std::unique_ptr<bvhar::VharForecaster>> forecaster(num_horizon);
 	std::vector<Eigen::MatrixXd> res(num_horizon);
 #ifdef _OPENMP
 	#pragma omp parallel for num_threads(nthreads)
@@ -365,7 +367,7 @@ Eigen::MatrixXd roll_vhar(Eigen::MatrixXd y, int week, int month, bool include_m
 	for (int window = 0; window < num_horizon; window++) {
 		bvhar::OlsFit ols_fit = ols_objs[window]->returnOlsFit(month);
 		// forecaster[window].reset(new bvhar::VharForecaster(ols_fit, step, roll_y0[window], har_trans, include_mean));
-		forecaster[window] = std::make_unique<bvhar::VharForecaster<false>>(ols_fit, step, roll_y0[window], har_trans, include_mean);
+		forecaster[window] = std::make_unique<bvhar::VharForecaster>(ols_fit, step, roll_y0[window], har_trans, include_mean);
 		res[window] = forecaster[window]->forecastPoint().bottomRows(1);
 		ols_objs[window].reset(); // free the memory by making nullptr
 		forecaster[window].reset(); // free the memory by making nullptr
@@ -433,7 +435,7 @@ Eigen::MatrixXd expand_var(Eigen::MatrixXd y, int lag, bool include_mean, int st
 		}
 	}
 	}
-	std::vector<std::unique_ptr<bvhar::VarForecaster<false>>> forecaster(num_horizon);
+	std::vector<std::unique_ptr<bvhar::VarForecaster>> forecaster(num_horizon);
 	std::vector<Eigen::MatrixXd> res(num_horizon);
 #ifdef _OPENMP
 	#pragma omp parallel for num_threads(nthreads)
@@ -441,7 +443,7 @@ Eigen::MatrixXd expand_var(Eigen::MatrixXd y, int lag, bool include_mean, int st
 	for (int window = 0; window < num_horizon; window++) {
 		bvhar::OlsFit ols_fit = ols_objs[window]->returnOlsFit(lag);
 		// forecaster[window].reset(new bvhar::VarForecaster(ols_fit, step, expand_y0[window], include_mean));
-		forecaster[window] = std::make_unique<bvhar::VarForecaster<false>>(ols_fit, step, expand_y0[window], include_mean);
+		forecaster[window] = std::make_unique<bvhar::VarForecaster>(ols_fit, step, expand_y0[window], include_mean);
 		res[window] = forecaster[window]->forecastPoint().bottomRows(1);
 		ols_objs[window].reset(); // free the memory by making nullptr
 		forecaster[window].reset(); // free the memory by making nullptr
@@ -511,7 +513,7 @@ Eigen::MatrixXd expand_vhar(Eigen::MatrixXd y, int week, int month, bool include
 		}
 	}
 	}
-	std::vector<std::unique_ptr<bvhar::VharForecaster<false>>> forecaster(num_horizon);
+	std::vector<std::unique_ptr<bvhar::VharForecaster>> forecaster(num_horizon);
 	std::vector<Eigen::MatrixXd> res(num_horizon);
 #ifdef _OPENMP
 	#pragma omp parallel for num_threads(nthreads)
@@ -519,7 +521,7 @@ Eigen::MatrixXd expand_vhar(Eigen::MatrixXd y, int week, int month, bool include
 	for (int window = 0; window < num_horizon; window++) {
 		bvhar::OlsFit ols_fit = ols_objs[window]->returnOlsFit(month);
 		// forecaster[window].reset(new bvhar::VharForecaster(ols_fit, step, expand_y0[window], har_trans, include_mean));
-		forecaster[window] = std::make_unique<bvhar::VharForecaster<false>>(ols_fit, step, expand_y0[window], har_trans, include_mean);
+		forecaster[window] = std::make_unique<bvhar::VharForecaster>(ols_fit, step, expand_y0[window], har_trans, include_mean);
 		res[window] = forecaster[window]->forecastPoint().bottomRows(1);
 		ols_objs[window].reset(); // free the memory by making nullptr
 		forecaster[window].reset(); // free the memory by making nullptr

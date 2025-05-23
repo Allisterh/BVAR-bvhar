@@ -381,6 +381,11 @@ forecast_var <- function(object, step) {
     .Call(`_bvhar_forecast_var`, object, step)
 }
 
+#' @noRd
+forecast_varx <- function(response, coef_mat, lag, step, include_mean, exogen, exogen_coef, exogen_lag) {
+    .Call(`_bvhar_forecast_varx`, response, coef_mat, lag, step, include_mean, exogen, exogen_coef, exogen_lag)
+}
+
 #' Forecasting Vector HAR
 #' 
 #' @param object A `vharlse` object

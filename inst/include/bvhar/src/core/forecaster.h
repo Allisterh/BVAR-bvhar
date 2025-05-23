@@ -8,6 +8,7 @@ namespace bvhar {
 
 template <typename ReturnType, typename DataType> class MultistepForecaster;
 template <typename ReturnType, typename DataType> class MultistepForecastRun;
+template <typename ReturnType, typename DataType> class ExogenForecaster;
 
 /**
  * @brief Base class for Recursive multi-step forecasting
@@ -106,6 +107,35 @@ public:
 	 * 
 	 */
 	virtual void forecast() {}
+};
+
+/**
+ * @brief Base class for exogenous variables in forecaster
+ * 
+ * @tparam ReturnType 
+ * @tparam DataType 
+ */
+template <typename ReturnType = Eigen::MatrixXd, typename DataType = Eigen::VectorXd>
+class ExogenForecaster {
+public:
+	ExogenForecaster() {}
+	ExogenForecaster(int lag, const ReturnType& exogen)
+	: lag(lag), exogen(exogen) {}
+	virtual ~ExogenForecaster() = default;
+
+	// virtual void updateX(DataType& last_pvec, const int h) {}
+	/**
+	 * @brief Add point forecast by exogenous terms
+	 * 
+	 * @param point_forecast 
+	 * @param h 
+	 */
+	virtual void appendForecast(DataType& point_forecast, const int h) {}
+
+protected:
+	int lag;
+	ReturnType exogen;
+	DataType last_pvec;
 };
 
 } // namespace bvhar

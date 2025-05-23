@@ -65,14 +65,16 @@ predict.varlse <- function(object, n_ahead, level = .05, newxreg = NULL, ...) {
       if (nrow(newxreg) != n_ahead) {
         stop("Wrong row number of 'newxreg'")
       }
-      stop("Not defined")
-      # pred_res <- forecast_varx(
-      #   response = object$y0, coef_mat = object$coefficients[-object$exogen_id,],
-      #   lag = object$p, step = n_ahead, include_mean = object$type == "const",
-      #   exogen = newxreg,
-      #   exogen_coef = object$coefficients[object$exogen_id,],
-      #   exogen_lag = object$s
-      # )
+      pred_res <- forecast_varx(
+        response = object$y0,
+        coef_mat = object$coefficients[-object$exogen_id,],
+        lag = object$p,
+        step = n_ahead,
+        include_mean = object$type == "const",
+        exogen = rbind(tail(object$exogen_data, object$s), newxreg),
+        exogen_coef = object$coefficients[object$exogen_id,],
+        exogen_lag = object$s
+      )
     } else {
       object$coefficients <- object$coefficients[-object$exogen_id,]
       pred_res <- forecast_var(object, n_ahead)

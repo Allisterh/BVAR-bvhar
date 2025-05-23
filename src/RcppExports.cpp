@@ -404,6 +404,24 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// forecast_varx
+Eigen::MatrixXd forecast_varx(Eigen::MatrixXd response, Eigen::MatrixXd coef_mat, int lag, int step, bool include_mean, Eigen::MatrixXd exogen, Eigen::MatrixXd exogen_coef, int exogen_lag);
+RcppExport SEXP _bvhar_forecast_varx(SEXP responseSEXP, SEXP coef_matSEXP, SEXP lagSEXP, SEXP stepSEXP, SEXP include_meanSEXP, SEXP exogenSEXP, SEXP exogen_coefSEXP, SEXP exogen_lagSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type response(responseSEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type coef_mat(coef_matSEXP);
+    Rcpp::traits::input_parameter< int >::type lag(lagSEXP);
+    Rcpp::traits::input_parameter< int >::type step(stepSEXP);
+    Rcpp::traits::input_parameter< bool >::type include_mean(include_meanSEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type exogen(exogenSEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type exogen_coef(exogen_coefSEXP);
+    Rcpp::traits::input_parameter< int >::type exogen_lag(exogen_lagSEXP);
+    rcpp_result_gen = Rcpp::wrap(forecast_varx(response, coef_mat, lag, step, include_mean, exogen, exogen_coef, exogen_lag));
+    return rcpp_result_gen;
+END_RCPP
+}
 // forecast_vhar
 Eigen::MatrixXd forecast_vhar(Rcpp::List object, int step);
 RcppExport SEXP _bvhar_forecast_vhar(SEXP objectSEXP, SEXP stepSEXP) {
@@ -1760,6 +1778,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_bvhar_infer_var", (DL_FUNC) &_bvhar_infer_var, 1},
     {"_bvhar_infer_vhar", (DL_FUNC) &_bvhar_infer_vhar, 1},
     {"_bvhar_forecast_var", (DL_FUNC) &_bvhar_forecast_var, 2},
+    {"_bvhar_forecast_varx", (DL_FUNC) &_bvhar_forecast_varx, 8},
     {"_bvhar_forecast_vhar", (DL_FUNC) &_bvhar_forecast_vhar, 2},
     {"_bvhar_roll_var", (DL_FUNC) &_bvhar_roll_var, 7},
     {"_bvhar_roll_vhar", (DL_FUNC) &_bvhar_roll_vhar, 8},

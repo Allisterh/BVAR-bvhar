@@ -5,6 +5,9 @@
 #' @param object Model object
 #' @param n_ahead step to forecast
 #' @param level Specify alpha of confidence interval level 100(1 - alpha) percentage. By default, .05.
+#' @param newxreg New values for exogenous variables.
+#' If `NULL` (default), ignore exogenous variables.
+#' Should have the same row numbers with `n_ahead`.
 #' @param ... not used
 #' @section n-step ahead forecasting VAR(p):
 #' See pp35 of Lütkepohl (2007).
@@ -52,10 +55,19 @@
 #' @importFrom stats qnorm
 #' @order 1
 #' @export
-predict.varlse <- function(object, n_ahead, level = .05, ...) {
+predict.varlse <- function(object, n_ahead, level = .05, newxreg = NULL, ...) {
   if (!is.null(eval(object$call$exogen))) {
-    # temporarily remove exogen part until adding newx
-    object$coefficients <- object$coefficients[-object$exogen_id,]
+    if (!is.null(newxreg)) {
+      # append to last_pvec: y_T, ..., y_(T - p + 1), [ x_(T + 1), ..., X_(T + 1 - s) ], 1
+      if (!is.matrix(newxreg)) {
+        newxreg <- as.matrix(newxreg)
+      }
+      if (nrow(newxreg) != n_ahead) {
+        stop("Wrong row number of 'newxreg'")
+      }
+    } else {
+      object$coefficients <- object$coefficients[-object$exogen_id,]
+    }
   }
   pred_res <- forecast_var(object, n_ahead)
   colnames(pred_res) <- colnames(object$y0)
@@ -86,6 +98,9 @@ predict.varlse <- function(object, n_ahead, level = .05, ...) {
 #' @param object A `vharlse` object
 #' @param n_ahead step to forecast
 #' @param level Specify alpha of confidence interval level 100(1 - alpha) percentage. By default, .05.
+#' @param newxreg New values for exogenous variables.
+#' If `NULL` (default), ignore exogenous variables.
+#' Should have the same row numbers with `n_ahead`.
 #' @param ... not used
 #' @section n-step ahead forecasting VHAR:
 #' Let \eqn{T_{HAR}} is VHAR linear transformation matrix.
@@ -109,11 +124,14 @@ predict.varlse <- function(object, n_ahead, level = .05, ...) {
 #' @importFrom stats qnorm
 #' @order 1
 #' @export
-predict.vharlse <- function(object, n_ahead, level = .05, ...) {
+predict.vharlse <- function(object, n_ahead, level = .05, newxreg = NULL, ...) {
   if (!is.null(eval(object$call$exogen))) {
-    # temporarily remove exogen part until adding newx
-    object$coefficients <- object$coefficients[-object$exogen_id, ]
-    object$HARtrans <- object$HARtrans[-object$exogen_id, -object$exogen_colid]
+    if (!is.null(newxreg)) {
+      # append to last_pvec
+    } else {
+      object$coefficients <- object$coefficients[-object$exogen_id,]
+      object$HARtrans <- object$HARtrans[-object$exogen_id, -object$exogen_colid]
+    }
   }
   pred_res <- forecast_vhar(object, n_ahead)
   colnames(pred_res) <- colnames(object$y0)

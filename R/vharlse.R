@@ -95,24 +95,33 @@ vhar_lm <- function(y, har = c(5, 22), exogen = NULL, include_mean = TRUE, metho
     } else {
       name_exogen <- paste0("x", seq_len(ncol(exogen)))
     }
-    if (include_mean) {
-      # append name_lag before const
-      name_har <- c(
-        name_har[-length(name_har)],
-        concatenate_colnames(name_exogen, c("day", "week", "month"), TRUE)
-      )
-    } else {
-      name_har <- c(
-        name_har,
-        concatenate_colnames(name_exogen, c("day", "week", "month"), FALSE)
-      )
-    }
+    # if (include_mean) {
+    #   # append name_lag before const
+    #   name_har <- c(
+    #     name_har[-length(name_har)],
+    #     concatenate_colnames(name_exogen, c("day", "week", "month"), TRUE)
+    #   )
+    # } else {
+    #   name_har <- c(
+    #     name_har,
+    #     concatenate_colnames(name_exogen, c("day", "week", "month"), FALSE)
+    #   )
+    # }
     res <- estimate_harx(y, exogen, week, month, include_mean, method_fit)
+    res$exogen_id <- length(name_har) + 1:(3 * ncol(exogen)) # row index for exogen in coefficient
+    res$exogen_colid <- res$month * ncol(y) + 1:(res$month * ncol(exogen)) # col index for exogen in har transformation matrix
+    if (include_mean) {
+      res$exogen_colid <- res$exogen_colid + 1
+    }
+    name_har <- c(
+      name_har,
+      concatenate_colnames(name_exogen, c("day", "week", "month"), FALSE)
+    )
     res$s <- 3
     res$exogen_m <- ncol(exogen)
     # res$exogen <- TRUE
-    res$exogen_id <- 3 * ncol(y) + 1:(3 * ncol(exogen)) # row index for exogen in coefficient
-    res$exogen_colid <- res$month * ncol(y) + 1:(res$month * ncol(exogen)) # col index for exogen in har transformation matrix
+    # res$exogen_id <- 3 * ncol(y) + 1:(3 * ncol(exogen)) # row index for exogen in coefficient
+    # res$exogen_colid <- res$month * ncol(y) + 1:(res$month * ncol(exogen)) # col index for exogen in har transformation matrix
   } else {
     res <- estimate_har(y, week, month, include_mean, method_fit)
     # res$exogen <- FALSE

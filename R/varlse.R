@@ -81,23 +81,28 @@ var_lm <- function(y, p = 1, exogen = NULL, s = p, include_mean = TRUE, method =
     } else {
       name_exogen <- paste0("x", seq_len(ncol(exogen)))
     }
-    if (include_mean) {
-      # append name_lag before const
-      name_lag <- c(
-        name_lag[-length(name_lag)],
-        concatenate_colnames(name_exogen, 1:s, TRUE)
-      )
-    } else {
-      name_lag <- c(
-        name_lag,
-        concatenate_colnames(name_exogen, 1:s, FALSE)
-      )
-    }
+    # if (include_mean) {
+    #   # append name_lag before const
+    #   name_lag <- c(
+    #     name_lag[-length(name_lag)],
+    #     concatenate_colnames(name_exogen, 1:s, TRUE)
+    #   )
+    # } else {
+    #   name_lag <- c(
+    #     name_lag,
+    #     concatenate_colnames(name_exogen, 1:s, FALSE)
+    #   )
+    # }
     res <- estimate_varx(y, exogen, p, s, include_mean, method_fit)
+    res$exogen_id <- length(name_lag) + 1:(s * ncol(exogen)) # row index for exogen in coefficient
+    name_lag <- c(
+      name_lag,
+      concatenate_colnames(name_exogen, 1:s, FALSE)
+    )
     res$s <- s
     res$exogen_m <- ncol(exogen)
     # res$exogen <- TRUE
-    res$exogen_id <- p * ncol(y) + 1:(s * ncol(exogen)) # row index for exogen in coefficient
+    # res$exogen_id <- p * ncol(y) + 1:(s * ncol(exogen)) # row index for exogen in coefficient
   } else {
     res <- estimate_var(y, p, include_mean, method_fit)
     # res$exogen <- FALSE

@@ -57,7 +57,8 @@ print.vharlse <- function(x, digits = max(3L, getOption("digits") - 3L), ...) {
   }
   # const term----------------------
   if (x$type == "const") {
-    intercept <- x$coefficients[x$df,]
+    # intercept <- x$coefficients[x$df,]
+    intercept <- x$coefficients[x$p * x$m + 1,]
     cat("LSE for constant:\n")
     print.default(
       intercept,

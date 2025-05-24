@@ -1,14 +1,20 @@
 # VAR----------------------------------
-test_that("Test for varlse forecast", {
+test_that("Test for varlse and vharlse forecast", {
   skip_on_cran()
   
   num_col <- 3
-  fit_var <- var_lm(etf_vix[, 1:3], 2)
-  fit_vhar <- vhar_lm(etf_vix[, 1:3])
+  etf_train <- etf_vix[1:50, 1:num_col]
+  etf_x <- etf_vix[1:50, (num_col + 1):(num_col + 2)]
+  fit_var <- var_lm(etf_train, 2)
+  fit_vhar <- vhar_lm(etf_train)
+  fit_varx <- var_lm(etf_train, 2, exogen = etf_x)
+  fit_vharx <- vhar_lm(etf_train, exogen = etf_x)
   
   num_forecast <- 2
   pred_var <- predict(fit_var, num_forecast)
+  pred_varx <- predict(fit_varx, num_forecast, newxreg = etf_vix[51:(50 + num_forecast), (num_col + 1):(num_col + 2)])
   pred_vhar <- predict(fit_vhar, num_forecast)
+  pred_vharx <- predict(fit_vharx, num_forecast, newxreg = etf_vix[51:(50 + num_forecast), (num_col + 1):(num_col + 2)])
   
   expect_s3_class(pred_var, "predbvhar")
   expect_s3_class(pred_vhar, "predbvhar")
@@ -29,7 +35,14 @@ test_that("Test for varlse forecast", {
     ncol(pred_vhar$forecast),
     num_col
   )
-  
+  expect_error(
+    predict(fit_varx, num_forecast),
+    "'newxreg' should be supplied when using VARX model."
+  )
+  expect_error(
+    predict(fit_vharx, num_forecast),
+    "'newxreg' should be supplied when using VHARX model."
+  )
 })
 
 help_var_bayes_pred <- function(bayes_spec, cov_spec, sparse) {

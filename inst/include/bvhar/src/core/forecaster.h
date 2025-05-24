@@ -40,7 +40,7 @@ public:
 	}
 
 	virtual DataType getLastForecast() = 0;
-	virtual DataType getLastForecast(const DataType& valid_vec) { getLastForecast(); }
+	virtual DataType getLastForecast(const DataType& valid_vec) { return getLastForecast(); }
 
 protected:
 	int step, lag;

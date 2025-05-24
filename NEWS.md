@@ -2,11 +2,15 @@
 
 * Changed `bayes_spec` argument into `coef_spec` and `contem_spec` to enable different priors
 
-* In C++, added `shrinkage` headers for strategy design pattern.
-
 * Added `mcmc` option in `forecast_roll()` and `forecast_expand()` for `ldltmod` and `svmod` classes.
 
-* In C++ side, added `McmcParams`, `McmcAlgo`, and `McmcRun` (changed original `McmcRun` to `CtaRun`) for extensibility of MCMC algorithms.
+* `var_lm()` and `vhar_lm()` can run frequentist VARX and VHARX via `exogen` and `s`.
+
+## Internal changes (C++)
+
+* Added `shrinkage` headers for strategy design pattern.
+
+* Added `McmcParams`, `McmcAlgo`, and `McmcRun` (changed original `McmcRun` to `CtaRun`) for extensibility of MCMC algorithms.
 
 * Also added base forecaster classes.
 

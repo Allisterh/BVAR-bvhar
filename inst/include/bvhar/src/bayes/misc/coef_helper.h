@@ -108,42 +108,6 @@ inline void reg_ldlt_diag(Eigen::Ref<Eigen::VectorXd> diag_vec, Eigen::VectorXd&
 	}
 }
 
-// Build coefficient in VAR(1) companion form of VAR(p)
-// 
-// @param coef_mat VAR without constant coefficient matrix form
-// 
-inline Eigen::MatrixXd build_companion(Eigen::Ref<const Eigen::MatrixXd> coef_mat) {
-	int dim = coef_mat.cols();
-	int dim_design = coef_mat.rows();
-	Eigen::MatrixXd res = Eigen::MatrixXd::Zero(dim_design, dim_design);
-	res.topRows(dim) = coef_mat.transpose();
-	res.bottomLeftCorner(dim_design - dim, dim_design - dim).setIdentity();
-	return res;
-}
-
-// Characteristic polynomial for stability
-// 
-// @param var_mat VAR(1) form coefficient matrix
-// 
-inline Eigen::VectorXd root_unitcircle(Eigen::Ref<Eigen::MatrixXd> var_mat) {
-	Eigen::VectorXcd eigenvals = var_mat.eigenvalues();
-	return eigenvals.cwiseAbs();
-}
-
-// Check if the coefficient is stable
-inline bool is_stable(Eigen::Ref<const Eigen::MatrixXd> coef_mat, double threshold) {
-	Eigen::MatrixXd companion_mat = build_companion(coef_mat);
-	Eigen::VectorXd stableroot = root_unitcircle(companion_mat);
-	return stableroot.maxCoeff() < threshold;
-}
-
-// Check if the coefficient is stable
-inline bool is_stable(Eigen::Ref<const Eigen::MatrixXd> coef_mat, double threshold, Eigen::Ref<const Eigen::MatrixXd> har_trans) {
-	Eigen::MatrixXd companion_mat = build_companion(har_trans.transpose() * coef_mat);
-	Eigen::VectorXd stableroot = root_unitcircle(companion_mat);
-	return stableroot.maxCoeff() < threshold;
-}
-
 } // namespace bvhar
 
 #endif // BVHAR_BAYES_MISC_COEF_HELPER_H_H_H

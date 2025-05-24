@@ -309,6 +309,22 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// estimate_varx
+Rcpp::List estimate_varx(Eigen::MatrixXd y, Eigen::MatrixXd exogen, int lag, int exogen_lag, bool include_mean, int method);
+RcppExport SEXP _bvhar_estimate_varx(SEXP ySEXP, SEXP exogenSEXP, SEXP lagSEXP, SEXP exogen_lagSEXP, SEXP include_meanSEXP, SEXP methodSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type y(ySEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type exogen(exogenSEXP);
+    Rcpp::traits::input_parameter< int >::type lag(lagSEXP);
+    Rcpp::traits::input_parameter< int >::type exogen_lag(exogen_lagSEXP);
+    Rcpp::traits::input_parameter< bool >::type include_mean(include_meanSEXP);
+    Rcpp::traits::input_parameter< int >::type method(methodSEXP);
+    rcpp_result_gen = Rcpp::wrap(estimate_varx(y, exogen, lag, exogen_lag, include_mean, method));
+    return rcpp_result_gen;
+END_RCPP
+}
 // estimate_har
 Rcpp::List estimate_har(Eigen::MatrixXd y, int week, int month, bool include_mean, int method);
 RcppExport SEXP _bvhar_estimate_har(SEXP ySEXP, SEXP weekSEXP, SEXP monthSEXP, SEXP include_meanSEXP, SEXP methodSEXP) {
@@ -321,6 +337,23 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< bool >::type include_mean(include_meanSEXP);
     Rcpp::traits::input_parameter< int >::type method(methodSEXP);
     rcpp_result_gen = Rcpp::wrap(estimate_har(y, week, month, include_mean, method));
+    return rcpp_result_gen;
+END_RCPP
+}
+// estimate_harx
+Rcpp::List estimate_harx(Eigen::MatrixXd y, Eigen::MatrixXd exogen, int week, int month, int exogen_lag, bool include_mean, int method);
+RcppExport SEXP _bvhar_estimate_harx(SEXP ySEXP, SEXP exogenSEXP, SEXP weekSEXP, SEXP monthSEXP, SEXP exogen_lagSEXP, SEXP include_meanSEXP, SEXP methodSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type y(ySEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type exogen(exogenSEXP);
+    Rcpp::traits::input_parameter< int >::type week(weekSEXP);
+    Rcpp::traits::input_parameter< int >::type month(monthSEXP);
+    Rcpp::traits::input_parameter< int >::type exogen_lag(exogen_lagSEXP);
+    Rcpp::traits::input_parameter< bool >::type include_mean(include_meanSEXP);
+    Rcpp::traits::input_parameter< int >::type method(methodSEXP);
+    rcpp_result_gen = Rcpp::wrap(estimate_harx(y, exogen, week, month, exogen_lag, include_mean, method));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -371,6 +404,24 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// forecast_varx
+Eigen::MatrixXd forecast_varx(Eigen::MatrixXd response, Eigen::MatrixXd coef_mat, int lag, int step, bool include_mean, Eigen::MatrixXd exogen, Eigen::MatrixXd exogen_coef, int exogen_lag);
+RcppExport SEXP _bvhar_forecast_varx(SEXP responseSEXP, SEXP coef_matSEXP, SEXP lagSEXP, SEXP stepSEXP, SEXP include_meanSEXP, SEXP exogenSEXP, SEXP exogen_coefSEXP, SEXP exogen_lagSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type response(responseSEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type coef_mat(coef_matSEXP);
+    Rcpp::traits::input_parameter< int >::type lag(lagSEXP);
+    Rcpp::traits::input_parameter< int >::type step(stepSEXP);
+    Rcpp::traits::input_parameter< bool >::type include_mean(include_meanSEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type exogen(exogenSEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type exogen_coef(exogen_coefSEXP);
+    Rcpp::traits::input_parameter< int >::type exogen_lag(exogen_lagSEXP);
+    rcpp_result_gen = Rcpp::wrap(forecast_varx(response, coef_mat, lag, step, include_mean, exogen, exogen_coef, exogen_lag));
+    return rcpp_result_gen;
+END_RCPP
+}
 // forecast_vhar
 Eigen::MatrixXd forecast_vhar(Rcpp::List object, int step);
 RcppExport SEXP _bvhar_forecast_vhar(SEXP objectSEXP, SEXP stepSEXP) {
@@ -380,6 +431,25 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< Rcpp::List >::type object(objectSEXP);
     Rcpp::traits::input_parameter< int >::type step(stepSEXP);
     rcpp_result_gen = Rcpp::wrap(forecast_vhar(object, step));
+    return rcpp_result_gen;
+END_RCPP
+}
+// forecast_harx
+Eigen::MatrixXd forecast_harx(Eigen::MatrixXd response, Eigen::MatrixXd coef_mat, int week, int month, int step, bool include_mean, Eigen::MatrixXd exogen, Eigen::MatrixXd exogen_coef, int exogen_lag);
+RcppExport SEXP _bvhar_forecast_harx(SEXP responseSEXP, SEXP coef_matSEXP, SEXP weekSEXP, SEXP monthSEXP, SEXP stepSEXP, SEXP include_meanSEXP, SEXP exogenSEXP, SEXP exogen_coefSEXP, SEXP exogen_lagSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type response(responseSEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type coef_mat(coef_matSEXP);
+    Rcpp::traits::input_parameter< int >::type week(weekSEXP);
+    Rcpp::traits::input_parameter< int >::type month(monthSEXP);
+    Rcpp::traits::input_parameter< int >::type step(stepSEXP);
+    Rcpp::traits::input_parameter< bool >::type include_mean(include_meanSEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type exogen(exogenSEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type exogen_coef(exogen_coefSEXP);
+    Rcpp::traits::input_parameter< int >::type exogen_lag(exogen_lagSEXP);
+    rcpp_result_gen = Rcpp::wrap(forecast_harx(response, coef_mat, week, month, step, include_mean, exogen, exogen_coef, exogen_lag));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -1155,6 +1225,21 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// build_exogen_design
+Eigen::MatrixXd build_exogen_design(Eigen::MatrixXd y, Eigen::MatrixXd exogen, int var_lag, int exogen_lag, bool include_mean);
+RcppExport SEXP _bvhar_build_exogen_design(SEXP ySEXP, SEXP exogenSEXP, SEXP var_lagSEXP, SEXP exogen_lagSEXP, SEXP include_meanSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type y(ySEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type exogen(exogenSEXP);
+    Rcpp::traits::input_parameter< int >::type var_lag(var_lagSEXP);
+    Rcpp::traits::input_parameter< int >::type exogen_lag(exogen_lagSEXP);
+    Rcpp::traits::input_parameter< bool >::type include_mean(include_meanSEXP);
+    rcpp_result_gen = Rcpp::wrap(build_exogen_design(y, exogen, var_lag, exogen_lag, include_mean));
+    return rcpp_result_gen;
+END_RCPP
+}
 // scale_har
 Eigen::MatrixXd scale_har(int dim, int week, int month, bool include_mean);
 RcppExport SEXP _bvhar_scale_har(SEXP dimSEXP, SEXP weekSEXP, SEXP monthSEXP, SEXP include_meanSEXP) {
@@ -1395,9 +1480,9 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// compute_var_mse
-Eigen::MatrixXd compute_var_mse(Eigen::MatrixXd cov_mat, Eigen::MatrixXd var_coef, int var_lag, int step);
-RcppExport SEXP _bvhar_compute_var_mse(SEXP cov_matSEXP, SEXP var_coefSEXP, SEXP var_lagSEXP, SEXP stepSEXP) {
+// compute_var_mse_export
+Eigen::MatrixXd compute_var_mse_export(Eigen::MatrixXd cov_mat, Eigen::MatrixXd var_coef, int var_lag, int step);
+RcppExport SEXP _bvhar_compute_var_mse_export(SEXP cov_matSEXP, SEXP var_coefSEXP, SEXP var_lagSEXP, SEXP stepSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -1405,7 +1490,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< Eigen::MatrixXd >::type var_coef(var_coefSEXP);
     Rcpp::traits::input_parameter< int >::type var_lag(var_lagSEXP);
     Rcpp::traits::input_parameter< int >::type step(stepSEXP);
-    rcpp_result_gen = Rcpp::wrap(compute_var_mse(cov_mat, var_coef, var_lag, step));
+    rcpp_result_gen = Rcpp::wrap(compute_var_mse_export(cov_mat, var_coef, var_lag, step));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -1461,9 +1546,9 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// compute_vhar_mse
-Eigen::MatrixXd compute_vhar_mse(Eigen::MatrixXd cov_mat, Eigen::MatrixXd vhar_coef, Eigen::MatrixXd har_trans, int month, int step);
-RcppExport SEXP _bvhar_compute_vhar_mse(SEXP cov_matSEXP, SEXP vhar_coefSEXP, SEXP har_transSEXP, SEXP monthSEXP, SEXP stepSEXP) {
+// compute_vhar_mse_export
+Eigen::MatrixXd compute_vhar_mse_export(Eigen::MatrixXd cov_mat, Eigen::MatrixXd vhar_coef, Eigen::MatrixXd har_trans, int month, int step);
+RcppExport SEXP _bvhar_compute_vhar_mse_export(SEXP cov_matSEXP, SEXP vhar_coefSEXP, SEXP har_transSEXP, SEXP monthSEXP, SEXP stepSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -1472,7 +1557,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< Eigen::MatrixXd >::type har_trans(har_transSEXP);
     Rcpp::traits::input_parameter< int >::type month(monthSEXP);
     Rcpp::traits::input_parameter< int >::type step(stepSEXP);
-    rcpp_result_gen = Rcpp::wrap(compute_vhar_mse(cov_mat, vhar_coef, har_trans, month, step));
+    rcpp_result_gen = Rcpp::wrap(compute_vhar_mse_export(cov_mat, vhar_coef, har_trans, month, step));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -1583,24 +1668,26 @@ BEGIN_RCPP
 END_RCPP
 }
 // compute_var_stablemat
-Eigen::MatrixXd compute_var_stablemat(Rcpp::List object);
-RcppExport SEXP _bvhar_compute_var_stablemat(SEXP objectSEXP) {
+Eigen::MatrixXd compute_var_stablemat(Eigen::MatrixXd coef_mat, int var_lag);
+RcppExport SEXP _bvhar_compute_var_stablemat(SEXP coef_matSEXP, SEXP var_lagSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::List >::type object(objectSEXP);
-    rcpp_result_gen = Rcpp::wrap(compute_var_stablemat(object));
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type coef_mat(coef_matSEXP);
+    Rcpp::traits::input_parameter< int >::type var_lag(var_lagSEXP);
+    rcpp_result_gen = Rcpp::wrap(compute_var_stablemat(coef_mat, var_lag));
     return rcpp_result_gen;
 END_RCPP
 }
 // compute_vhar_stablemat
-Eigen::MatrixXd compute_vhar_stablemat(Rcpp::List object);
-RcppExport SEXP _bvhar_compute_vhar_stablemat(SEXP objectSEXP) {
+Eigen::MatrixXd compute_vhar_stablemat(Eigen::MatrixXd coef_mat, Eigen::MatrixXd hartrans_mat);
+RcppExport SEXP _bvhar_compute_vhar_stablemat(SEXP coef_matSEXP, SEXP hartrans_matSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::List >::type object(objectSEXP);
-    rcpp_result_gen = Rcpp::wrap(compute_vhar_stablemat(object));
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type coef_mat(coef_matSEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type hartrans_mat(hartrans_matSEXP);
+    rcpp_result_gen = Rcpp::wrap(compute_vhar_stablemat(coef_mat, hartrans_mat));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -1703,12 +1790,16 @@ static const R_CallMethodDef CallEntries[] = {
     {"_bvhar_dynamic_bvar_spillover", (DL_FUNC) &_bvhar_dynamic_bvar_spillover, 11},
     {"_bvhar_dynamic_bvhar_spillover", (DL_FUNC) &_bvhar_dynamic_bvhar_spillover, 12},
     {"_bvhar_estimate_var", (DL_FUNC) &_bvhar_estimate_var, 4},
+    {"_bvhar_estimate_varx", (DL_FUNC) &_bvhar_estimate_varx, 6},
     {"_bvhar_estimate_har", (DL_FUNC) &_bvhar_estimate_har, 5},
+    {"_bvhar_estimate_harx", (DL_FUNC) &_bvhar_estimate_harx, 7},
     {"_bvhar_compute_cov", (DL_FUNC) &_bvhar_compute_cov, 3},
     {"_bvhar_infer_var", (DL_FUNC) &_bvhar_infer_var, 1},
     {"_bvhar_infer_vhar", (DL_FUNC) &_bvhar_infer_vhar, 1},
     {"_bvhar_forecast_var", (DL_FUNC) &_bvhar_forecast_var, 2},
+    {"_bvhar_forecast_varx", (DL_FUNC) &_bvhar_forecast_varx, 8},
     {"_bvhar_forecast_vhar", (DL_FUNC) &_bvhar_forecast_vhar, 2},
+    {"_bvhar_forecast_harx", (DL_FUNC) &_bvhar_forecast_harx, 9},
     {"_bvhar_roll_var", (DL_FUNC) &_bvhar_roll_var, 7},
     {"_bvhar_roll_vhar", (DL_FUNC) &_bvhar_roll_vhar, 8},
     {"_bvhar_expand_var", (DL_FUNC) &_bvhar_expand_var, 7},
@@ -1740,6 +1831,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_bvhar_is_omp", (DL_FUNC) &_bvhar_is_omp, 0},
     {"_bvhar_build_response", (DL_FUNC) &_bvhar_build_response, 3},
     {"_bvhar_build_design", (DL_FUNC) &_bvhar_build_design, 3},
+    {"_bvhar_build_exogen_design", (DL_FUNC) &_bvhar_build_exogen_design, 5},
     {"_bvhar_scale_har", (DL_FUNC) &_bvhar_scale_har, 4},
     {"_bvhar_build_ydummy_export", (DL_FUNC) &_bvhar_build_ydummy_export, 7},
     {"_bvhar_build_xdummy_export", (DL_FUNC) &_bvhar_build_xdummy_export, 5},
@@ -1756,12 +1848,12 @@ static const R_CallMethodDef CallEntries[] = {
     {"_bvhar_sim_vhar_chol", (DL_FUNC) &_bvhar_sim_vhar_chol, 9},
     {"_bvhar_VARcoeftoVMA", (DL_FUNC) &_bvhar_VARcoeftoVMA, 3},
     {"_bvhar_VARtoVMA", (DL_FUNC) &_bvhar_VARtoVMA, 2},
-    {"_bvhar_compute_var_mse", (DL_FUNC) &_bvhar_compute_var_mse, 4},
+    {"_bvhar_compute_var_mse_export", (DL_FUNC) &_bvhar_compute_var_mse_export, 4},
     {"_bvhar_compute_covmse", (DL_FUNC) &_bvhar_compute_covmse, 2},
     {"_bvhar_VARcoeftoVMA_ortho", (DL_FUNC) &_bvhar_VARcoeftoVMA_ortho, 4},
     {"_bvhar_VHARcoeftoVMA", (DL_FUNC) &_bvhar_VHARcoeftoVMA, 4},
     {"_bvhar_VHARtoVMA", (DL_FUNC) &_bvhar_VHARtoVMA, 2},
-    {"_bvhar_compute_vhar_mse", (DL_FUNC) &_bvhar_compute_vhar_mse, 5},
+    {"_bvhar_compute_vhar_mse_export", (DL_FUNC) &_bvhar_compute_vhar_mse_export, 5},
     {"_bvhar_compute_covmse_har", (DL_FUNC) &_bvhar_compute_covmse_har, 2},
     {"_bvhar_VHARcoeftoVMA_ortho", (DL_FUNC) &_bvhar_VHARcoeftoVMA_ortho, 5},
     {"_bvhar_compute_fevd", (DL_FUNC) &_bvhar_compute_fevd, 3},
@@ -1771,8 +1863,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_bvhar_compute_tot_spillover", (DL_FUNC) &_bvhar_compute_tot_spillover, 1},
     {"_bvhar_compute_net_spillover", (DL_FUNC) &_bvhar_compute_net_spillover, 1},
     {"_bvhar_compute_stablemat", (DL_FUNC) &_bvhar_compute_stablemat, 1},
-    {"_bvhar_compute_var_stablemat", (DL_FUNC) &_bvhar_compute_var_stablemat, 1},
-    {"_bvhar_compute_vhar_stablemat", (DL_FUNC) &_bvhar_compute_vhar_stablemat, 1},
+    {"_bvhar_compute_var_stablemat", (DL_FUNC) &_bvhar_compute_var_stablemat, 2},
+    {"_bvhar_compute_vhar_stablemat", (DL_FUNC) &_bvhar_compute_vhar_stablemat, 2},
     {"_bvhar_log_mgammafn", (DL_FUNC) &_bvhar_log_mgammafn, 2},
     {"_bvhar_logml_stable", (DL_FUNC) &_bvhar_logml_stable, 1},
     {"_bvhar_compute_aic", (DL_FUNC) &_bvhar_compute_aic, 1},

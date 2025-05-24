@@ -8,6 +8,7 @@ namespace bvhar {
 
 template <typename ReturnType, typename DataType> class MultistepForecaster;
 template <typename ReturnType, typename DataType> class MultistepForecastRun;
+template <typename ReturnType, typename DataType> class ExogenForecaster;
 
 /**
  * @brief Base class for Recursive multi-step forecasting
@@ -39,7 +40,7 @@ public:
 	}
 
 	virtual DataType getLastForecast() = 0;
-	virtual DataType getLastForecast(const DataType& valid_vec) = 0;
+	virtual DataType getLastForecast(const DataType& valid_vec) { getLastForecast(); }
 
 protected:
 	int step, lag;
@@ -59,9 +60,15 @@ protected:
 	 * @brief Multi-step forecasting
 	 * 
 	 */
-	virtual void forecast() = 0;
+	virtual void forecast() {
+		for (int h = 0; h < step; ++h) {
+			setRecursion();
+			updatePred(h, 0);
+			updateRecursion();
+		}
+	}
 
-	virtual void forecast(const DataType& valid_vec) = 0;
+	virtual void forecast(const DataType& valid_vec) { forecast(); }
 
 	/**
 	 * @brief Set the initial lagged unit
@@ -99,7 +106,35 @@ public:
 	 * @brief Forecast
 	 * 
 	 */
-	virtual void forecast() = 0;
+	virtual void forecast() {}
+};
+
+/**
+ * @brief Base class for exogenous variables in forecaster
+ * 
+ * @tparam ReturnType 
+ * @tparam DataType 
+ */
+template <typename ReturnType = Eigen::MatrixXd, typename DataType = Eigen::VectorXd>
+class ExogenForecaster {
+public:
+	ExogenForecaster() {}
+	ExogenForecaster(int lag, const ReturnType& exogen)
+	: lag(lag), exogen(exogen) {}
+	virtual ~ExogenForecaster() = default;
+
+	/**
+	 * @brief Add point forecast by exogenous terms
+	 * 
+	 * @param point_forecast 
+	 * @param h 
+	 */
+	virtual void appendForecast(DataType& point_forecast, const int h) {}
+
+protected:
+	int lag;
+	ReturnType exogen;
+	DataType last_pvec;
 };
 
 } // namespace bvhar

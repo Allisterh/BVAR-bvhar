@@ -15,7 +15,15 @@
 //' @noRd
 // [[Rcpp::export]]
 Rcpp::List estimate_var(Eigen::MatrixXd y, int lag, bool include_mean, int method) {
-	std::unique_ptr<bvhar::OlsVar> ols_obj(new bvhar::OlsVar(y, lag, include_mean, method));
+	// std::unique_ptr<bvhar::OlsVar> ols_obj(new bvhar::OlsVar(y, lag, include_mean, method));
+	auto ols_obj = std::make_unique<bvhar::OlsVar>(y, lag, include_mean, method);
+	return ols_obj->returnOlsRes();
+}
+
+//' @noRd
+// [[Rcpp::export]]
+Rcpp::List estimate_varx(Eigen::MatrixXd y, Eigen::MatrixXd exogen, int lag, int exogen_lag, bool include_mean, int method) {
+	auto ols_obj = std::make_unique<bvhar::OlsVar>(y, exogen, lag, exogen_lag, include_mean, method);
 	return ols_obj->returnOlsRes();
 }
 
@@ -40,7 +48,14 @@ Rcpp::List estimate_var(Eigen::MatrixXd y, int lag, bool include_mean, int metho
 //' @noRd
 // [[Rcpp::export]]
 Rcpp::List estimate_har(Eigen::MatrixXd y, int week, int month, bool include_mean, int method) {
-	std::unique_ptr<bvhar::OlsVhar> ols_obj(new bvhar::OlsVhar(y, week, month, include_mean, method));
+	auto ols_obj = std::make_unique<bvhar::OlsVhar>(y, week, month, include_mean, method);
+	return ols_obj->returnOlsRes();
+}
+
+//' @noRd
+// [[Rcpp::export]]
+Rcpp::List estimate_harx(Eigen::MatrixXd y, Eigen::MatrixXd exogen, int week, int month, int exogen_lag, bool include_mean, int method) {
+	auto ols_obj = std::make_unique<bvhar::OlsVhar>(y, exogen, week, month, exogen_lag, include_mean, method);
 	return ols_obj->returnOlsRes();
 }
 
@@ -172,9 +187,20 @@ Eigen::MatrixXd forecast_var(Rcpp::List object, int step) {
   Eigen::MatrixXd coef_mat = object["coefficients"]; // bhat
   int var_lag = object["p"]; // VAR(p)
 	bool include_mean = Rcpp::as<std::string>(object["type"]) == "const";
-	bvhar::OlsFit ols_fit(coef_mat, var_lag);
-	std::unique_ptr<bvhar::VarForecaster> forecaster(new bvhar::VarForecaster(ols_fit, step, response_mat, include_mean));
-	return forecaster->forecastPoint();
+	// bvhar::OlsFit ols_fit(coef_mat, var_lag);
+	// std::unique_ptr<bvhar::VarForecaster> forecaster(new bvhar::VarForecaster(ols_fit, step, response_mat, include_mean));
+	// return forecaster->forecastPoint();
+	auto forecaster = std::make_unique<bvhar::OlsForecastRun>(var_lag, step, response_mat, coef_mat, include_mean);
+	return forecaster->returnForecast();
+}
+
+//' @noRd
+// [[Rcpp::export]]
+Eigen::MatrixXd forecast_varx(Eigen::MatrixXd response, Eigen::MatrixXd coef_mat, int lag, int step,
+															bool include_mean, Eigen::MatrixXd exogen, Eigen::MatrixXd exogen_coef, int exogen_lag) {
+	auto forecaster = std::make_unique<bvhar::OlsForecastRun>(lag, step, response, coef_mat, include_mean, exogen_lag, exogen, exogen_coef);
+	// auto forecaster = std::make_unique<bvhar::OlsForecastRun>(lag, step, response, coef_mat, include_mean, exogen, exogen_lag);
+	return forecaster->returnForecast();
 }
 
 //' Forecasting Vector HAR
@@ -192,12 +218,23 @@ Eigen::MatrixXd forecast_vhar(Rcpp::List object, int step) {
   }
   Eigen::MatrixXd response_mat = object["y0"]; // Y0
   Eigen::MatrixXd coef_mat = object["coefficients"]; // bhat
-  Eigen::MatrixXd HARtrans = object["HARtrans"]; // HAR transformation
+  // Eigen::MatrixXd HARtrans = object["HARtrans"]; // HAR transformation
+	int week = object["week"];
   int month = object["month"];
 	bool include_mean = Rcpp::as<std::string>(object["type"]) == "const";
-	bvhar::OlsFit ols_fit(coef_mat, month);
-	std::unique_ptr<bvhar::VharForecaster> forecaster(new bvhar::VharForecaster(ols_fit, step, response_mat, HARtrans, include_mean));
-	return forecaster->forecastPoint();
+	// bvhar::OlsFit ols_fit(coef_mat, month);
+	// std::unique_ptr<bvhar::VharForecaster> forecaster(new bvhar::VharForecaster(ols_fit, step, response_mat, HARtrans, include_mean));
+	// return forecaster->forecastPoint();
+	auto forecaster = std::make_unique<bvhar::OlsForecastRun>(week, month, step, response_mat, coef_mat, include_mean);
+	return forecaster->returnForecast();
+}
+
+//' @noRd
+// [[Rcpp::export]]
+Eigen::MatrixXd forecast_harx(Eigen::MatrixXd response, Eigen::MatrixXd coef_mat, int week, int month, int step,
+															bool include_mean, Eigen::MatrixXd exogen, Eigen::MatrixXd exogen_coef, int exogen_lag) {
+	auto forecaster = std::make_unique<bvhar::OlsForecastRun>(week, month, step, response, coef_mat, include_mean, exogen_lag, exogen, exogen_coef);
+	return forecaster->returnForecast();
 }
 
 //' Out-of-Sample Forecasting of VAR based on Rolling Window
@@ -259,7 +296,8 @@ Eigen::MatrixXd roll_var(Eigen::MatrixXd y, int lag, bool include_mean, int step
 #endif
 	for (int window = 0; window < num_horizon; window++) {
 		bvhar::OlsFit ols_fit = ols_objs[window]->returnOlsFit(lag);
-		forecaster[window].reset(new bvhar::VarForecaster(ols_fit, step, roll_y0[window], include_mean));
+		// forecaster[window].reset(new bvhar::VarForecaster(ols_fit, step, roll_y0[window], include_mean));
+		forecaster[window] = std::make_unique<bvhar::VarForecaster>(ols_fit, step, roll_y0[window], include_mean);
 		res[window] = forecaster[window]->forecastPoint().bottomRows(1);
 		ols_objs[window].reset(); // free the memory by making nullptr
 		forecaster[window].reset(); // free the memory by making nullptr
@@ -336,7 +374,8 @@ Eigen::MatrixXd roll_vhar(Eigen::MatrixXd y, int week, int month, bool include_m
 #endif
 	for (int window = 0; window < num_horizon; window++) {
 		bvhar::OlsFit ols_fit = ols_objs[window]->returnOlsFit(month);
-		forecaster[window].reset(new bvhar::VharForecaster(ols_fit, step, roll_y0[window], har_trans, include_mean));
+		// forecaster[window].reset(new bvhar::VharForecaster(ols_fit, step, roll_y0[window], har_trans, include_mean));
+		forecaster[window] = std::make_unique<bvhar::VharForecaster>(ols_fit, step, roll_y0[window], har_trans, include_mean);
 		res[window] = forecaster[window]->forecastPoint().bottomRows(1);
 		ols_objs[window].reset(); // free the memory by making nullptr
 		forecaster[window].reset(); // free the memory by making nullptr
@@ -411,7 +450,8 @@ Eigen::MatrixXd expand_var(Eigen::MatrixXd y, int lag, bool include_mean, int st
 #endif
 	for (int window = 0; window < num_horizon; window++) {
 		bvhar::OlsFit ols_fit = ols_objs[window]->returnOlsFit(lag);
-		forecaster[window].reset(new bvhar::VarForecaster(ols_fit, step, expand_y0[window], include_mean));
+		// forecaster[window].reset(new bvhar::VarForecaster(ols_fit, step, expand_y0[window], include_mean));
+		forecaster[window] = std::make_unique<bvhar::VarForecaster>(ols_fit, step, expand_y0[window], include_mean);
 		res[window] = forecaster[window]->forecastPoint().bottomRows(1);
 		ols_objs[window].reset(); // free the memory by making nullptr
 		forecaster[window].reset(); // free the memory by making nullptr
@@ -488,7 +528,8 @@ Eigen::MatrixXd expand_vhar(Eigen::MatrixXd y, int week, int month, bool include
 #endif
 	for (int window = 0; window < num_horizon; window++) {
 		bvhar::OlsFit ols_fit = ols_objs[window]->returnOlsFit(month);
-		forecaster[window].reset(new bvhar::VharForecaster(ols_fit, step, expand_y0[window], har_trans, include_mean));
+		// forecaster[window].reset(new bvhar::VharForecaster(ols_fit, step, expand_y0[window], har_trans, include_mean));
+		forecaster[window] = std::make_unique<bvhar::VharForecaster>(ols_fit, step, expand_y0[window], har_trans, include_mean);
 		res[window] = forecaster[window]->forecastPoint().bottomRows(1);
 		ols_objs[window].reset(); // free the memory by making nullptr
 		forecaster[window].reset(); // free the memory by making nullptr

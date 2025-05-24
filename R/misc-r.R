@@ -30,6 +30,22 @@ split_coef <- function(object, ...) {
     stop("Not valid method")
   }
   if (is.bvharmod(object)) {
+    # switch(object$type,
+    #   "const" = {
+    #     split.data.frame(
+    #       object$coefficients[-object$df, ],
+    #       c(
+    #         gl(object$p, object$m),
+    #         gl(object$s, object$exogen_m, labels = (object$p + 1):(object$p + object$s))
+    #       )
+    #     ) |>
+    #       lapply(t)
+    #   },
+    #   "none" = {
+    #     split.data.frame(object$coefficients, c(gl(object$p, object$m), gl(object$s, object$exogen_m))) |>
+    #       lapply(t)
+    #   }
+    # )
     return(
       switch(object$type,
         "const" = {
@@ -51,6 +67,19 @@ split_coef <- function(object, ...) {
   } else {
     stop("Not valid method")
   }
+}
+
+#' @noRd
+split_endog_coef <- function(coef_mat, p, dim_data, ...) {
+  # include_mean <- nrow(coef_mat) != p * dim_data
+  split.data.frame(coef_mat[-nrow(coef_mat),], gl(p, dim_data)) |>
+    lapply(t)
+}
+
+#' @noRd
+split_exogen_coef <- function(coef_mat, exogen_id, s, dim_exogen, ...) {
+  split.data.frame(coef_mat[exogen_id,], gl(s + 1, dim_exogen)) |>
+    lapply(t)
 }
 
 #' Processing Multiple Chain Record Result Matrix from `RcppEigen`

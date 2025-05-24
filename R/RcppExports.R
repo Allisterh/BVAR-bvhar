@@ -280,6 +280,11 @@ estimate_var <- function(y, lag, include_mean, method) {
     .Call(`_bvhar_estimate_var`, y, lag, include_mean, method)
 }
 
+#' @noRd
+estimate_varx <- function(y, exogen, lag, exogen_lag, include_mean, method) {
+    .Call(`_bvhar_estimate_varx`, y, exogen, lag, exogen_lag, include_mean, method)
+}
+
 #' Compute Vector HAR Coefficient Matrices and Fitted Values
 #' 
 #' This function fits VHAR given response and design matrices of multivariate time series.
@@ -301,6 +306,11 @@ estimate_var <- function(y, lag, include_mean, method) {
 #' @noRd
 estimate_har <- function(y, week, month, include_mean, method) {
     .Call(`_bvhar_estimate_har`, y, week, month, include_mean, method)
+}
+
+#' @noRd
+estimate_harx <- function(y, exogen, week, month, exogen_lag, include_mean, method) {
+    .Call(`_bvhar_estimate_harx`, y, exogen, week, month, exogen_lag, include_mean, method)
 }
 
 #' Covariance Estimate for Residual Covariance Matrix
@@ -371,6 +381,11 @@ forecast_var <- function(object, step) {
     .Call(`_bvhar_forecast_var`, object, step)
 }
 
+#' @noRd
+forecast_varx <- function(response, coef_mat, lag, step, include_mean, exogen, exogen_coef, exogen_lag) {
+    .Call(`_bvhar_forecast_varx`, response, coef_mat, lag, step, include_mean, exogen, exogen_coef, exogen_lag)
+}
+
 #' Forecasting Vector HAR
 #' 
 #' @param object A `vharlse` object
@@ -381,6 +396,11 @@ forecast_var <- function(object, step) {
 #' @noRd
 forecast_vhar <- function(object, step) {
     .Call(`_bvhar_forecast_vhar`, object, step)
+}
+
+#' @noRd
+forecast_harx <- function(response, coef_mat, week, month, step, include_mean, exogen, exogen_coef, exogen_lag) {
+    .Call(`_bvhar_forecast_harx`, response, coef_mat, week, month, step, include_mean, exogen, exogen_coef, exogen_lag)
 }
 
 #' Out-of-Sample Forecasting of VAR based on Rolling Window
@@ -951,6 +971,11 @@ build_design <- function(y, var_lag, include_mean) {
     .Call(`_bvhar_build_design`, y, var_lag, include_mean)
 }
 
+#' @noRd
+build_exogen_design <- function(y, exogen, var_lag, exogen_lag, include_mean) {
+    .Call(`_bvhar_build_exogen_design`, y, exogen, var_lag, exogen_lag, include_mean)
+}
+
 #' Building a Linear Transformation Matrix for Vector HAR
 #' 
 #' This function produces a linear transformation matrix for VHAR for given dimension.
@@ -1256,8 +1281,8 @@ VARtoVMA <- function(object, lag_max) {
 }
 
 #' @noRd
-compute_var_mse <- function(cov_mat, var_coef, var_lag, step) {
-    .Call(`_bvhar_compute_var_mse`, cov_mat, var_coef, var_lag, step)
+compute_var_mse_export <- function(cov_mat, var_coef, var_lag, step) {
+    .Call(`_bvhar_compute_var_mse_export`, cov_mat, var_coef, var_lag, step)
 }
 
 #' Compute Forecast MSE Matrices
@@ -1322,8 +1347,8 @@ VHARtoVMA <- function(object, lag_max) {
 }
 
 #' @noRd
-compute_vhar_mse <- function(cov_mat, vhar_coef, har_trans, month, step) {
-    .Call(`_bvhar_compute_vhar_mse`, cov_mat, vhar_coef, har_trans, month, step)
+compute_vhar_mse_export <- function(cov_mat, vhar_coef, har_trans, month, step) {
+    .Call(`_bvhar_compute_vhar_mse_export`, cov_mat, vhar_coef, har_trans, month, step)
 }
 
 #' Compute Forecast MSE Matrices for VHAR
@@ -1447,8 +1472,8 @@ compute_stablemat <- function(x) {
 #' 
 #' @references Lütkepohl, H. (2007). *New Introduction to Multiple Time Series Analysis*. Springer Publishing. doi:[10.1007/978-3-540-27752-1](https://doi.org/10.1007/978-3-540-27752-1)
 #' @noRd
-compute_var_stablemat <- function(object) {
-    .Call(`_bvhar_compute_var_stablemat`, object)
+compute_var_stablemat <- function(coef_mat, var_lag) {
+    .Call(`_bvhar_compute_var_stablemat`, coef_mat, var_lag)
 }
 
 #' VAR(1) Representation of VHAR
@@ -1462,8 +1487,8 @@ compute_var_stablemat <- function(object) {
 #'
 #' @references Lütkepohl, H. (2007). *New Introduction to Multiple Time Series Analysis*. Springer Publishing. doi:[10.1007/978-3-540-27752-1](https://doi.org/10.1007/978-3-540-27752-1)
 #' @noRd
-compute_vhar_stablemat <- function(object) {
-    .Call(`_bvhar_compute_vhar_stablemat`, object)
+compute_vhar_stablemat <- function(coef_mat, hartrans_mat) {
+    .Call(`_bvhar_compute_vhar_stablemat`, coef_mat, hartrans_mat)
 }
 
 #' Log of Multivariate Gamma Function

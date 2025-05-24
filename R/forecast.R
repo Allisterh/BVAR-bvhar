@@ -5,6 +5,8 @@
 #' @param object Model object
 #' @param n_ahead step to forecast
 #' @param level Specify alpha of confidence interval level 100(1 - alpha) percentage. By default, .05.
+#' @param newxreg New values for exogenous variables.
+#' Should have the same row numbers with `n_ahead`.
 #' @param ... not used
 #' @section n-step ahead forecasting VAR(p):
 #' See pp35 of Lütkepohl (2007).
@@ -50,10 +52,33 @@
 #' @references Lütkepohl, H. (2007). *New Introduction to Multiple Time Series Analysis*. Springer Publishing.
 #' @name predict
 #' @importFrom stats qnorm
+#' @importFrom utils tail
 #' @order 1
 #' @export
-predict.varlse <- function(object, n_ahead, level = .05, ...) {
-  pred_res <- forecast_var(object, n_ahead)
+predict.varlse <- function(object, n_ahead, level = .05, newxreg, ...) {
+  if (!is.null(object$call$exogen)) {
+    if (missing(newxreg) || is.null(newxreg)) {
+      stop("'newxreg' should be supplied when using VARX model.")
+    }
+    if (!is.matrix(newxreg)) {
+      newxreg <- as.matrix(newxreg)
+    }
+    if (nrow(newxreg) != n_ahead) {
+      stop("Wrong row number of 'newxreg'")
+    }
+    pred_res <- forecast_varx(
+      response = object$y0,
+      coef_mat = object$coefficients[-object$exogen_id, ],
+      lag = object$p,
+      step = n_ahead,
+      include_mean = object$type == "const",
+      exogen = rbind(tail(object$exogen_data, object$s), newxreg),
+      exogen_coef = object$coefficients[object$exogen_id, ],
+      exogen_lag = object$s
+    )
+  } else {
+    pred_res <- forecast_var(object, n_ahead)
+  }
   colnames(pred_res) <- colnames(object$y0)
   SE <- 
     compute_covmse(object, n_ahead) |> # concatenated matrix
@@ -82,6 +107,8 @@ predict.varlse <- function(object, n_ahead, level = .05, ...) {
 #' @param object A `vharlse` object
 #' @param n_ahead step to forecast
 #' @param level Specify alpha of confidence interval level 100(1 - alpha) percentage. By default, .05.
+#' @param newxreg New values for exogenous variables.
+#' Should have the same row numbers with `n_ahead`.
 #' @param ... not used
 #' @section n-step ahead forecasting VHAR:
 #' Let \eqn{T_{HAR}} is VHAR linear transformation matrix.
@@ -105,13 +132,36 @@ predict.varlse <- function(object, n_ahead, level = .05, ...) {
 #' @importFrom stats qnorm
 #' @order 1
 #' @export
-predict.vharlse <- function(object, n_ahead, level = .05, ...) {
-  pred_res <- forecast_vhar(object, n_ahead)
+predict.vharlse <- function(object, n_ahead, level = .05, newxreg, ...) {
+  if (!is.null(object$call$exogen)) {
+    if (missing(newxreg) || is.null(newxreg)) {
+      stop("'newxreg' should be supplied when using VHARX model.")
+    }
+    if (!is.matrix(newxreg)) {
+      newxreg <- as.matrix(newxreg)
+    }
+    if (nrow(newxreg) != n_ahead) {
+      stop("Wrong row number of 'newxreg'")
+    }
+    pred_res <- forecast_harx(
+      response = object$y0,
+      coef_mat = object$coefficients[-object$exogen_id, ],
+      week = object$week,
+      month = object$month,
+      step = n_ahead,
+      include_mean = object$type == "const",
+      exogen = rbind(tail(object$exogen_data, object$s), newxreg),
+      exogen_coef = object$coefficients[object$exogen_id, ],
+      exogen_lag = object$s
+    )
+  } else {
+    pred_res <- forecast_vhar(object, n_ahead)
+  }
   colnames(pred_res) <- colnames(object$y0)
-  SE <- 
+  SE <-
     compute_covmse_har(object, n_ahead) |> # concatenated matrix
     split.data.frame(gl(n_ahead, object$m)) |> # list of forecast MSE covariance matrix
-    sapply(diag) |> 
+    sapply(diag) |>
     t() # extract only diagonal element to compute CIs
   SE <- sqrt(SE)
   colnames(SE) <- colnames(object$y0)

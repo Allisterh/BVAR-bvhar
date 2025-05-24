@@ -39,7 +39,8 @@ Imports:
     stats,
     optimParallel,
     posterior,
-    bayesplot
+    bayesplot,
+    utils
 LinkingTo: 
     BH (>= 1.87.0-0),
     Rcpp (>= 0.10.0),

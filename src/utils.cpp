@@ -651,16 +651,17 @@ Eigen::MatrixXd VARtoVMA(Rcpp::List object, int lag_max) {
 
 //' @noRd
 // [[Rcpp::export]]
-Eigen::MatrixXd compute_var_mse(Eigen::MatrixXd cov_mat, Eigen::MatrixXd var_coef, int var_lag, int step) {
-  int dim = cov_mat.cols(); // dimension of time series
-  Eigen::MatrixXd vma_mat = bvhar::convert_var_to_vma(var_coef, var_lag, step);
-  Eigen::MatrixXd innov_account = Eigen::MatrixXd::Zero(dim, dim);
-  Eigen::MatrixXd mse = Eigen::MatrixXd::Zero(dim * step, dim);
-  for (int i = 0; i < step; i++) {
-    innov_account += vma_mat.block(i * dim, 0, dim, dim).transpose() * cov_mat * vma_mat.block(i * dim, 0, dim, dim);
-    mse.block(i * dim, 0, dim, dim) = innov_account;
-  }
-  return mse;
+Eigen::MatrixXd compute_var_mse_export(Eigen::MatrixXd cov_mat, Eigen::MatrixXd var_coef, int var_lag, int step) {
+  // int dim = cov_mat.cols(); // dimension of time series
+  // Eigen::MatrixXd vma_mat = bvhar::convert_var_to_vma(var_coef, var_lag, step);
+  // Eigen::MatrixXd innov_account = Eigen::MatrixXd::Zero(dim, dim);
+  // Eigen::MatrixXd mse = Eigen::MatrixXd::Zero(dim * step, dim);
+  // for (int i = 0; i < step; i++) {
+  //   innov_account += vma_mat.block(i * dim, 0, dim, dim).transpose() * cov_mat * vma_mat.block(i * dim, 0, dim, dim);
+  //   mse.block(i * dim, 0, dim, dim) = innov_account;
+  // }
+  // return mse;
+	return bvhar::compute_var_mse(cov_mat, var_coef, var_lag, step);
 }
 
 //' Compute Forecast MSE Matrices
@@ -684,7 +685,7 @@ Eigen::MatrixXd compute_covmse(Rcpp::List object, int step) {
   if (!object.inherits("varlse")) {
     Rcpp::stop("'object' must be varlse object.");
   }
-  return compute_var_mse(object["covmat"], object["coefficients"], object["p"], step);
+  return compute_var_mse_export(object["covmat"], object["coefficients"], object["p"], step);
 }
 
 //' Convert VAR to Orthogonalized VMA(infinite)
@@ -740,20 +741,12 @@ Eigen::MatrixXd VHARtoVMA(Rcpp::List object, int lag_max) {
 
 //' @noRd
 // [[Rcpp::export]]
-Eigen::MatrixXd compute_vhar_mse(Eigen::MatrixXd cov_mat,
-                                 Eigen::MatrixXd vhar_coef,
-                                 Eigen::MatrixXd har_trans,
-                                 int month,
-                                 int step) {
-  int dim = cov_mat.cols(); // dimension of time series
-  Eigen::MatrixXd vma_mat = bvhar::convert_vhar_to_vma(vhar_coef, har_trans, month, step);
-  Eigen::MatrixXd mse(dim * step, dim);
-  mse.topLeftCorner(dim, dim) = cov_mat; // sig(y) = sig
-  for (int i = 1; i < step; i++) {
-    mse.block(i * dim, 0, dim, dim) = mse.block((i - 1) * dim, 0, dim, dim) + 
-      vma_mat.block(i * dim, 0, dim, dim).transpose() * cov_mat * vma_mat.block(i * dim, 0, dim, dim);
-  }
-  return mse;
+Eigen::MatrixXd compute_vhar_mse_export(Eigen::MatrixXd cov_mat,
+                                				Eigen::MatrixXd vhar_coef,
+                                				Eigen::MatrixXd har_trans,
+                                				int month,
+                                				int step) {
+	return bvhar::compute_vhar_mse(cov_mat, vhar_coef, har_trans, month, step);
 }
 
 //' Compute Forecast MSE Matrices for VHAR
@@ -777,7 +770,7 @@ Eigen::MatrixXd compute_covmse_har(Rcpp::List object, int step) {
   if (!object.inherits("vharlse")) {
     Rcpp::stop("'object' must be vharlse object.");
   }
-  return compute_vhar_mse(
+  return compute_vhar_mse_export(
     object["covmat"],
     object["coefficients"],
     object["HARtrans"],

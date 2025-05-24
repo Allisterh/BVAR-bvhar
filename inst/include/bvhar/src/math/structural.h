@@ -18,6 +18,20 @@ inline Eigen::MatrixXd build_companion(Eigen::Ref<const Eigen::MatrixXd> coef_ma
 	return res;
 }
 
+inline Eigen::MatrixXd harx_to_var(Eigen::Ref<Eigen::MatrixXd> coef_mat, Eigen::Ref<Eigen::MatrixXd> har_trans) {
+	int dim = coef_mat.cols();
+	int dim_design = har_trans.cols();
+	int dim_exogen_design = coef_mat.rows() - har_trans.rows();
+	if (dim_exogen_design <= 0) {
+		return har_trans.transpose() * coef_mat;
+	}
+	int dim_har = coef_mat.rows() - dim_exogen_design;
+	Eigen::MatrixXd var_coef(dim_design + dim_exogen_design, dim); // rbind(C^T Phi, B)
+	var_coef.topRows(dim_design) = har_trans.transpose() * coef_mat.topRows(dim_har);
+	var_coef.bottomRows(dim_exogen_design) = coef_mat.bottomRows(dim_exogen_design);
+	return var_coef;
+}
+
 // Characteristic polynomial for stability
 // 
 // @param var_mat VAR(1) form coefficient matrix
@@ -86,9 +100,23 @@ inline Eigen::MatrixXd convert_vma_ortho(Eigen::MatrixXd var_coef, Eigen::Matrix
   return res;
 }
 
+inline Eigen::MatrixXd compute_var_mse(const Eigen::MatrixXd& cov_mat, const Eigen::MatrixXd& var_coef,
+																			 int var_lag, int step) {
+	int dim = cov_mat.cols(); // dimension of time series
+  Eigen::MatrixXd vma_mat = convert_var_to_vma(var_coef, var_lag, step);
+  Eigen::MatrixXd innov_account = Eigen::MatrixXd::Zero(dim, dim);
+  Eigen::MatrixXd mse = Eigen::MatrixXd::Zero(dim * step, dim);
+  for (int i = 0; i < step; i++) {
+    innov_account += vma_mat.block(i * dim, 0, dim, dim).transpose() * cov_mat * vma_mat.block(i * dim, 0, dim, dim);
+    mse.block(i * dim, 0, dim, dim) = innov_account;
+  }
+  return mse;
+}
+
 inline Eigen::MatrixXd convert_vhar_to_vma(Eigen::MatrixXd vhar_coef, Eigen::MatrixXd HARtrans_mat, int lag_max, int month) {
   int dim = vhar_coef.cols(); // dimension of time series
-  Eigen::MatrixXd coef_mat = HARtrans_mat.transpose() * vhar_coef; // bhat = tilde(T)^T * Phi
+  // Eigen::MatrixXd coef_mat = HARtrans_mat.transpose() * vhar_coef; // bhat = tilde(T)^T * Phi
+	Eigen::MatrixXd coef_mat = harx_to_var(vhar_coef, HARtrans_mat);
   if (lag_max < 1) {
     STOP("'lag_max' must larger than 0");
   }
@@ -126,6 +154,19 @@ inline Eigen::MatrixXd convert_vhar_vma_ortho(Eigen::MatrixXd vhar_coef, Eigen::
     res.block(i * dim, 0, dim, dim) = chol_covmat * ma.block(i * dim, 0, dim, dim);
   }
   return res;
+}
+
+inline Eigen::MatrixXd compute_vhar_mse(const Eigen::MatrixXd& cov_mat, const Eigen::MatrixXd& vhar_coef,
+																				const Eigen::MatrixXd& har_trans, int month, int step) {
+	int dim = cov_mat.cols(); // dimension of time series
+  Eigen::MatrixXd vma_mat = convert_vhar_to_vma(vhar_coef, har_trans, month, step);
+  Eigen::MatrixXd mse(dim * step, dim);
+  mse.topLeftCorner(dim, dim) = cov_mat; // sig(y) = sig
+  for (int i = 1; i < step; i++) {
+    mse.block(i * dim, 0, dim, dim) = mse.block((i - 1) * dim, 0, dim, dim) + 
+      vma_mat.block(i * dim, 0, dim, dim).transpose() * cov_mat * vma_mat.block(i * dim, 0, dim, dim);
+  }
+  return mse;
 }
 
 inline Eigen::MatrixXd compute_vma_fevd(Eigen::MatrixXd vma_coef, Eigen::MatrixXd cov_mat, bool normalize) {

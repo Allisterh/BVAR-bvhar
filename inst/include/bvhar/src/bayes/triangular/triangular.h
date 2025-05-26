@@ -221,9 +221,8 @@ protected:
 	 */
 	void updateCoefPrec() {
 		coef_updater->updateCoefPrec(
-			prior_alpha_prec, coef_vec,
-      num_alpha, num_grp,
-      grp_vec, grp_id,
+			prior_alpha_prec.head(num_alpha), coef_vec.head(num_alpha),
+      num_grp, grp_vec, grp_id,
       rng
 		);
 	}

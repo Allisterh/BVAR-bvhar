@@ -53,7 +53,6 @@ public:
 	 * 
 	 * @param prior_alpha_prec Prior precision
 	 * @param coef_vec Coefficient vector
-	 * @param num_alpha Number of alpha
 	 * @param num_grp Group number
 	 * @param grp_vec Group vector
 	 * @param grp_id Group id
@@ -62,8 +61,7 @@ public:
 	virtual void updateCoefPrec(
 		Eigen::Ref<Eigen::VectorXd> prior_alpha_prec,
 		Eigen::Ref<Eigen::VectorXd> coef_vec,
-		int num_alpha, int num_grp,
-		Eigen::VectorXi& grp_vec, Eigen::VectorXi& grp_id,
+		int num_grp, Eigen::VectorXi& grp_vec, Eigen::VectorXi& grp_id,
 		BHRNG& rng
 	) {}
 
@@ -165,18 +163,17 @@ public:
 	void updateCoefPrec(
 		Eigen::Ref<Eigen::VectorXd> prior_alpha_prec,
 		Eigen::Ref<Eigen::VectorXd> coef_vec,
-		int num_alpha, int num_grp,
-		Eigen::VectorXi& grp_vec, Eigen::VectorXi& grp_id,
+		int num_grp, Eigen::VectorXi& grp_vec, Eigen::VectorXi& grp_id,
 		BHRNG& rng
 	) override {
 		minnesota_lambda(
 			own_lambda, own_shape, own_rate,
-			coef_vec.head(num_alpha), prior_mean, prior_alpha_prec.head(num_alpha),
+			coef_vec, prior_mean, prior_alpha_prec,
 			rng
 		);
 		minnesota_nu_griddy(
 			cross_lambda, grid_size,
-			coef_vec.head(num_alpha), prior_mean, prior_alpha_prec.head(num_alpha),
+			coef_vec, prior_mean, prior_alpha_prec,
 			grp_vec, grp_id, rng
 		);
 	}
@@ -219,21 +216,20 @@ public:
 	void updateCoefPrec(
 		Eigen::Ref<Eigen::VectorXd> prior_alpha_prec,
 		Eigen::Ref<Eigen::VectorXd> coef_vec,
-		int num_alpha, int num_grp,
-		Eigen::VectorXi& grp_vec, Eigen::VectorXi& grp_id,
+		int num_grp, Eigen::VectorXi& grp_vec, Eigen::VectorXi& grp_id,
 		BHRNG& rng
 	) override {
-		ssvs_local_slab(slab, dummy, coef_vec.head(num_alpha), ig_shape, ig_scl, spike_scl, rng);
+		ssvs_local_slab(slab, dummy, coef_vec, ig_shape, ig_scl, spike_scl, rng);
 		for (int j = 0; j < num_grp; ++j) {
 			slab_weight = (grp_vec.array() == grp_id[j]).select(
 				weight[j],
 				slab_weight
 			);
 		}
-		ssvs_scl_griddy(spike_scl, grid_size, coef_vec.head(num_alpha), slab, rng);
-		ssvs_dummy(dummy, coef_vec.head(num_alpha), slab, spike_scl * slab, slab_weight, rng);
+		ssvs_scl_griddy(spike_scl, grid_size, coef_vec, slab, rng);
+		ssvs_dummy(dummy, coef_vec, slab, spike_scl * slab, slab_weight, rng);
 		ssvs_mn_weight(weight, grp_vec, grp_id, dummy, s1, s2, rng);
-		prior_alpha_prec.head(num_alpha).array() = 1 / (spike_scl * (1 - dummy.array()) * slab.array() + dummy.array() * slab.array());
+		prior_alpha_prec.array() = 1 / (spike_scl * (1 - dummy.array()) * slab.array() + dummy.array() * slab.array());
 	}
 	
 	void updateImpactPrec(
@@ -295,12 +291,11 @@ public:
 	void updateCoefPrec(
 		Eigen::Ref<Eigen::VectorXd> prior_alpha_prec,
 		Eigen::Ref<Eigen::VectorXd> coef_vec,
-		int num_alpha, int num_grp,
-		Eigen::VectorXi& grp_vec, Eigen::VectorXi& grp_id,
+		int num_grp, Eigen::VectorXi& grp_vec, Eigen::VectorXi& grp_id,
 		BHRNG& rng
 	) override {
 		horseshoe_latent(latent_group, group_lev, rng);
-		horseshoe_mn_sparsity(group_lev, grp_vec, grp_id, latent_group, global_lev, local_lev, coef_vec.head(num_alpha), 1, rng);
+		horseshoe_mn_sparsity(group_lev, grp_vec, grp_id, latent_group, global_lev, local_lev, coef_vec, 1, rng);
 		for (int j = 0; j < num_grp; j++) {
 			coef_var = (grp_vec.array() == grp_id[j]).select(
 				group_lev[j],
@@ -311,11 +306,11 @@ public:
 		using is_group = std::integral_constant<bool, isGroup>;
 		if (is_group::value) {
 			horseshoe_latent(latent_global, global_lev, rng);
-			global_lev = horseshoe_global_sparsity(latent_global, coef_var.array() * local_lev.array(), coef_vec.head(num_alpha), 1, rng);
+			global_lev = horseshoe_global_sparsity(latent_global, coef_var.array() * local_lev.array(), coef_vec, 1, rng);
 		}
-		horseshoe_local_sparsity(local_lev, latent_local, coef_var, coef_vec.head(num_alpha), global_lev * global_lev, rng);
-		prior_alpha_prec.head(num_alpha) = 1 / (global_lev * coef_var.array() * local_lev.array()).square();
-		shrink_fac = 1 / (1 + prior_alpha_prec.head(num_alpha).array());
+		horseshoe_local_sparsity(local_lev, latent_local, coef_var, coef_vec, global_lev * global_lev, rng);
+		prior_alpha_prec = 1 / (global_lev * coef_var.array() * local_lev.array()).square();
+		shrink_fac = 1 / (1 + prior_alpha_prec.array());
 	}
 
 	void updateImpactPrec(
@@ -385,8 +380,7 @@ public:
 	void updateCoefPrec(
 		Eigen::Ref<Eigen::VectorXd> prior_alpha_prec,
 		Eigen::Ref<Eigen::VectorXd> coef_vec,
-		int num_alpha, int num_grp,
-		Eigen::VectorXi& grp_vec, Eigen::VectorXi& grp_id,
+		int num_grp, Eigen::VectorXi& grp_vec, Eigen::VectorXi& grp_id,
 		BHRNG& rng
 	) override {
 		ng_mn_shape_jump(local_shape, local_lev, group_lev, grp_vec, grp_id, global_lev, mh_sd, rng);
@@ -405,8 +399,8 @@ public:
 		if (is_group::value) {
 			global_lev = ng_global_sparsity(local_lev.array() / coef_var.array(), local_shape_fac, global_shape, global_scl, rng);
 		}
-		ng_local_sparsity(local_lev, local_shape_fac, coef_vec.head(num_alpha), global_lev * coef_var, rng);
-		prior_alpha_prec.head(num_alpha) = 1 / local_lev.array().square();
+		ng_local_sparsity(local_lev, local_shape_fac, coef_vec, global_lev * coef_var, rng);
+		prior_alpha_prec = 1 / local_lev.array().square();
 	}
 
 	void updateImpactPrec(
@@ -466,11 +460,10 @@ public:
 	void updateCoefPrec(
 		Eigen::Ref<Eigen::VectorXd> prior_alpha_prec,
 		Eigen::Ref<Eigen::VectorXd> coef_vec,
-		int num_alpha, int num_grp,
-		Eigen::VectorXi& grp_vec, Eigen::VectorXi& grp_id,
+		int num_grp, Eigen::VectorXi& grp_vec, Eigen::VectorXi& grp_id,
 		BHRNG& rng
 	) override {
-		dl_mn_sparsity(group_lev, grp_vec, grp_id, global_lev, local_lev, shape, scl, coef_vec.head(num_alpha), rng);
+		dl_mn_sparsity(group_lev, grp_vec, grp_id, global_lev, local_lev, shape, scl, coef_vec, rng);
 		for (int j = 0; j < num_grp; j++) {
 			coef_var = (grp_vec.array() == grp_id[j]).select(
 				group_lev[j],
@@ -478,13 +471,13 @@ public:
 			);
 		}
 		dl_dir_griddy(dir_concen, grid_size, local_lev, global_lev, rng);
-		dl_local_sparsity(local_lev, dir_concen, coef_vec.head(num_alpha).array() / coef_var.array(), rng);
+		dl_local_sparsity(local_lev, dir_concen, coef_vec.array() / coef_var.array(), rng);
 		using is_group = std::integral_constant<bool, isGroup>;
 		if (is_group::value) {
-			global_lev = dl_global_sparsity(local_lev.array() * coef_var.array(), dir_concen, coef_vec.head(num_alpha), rng);
+			global_lev = dl_global_sparsity(local_lev.array() * coef_var.array(), dir_concen, coef_vec, rng);
 		}
-		dl_latent(latent_local, global_lev * local_lev.array() * coef_var.array(), coef_vec.head(num_alpha), rng);
-		prior_alpha_prec.head(num_alpha) = 1 / ((global_lev * local_lev.array() * coef_var.array()).square() * latent_local.array());
+		dl_latent(latent_local, global_lev * local_lev.array() * coef_var.array(), coef_vec, rng);
+		prior_alpha_prec = 1 / ((global_lev * local_lev.array() * coef_var.array()).square() * latent_local.array());
 	}
 
 	void updateImpactPrec(
@@ -541,21 +534,20 @@ public:
 	void updateCoefPrec(
 		Eigen::Ref<Eigen::VectorXd> prior_alpha_prec,
 		Eigen::Ref<Eigen::VectorXd> coef_vec,
-		int num_alpha, int num_grp,
-		Eigen::VectorXi& grp_vec, Eigen::VectorXi& grp_id,
+		int num_grp, Eigen::VectorXi& grp_vec, Eigen::VectorXi& grp_id,
 		BHRNG& rng
 	) override {
-		gdp_shape_griddy(gamma_shape, gamma_rate, shape_grid, coef_vec.head(num_alpha), rng);
-		gdp_rate_griddy(gamma_rate, gamma_shape, rate_grid, coef_vec.head(num_alpha), rng);
-		gdp_exp_rate(group_rate, gamma_shape, gamma_rate, coef_vec.head(num_alpha), grp_vec, grp_id, rng);
+		gdp_shape_griddy(gamma_shape, gamma_rate, shape_grid, coef_vec, rng);
+		gdp_rate_griddy(gamma_rate, gamma_shape, rate_grid, coef_vec, rng);
+		gdp_exp_rate(group_rate, gamma_shape, gamma_rate, coef_vec, grp_vec, grp_id, rng);
 		for (int j = 0; j < num_grp; ++j) {
 			group_rate_fac = (grp_vec.array() == grp_id[j]).select(
 				group_rate[j],
 				group_rate_fac
 			);
 		}
-		gdp_local_sparsity(local_lev, group_rate_fac, coef_vec.head(num_alpha), rng);
-		prior_alpha_prec.head(num_alpha) = 1 / local_lev.array();
+		gdp_local_sparsity(local_lev, group_rate_fac, coef_vec, rng);
+		prior_alpha_prec = 1 / local_lev.array();
 	}
 
 	void updateImpactPrec(

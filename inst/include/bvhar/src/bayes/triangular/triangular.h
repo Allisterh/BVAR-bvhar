@@ -57,12 +57,12 @@ public:
 		sqrt_sv(Eigen::MatrixXd::Zero(num_design, dim)),
 		prior_sig_shp(params._sig_shp), prior_sig_scl(params._sig_scl) {
 		if (include_mean) {
-			prior_alpha_mean.tail(dim) = params._mean_non;
-			prior_alpha_prec.tail(dim) = 1 / (params._sd_non * Eigen::VectorXd::Ones(dim)).array().square();
+			prior_alpha_mean.segment(num_alpha, dim) = params._mean_non;
+			prior_alpha_prec.segment(num_alpha, dim) = 1 / (params._sd_non * Eigen::VectorXd::Ones(dim)).array().square();
 		}
 		coef_vec.head(num_alpha) = coef_mat.topRows(nrow_coef).reshaped();
 		if (include_mean) {
-			coef_vec.tail(dim) = coef_mat.bottomRows(1).transpose();
+			coef_vec.segment(num_alpha, dim) = coef_mat.bottomRows(1).transpose();
 		}
 		// reg_record->assignRecords(0, coef_vec, contem_coef, diag_vec);
 		sparse_record.assignRecords(0, sparse_coef, sparse_contem);
@@ -275,8 +275,8 @@ protected:
 			Eigen::VectorXd prior_prec_j(dim_design);
 			Eigen::VectorXd penalty_j = Eigen::VectorXd::Zero(dim_design);
 			if (include_mean) {
-				prior_mean_j << prior_alpha_mean.segment(j * nrow_coef, nrow_coef), prior_alpha_mean.tail(dim)[j];
-				prior_prec_j << prior_alpha_prec.segment(j * nrow_coef, nrow_coef), prior_alpha_prec.tail(dim)[j];
+				prior_mean_j << prior_alpha_mean.segment(j * nrow_coef, nrow_coef), prior_alpha_mean.segment(num_alpha, dim)[j];
+				prior_prec_j << prior_alpha_prec.segment(j * nrow_coef, nrow_coef), prior_alpha_prec.segment(num_alpha, dim)[j];
 				// penalty_j << alpha_penalty.segment(j * nrow_coef, nrow_coef), alpha_penalty.tail(dim)[j];
 				penalty_j.head(nrow_coef) = alpha_penalty.segment(j * nrow_coef, nrow_coef);
 				draw_coef(
@@ -285,7 +285,7 @@ protected:
 					prior_mean_j, prior_prec_j, rng
 				);
 				coef_vec.head(num_alpha) = coef_mat.topRows(nrow_coef).reshaped();
-				coef_vec.tail(dim) = coef_mat.bottomRows(1).transpose();
+				coef_vec.segment(num_alpha, dim) = coef_mat.bottomRows(1).transpose();
 			} else {
 				prior_mean_j = prior_alpha_mean.segment(dim_design * j, dim_design);
 				prior_prec_j = prior_alpha_prec.segment(dim_design * j, dim_design);

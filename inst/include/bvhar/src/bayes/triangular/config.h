@@ -227,7 +227,7 @@ struct RegRecords {
 			NAMED("a_record") = contem_coef_record
 		);
 		if (include_mean) {
-			res["c_record"] = CAST_MATRIX(coef_record.rightCols(dim));
+			res["c_record"] = CAST_MATRIX(coef_record.middleCols(num_alpha, dim));
 		}
 		return res;
 	}
@@ -383,7 +383,7 @@ struct SparseRecords {
 			coef_record.row(id) = coef_mat.reshaped();
 		} else {
 			coef_record.row(id).head(num_alpha) = coef_mat.topRows(nrow_coef).reshaped();
-			coef_record.row(id).tail(dim) = coef_mat.bottomRows(1).reshaped();
+			coef_record.row(id).segment(num_alpha, dim) = coef_mat.bottomRows(1).reshaped();
 		}
 		contem_coef_record.row(id) = contem_coef;
 	}
@@ -400,7 +400,7 @@ struct SparseRecords {
 		list["alpha_sparse_record"] = CAST_MATRIX(coef_record.leftCols(num_alpha));
 		list["a_sparse_record"] = contem_coef_record;
 		if (include_mean) {
-			list["c_sparse_record"] = CAST_MATRIX(coef_record.rightCols(dim));
+			list["c_sparse_record"] = CAST_MATRIX(coef_record.middleCols(num_alpha, dim));
 		}
 	}
 };

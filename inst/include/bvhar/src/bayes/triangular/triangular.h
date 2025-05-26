@@ -247,11 +247,7 @@ protected:
 	 * 
 	 */
 	void updateImpactPrec() {
-		contem_updater->updateImpactPrec(
-			prior_chol_prec, contem_coef,
-      num_lowerchol,
-      rng
-		);
+		contem_updater->updateImpactPrec(prior_chol_prec, contem_coef, rng);
 	}
 
 	/**

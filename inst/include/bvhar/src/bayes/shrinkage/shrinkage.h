@@ -69,13 +69,11 @@ public:
 	 * 
 	 * @param prior_chol_prec Prior precision
 	 * @param contem_coef Contemporaneous coefficient
-	 * @param num_lowerchol Size of contemporaneous coefficient
 	 * @param rng RNG
 	 */
 	virtual void updateImpactPrec(
 		Eigen::Ref<Eigen::VectorXd> prior_chol_prec,
 		Eigen::Ref<Eigen::VectorXd> contem_coef,
-		int num_lowerchol,
 		BHRNG& rng
 	) {}
 
@@ -179,7 +177,6 @@ public:
 	void updateImpactPrec(
 		Eigen::Ref<Eigen::VectorXd> prior_chol_prec,
 		Eigen::Ref<Eigen::VectorXd> contem_coef,
-		int num_lowerchol,
 		BHRNG& rng
 	) override {
 		minnesota_lambda(
@@ -234,7 +231,6 @@ public:
 	void updateImpactPrec(
 		Eigen::Ref<Eigen::VectorXd> prior_chol_prec,
 		Eigen::Ref<Eigen::VectorXd> contem_coef,
-		int num_lowerchol,
 		BHRNG& rng
 	) override {
 		ssvs_local_slab(slab, dummy, contem_coef, ig_shape, ig_scl, spike_scl, rng);
@@ -315,12 +311,11 @@ public:
 	void updateImpactPrec(
 		Eigen::Ref<Eigen::VectorXd> prior_chol_prec,
 		Eigen::Ref<Eigen::VectorXd> contem_coef,
-		int num_lowerchol,
 		BHRNG& rng
 	) override {
 		horseshoe_latent(latent_local, local_lev, rng);
 		horseshoe_latent(latent_group, group_lev, rng);
-		coef_var = group_lev.replicate(1, num_lowerchol).reshaped();
+		coef_var = group_lev.replicate(1, prior_chol_prec.size()).reshaped();
 		horseshoe_local_sparsity(local_lev, latent_local, coef_var, contem_coef, 1, rng);
 		group_lev[0] = horseshoe_global_sparsity(latent_group[0], latent_local, contem_coef, 1, rng);
 		prior_chol_prec.setZero();
@@ -405,12 +400,11 @@ public:
 	void updateImpactPrec(
 		Eigen::Ref<Eigen::VectorXd> prior_chol_prec,
 		Eigen::Ref<Eigen::VectorXd> contem_coef,
-		int num_lowerchol,
 		BHRNG& rng
 	) override {
 		local_shape[0] = ng_shape_jump(local_shape[0], local_lev, group_lev[0], mh_sd, rng);
 		group_lev[0] = ng_global_sparsity(local_lev, local_shape[0], group_shape, group_scl, rng);
-		ng_local_sparsity(coef_var, local_shape[0], contem_coef, group_lev.replicate(1, num_lowerchol).reshaped(), rng);
+		ng_local_sparsity(coef_var, local_shape[0], contem_coef, group_lev.replicate(1, prior_chol_prec.size()).reshaped(), rng);
 		prior_chol_prec = 1 / local_lev.array().square();
 	}
 
@@ -482,7 +476,6 @@ public:
 	void updateImpactPrec(
 		Eigen::Ref<Eigen::VectorXd> prior_chol_prec,
 		Eigen::Ref<Eigen::VectorXd> contem_coef,
-		int num_lowerchol,
 		BHRNG& rng
 	) override {
 		dl_dir_griddy(dir_concen, grid_size, local_lev, group_lev[0], rng);
@@ -552,7 +545,6 @@ public:
 	void updateImpactPrec(
 		Eigen::Ref<Eigen::VectorXd> prior_chol_prec,
 		Eigen::Ref<Eigen::VectorXd> contem_coef,
-		int num_lowerchol,
 		BHRNG& rng
 	) override {
 		gdp_shape_griddy(gamma_shape, gamma_rate, shape_grid, contem_coef, rng);

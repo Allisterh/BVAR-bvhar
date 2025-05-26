@@ -475,8 +475,8 @@ inline std::vector<std::unique_ptr<BaseMcmc>> initialize_mcmc(
 	for (int i = 0; i < num_chains; ++i) {
 		LIST init_spec = param_init[i];
 		auto coef_updater = initialize_shrinkageupdater<isGroup>(num_iter, param_prior, init_spec, prior_type);
-		coef_updater->initCoefMean(base_params._alpha_mean, base_params._num_alpha);
-		coef_updater->initCoefPrec(base_params._alpha_prec, base_params._num_alpha, base_params._grp_vec, base_params._cross_id);
+		coef_updater->initCoefMean(base_params._alpha_mean.head(base_params._num_alpha));
+		coef_updater->initCoefPrec(base_params._alpha_prec.head(base_params._num_alpha), base_params._grp_vec, base_params._cross_id);
 		LIST contem_init_spec = contem_init[i];
 		auto contem_updater = initialize_shrinkageupdater<isGroup>(num_iter, contem_prior, contem_init_spec, contem_prior_type);
 		contem_updater->initImpactPrec(base_params._chol_prec);

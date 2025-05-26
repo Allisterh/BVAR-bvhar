@@ -29,17 +29,16 @@ public:
 	 * 
 	 * @param prior_alpha_mean Coefficient prior mean
 	 */
-	virtual void initCoefMean(Eigen::Ref<Eigen::VectorXd> prior_alpha_mean, int num_alpha) {}
+	virtual void initCoefMean(Eigen::Ref<Eigen::VectorXd> prior_alpha_mean) {}
 
 	/**
 	 * @brief Build coefficient prior precision structure
 	 * 
 	 * @param prior_alpha_prec Coefficient prior precision
-	 * @param num_alpha Number of alpha
 	 * @param grp_vec Group vector
 	 * @param cross_id Cross id
 	 */
-	virtual void initCoefPrec(Eigen::Ref<Eigen::VectorXd> prior_alpha_prec, int num_alpha, Eigen::VectorXi& grp_vec, std::set<int>& cross_id) {}
+	virtual void initCoefPrec(Eigen::Ref<Eigen::VectorXd> prior_alpha_prec, Eigen::VectorXi& grp_vec, std::set<int>& cross_id) {}
 
 	/**
 	 * @brief Build contemporaneous coefficient precision structure
@@ -111,13 +110,13 @@ public:
 	: ShrinkageUpdater(num_iter, params, inits), prior_mean(params._prior_mean), prior_prec(params._prior_prec) {}
 	virtual ~MinnUpdater() = default;
 	
-	void initCoefMean(Eigen::Ref<Eigen::VectorXd> prior_alpha_mean, int num_alpha) override {
-		prior_alpha_mean.head(num_alpha) = prior_mean;
+	void initCoefMean(Eigen::Ref<Eigen::VectorXd> prior_alpha_mean) override {
+		prior_alpha_mean = prior_mean;
 		prior_mean.resize(0);
 	}
 
-	void initCoefPrec(Eigen::Ref<Eigen::VectorXd> prior_alpha_prec, int num_alpha, Eigen::VectorXi& grp_vec, std::set<int>& cross_id) override {
-		prior_alpha_prec.head(num_alpha) = prior_prec;
+	void initCoefPrec(Eigen::Ref<Eigen::VectorXd> prior_alpha_prec, Eigen::VectorXi& grp_vec, std::set<int>& cross_id) override {
+		prior_alpha_prec = prior_prec;
 		prior_prec.resize(0);
 	}
 
@@ -140,14 +139,14 @@ public:
 		own_lambda(inits._own_lambda), cross_lambda(inits._cross_lambda) {}
 	virtual ~HierminnUpdater() = default;
 
-	void initCoefMean(Eigen::Ref<Eigen::VectorXd> prior_alpha_mean, int num_alpha) override {
-		prior_alpha_mean.head(num_alpha) = prior_mean;
+	void initCoefMean(Eigen::Ref<Eigen::VectorXd> prior_alpha_mean) override {
+		prior_alpha_mean = prior_mean;
 	}
 
-	void initCoefPrec(Eigen::Ref<Eigen::VectorXd> prior_alpha_prec, int num_alpha, Eigen::VectorXi& grp_vec, std::set<int>& cross_id) override {
-		prior_alpha_prec.head(num_alpha) = prior_prec;
-		prior_alpha_prec.head(num_alpha).array() /= own_lambda;
-		for (int i = 0; i < num_alpha; ++i) {
+	void initCoefPrec(Eigen::Ref<Eigen::VectorXd> prior_alpha_prec, Eigen::VectorXi& grp_vec, std::set<int>& cross_id) override {
+		prior_alpha_prec = prior_prec;
+		prior_alpha_prec.array() /= own_lambda;
+		for (int i = 0; i < prior_alpha_prec.size(); ++i) {
 			if (cross_id.find(grp_vec[i]) != cross_id.end()) {
 				prior_alpha_prec[i] /= cross_lambda; // nu
 			}

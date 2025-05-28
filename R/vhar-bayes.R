@@ -114,6 +114,9 @@ vhar_bayes <- function(y,
   if (!is.logical(include_mean)) {
     stop("'include_mean' is logical.")
   }
+  exogen_prior <- list()
+  exogen_init <- list()
+  exogen_prior_type <- 0
   X0 <- build_design(y, month, include_mean)
   HARtrans <- scale_har(dim_data, week, month, include_mean)
   name_har <- concatenate_colnames(name_var, c("day", "week", "month"), include_mean) # in misc-r.R file
@@ -122,26 +125,8 @@ vhar_bayes <- function(y,
   num_design <- nrow(Y0)
   dim_har <- ncol(X1) # 3 * dim_data + 1
   # model specification---------------
-  if (!(
-    is.bvharspec(coef_spec) ||
-    is.ssvsinput(coef_spec) ||
-    is.horseshoespec(coef_spec) ||
-    is.ngspec(coef_spec) ||
-    is.dlspec(coef_spec) ||
-    is.gdpspec(coef_spec)
-  )) {
-    stop("Provide 'bvharspec', 'ssvsinput', 'horseshoespec', 'ngspec', 'dlspec', or 'gdpspec' for 'coef_spec'.")
-  }
-  if (!(
-    is.bvharspec(contem_spec) ||
-    is.ssvsinput(contem_spec) ||
-    is.horseshoespec(contem_spec) ||
-    is.ngspec(contem_spec) ||
-    is.dlspec(contem_spec) ||
-    is.gdpspec(contem_spec)
-  )) {
-    stop("Provide 'bvharspec', 'ssvsinput', 'horseshoespec', 'ngspec', 'dlspec', or 'gdpspec' for 'contem_spec'.")
-  }
+  validate_prior(coef_spec)
+  validate_prior(contem_spec)
   if (!is.covspec(cov_spec)) {
     stop("Provide 'covspec' for 'cov_spec'.")
   }
@@ -582,6 +567,9 @@ vhar_bayes <- function(y,
     contem_prior = contem_prior,
     contem_init = contem_init,
     contem_prior_type = contem_prior_type,
+    exogen_prior = exogen_prior,
+    exogen_init = exogen_init,
+    exogen_prior_type = exogen_prior_type,
     grp_id = grp_id,
     own_id = own_id,
     cross_id = cross_id,

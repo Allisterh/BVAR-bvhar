@@ -200,6 +200,21 @@ get_gammaparam <- function(mode, sd) {
   )
 }
 
+#' @noRd
+validate_prior <- function(bayes_spec) {
+  spec_name <- deparse(substitute(bayes_spec))
+  if (!(
+    is.bvharspec(bayes_spec) ||
+    is.ssvsinput(bayes_spec) ||
+    is.horseshoespec(bayes_spec) ||
+    is.ngspec(bayes_spec) ||
+    is.dlspec(bayes_spec) ||
+    is.gdpspec(bayes_spec)
+  )) {
+    stop(sprintf("Provide 'bvharspec', 'ssvsinput', 'horseshoespec', 'ngspec', 'dlspec', or 'gdpspec' for '%s'.", spec_name))
+  }
+}
+
 #' Validate prior specification
 #' @noRd
 validate_spec <- function(bayes_spec,

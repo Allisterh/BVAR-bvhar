@@ -571,8 +571,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // estimate_sur
-Rcpp::List estimate_sur(int num_chains, int num_iter, int num_burn, int thin, Eigen::MatrixXd x, Eigen::MatrixXd y, Rcpp::List param_reg, Rcpp::List param_prior, Rcpp::List param_intercept, Rcpp::List param_init, int prior_type, bool ggl, Rcpp::List contem_prior, Rcpp::List contem_init, int contem_prior_type, Eigen::VectorXi grp_id, Eigen::VectorXi own_id, Eigen::VectorXi cross_id, Eigen::MatrixXi grp_mat, bool include_mean, Eigen::VectorXi seed_chain, bool display_progress, int nthreads);
-RcppExport SEXP _bvhar_estimate_sur(SEXP num_chainsSEXP, SEXP num_iterSEXP, SEXP num_burnSEXP, SEXP thinSEXP, SEXP xSEXP, SEXP ySEXP, SEXP param_regSEXP, SEXP param_priorSEXP, SEXP param_interceptSEXP, SEXP param_initSEXP, SEXP prior_typeSEXP, SEXP gglSEXP, SEXP contem_priorSEXP, SEXP contem_initSEXP, SEXP contem_prior_typeSEXP, SEXP grp_idSEXP, SEXP own_idSEXP, SEXP cross_idSEXP, SEXP grp_matSEXP, SEXP include_meanSEXP, SEXP seed_chainSEXP, SEXP display_progressSEXP, SEXP nthreadsSEXP) {
+Rcpp::List estimate_sur(int num_chains, int num_iter, int num_burn, int thin, Eigen::MatrixXd x, Eigen::MatrixXd y, Rcpp::List param_reg, Rcpp::List param_prior, Rcpp::List param_intercept, Rcpp::List param_init, int prior_type, bool ggl, Rcpp::List contem_prior, Rcpp::List contem_init, int contem_prior_type, Rcpp::List exogen_prior, Rcpp::List exogen_init, int exogen_prior_type, Eigen::VectorXi grp_id, Eigen::VectorXi own_id, Eigen::VectorXi cross_id, Eigen::MatrixXi grp_mat, bool include_mean, Eigen::VectorXi seed_chain, bool display_progress, int nthreads);
+RcppExport SEXP _bvhar_estimate_sur(SEXP num_chainsSEXP, SEXP num_iterSEXP, SEXP num_burnSEXP, SEXP thinSEXP, SEXP xSEXP, SEXP ySEXP, SEXP param_regSEXP, SEXP param_priorSEXP, SEXP param_interceptSEXP, SEXP param_initSEXP, SEXP prior_typeSEXP, SEXP gglSEXP, SEXP contem_priorSEXP, SEXP contem_initSEXP, SEXP contem_prior_typeSEXP, SEXP exogen_priorSEXP, SEXP exogen_initSEXP, SEXP exogen_prior_typeSEXP, SEXP grp_idSEXP, SEXP own_idSEXP, SEXP cross_idSEXP, SEXP grp_matSEXP, SEXP include_meanSEXP, SEXP seed_chainSEXP, SEXP display_progressSEXP, SEXP nthreadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -591,6 +591,9 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< Rcpp::List >::type contem_prior(contem_priorSEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type contem_init(contem_initSEXP);
     Rcpp::traits::input_parameter< int >::type contem_prior_type(contem_prior_typeSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type exogen_prior(exogen_priorSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type exogen_init(exogen_initSEXP);
+    Rcpp::traits::input_parameter< int >::type exogen_prior_type(exogen_prior_typeSEXP);
     Rcpp::traits::input_parameter< Eigen::VectorXi >::type grp_id(grp_idSEXP);
     Rcpp::traits::input_parameter< Eigen::VectorXi >::type own_id(own_idSEXP);
     Rcpp::traits::input_parameter< Eigen::VectorXi >::type cross_id(cross_idSEXP);
@@ -599,7 +602,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< Eigen::VectorXi >::type seed_chain(seed_chainSEXP);
     Rcpp::traits::input_parameter< bool >::type display_progress(display_progressSEXP);
     Rcpp::traits::input_parameter< int >::type nthreads(nthreadsSEXP);
-    rcpp_result_gen = Rcpp::wrap(estimate_sur(num_chains, num_iter, num_burn, thin, x, y, param_reg, param_prior, param_intercept, param_init, prior_type, ggl, contem_prior, contem_init, contem_prior_type, grp_id, own_id, cross_id, grp_mat, include_mean, seed_chain, display_progress, nthreads));
+    rcpp_result_gen = Rcpp::wrap(estimate_sur(num_chains, num_iter, num_burn, thin, x, y, param_reg, param_prior, param_intercept, param_init, prior_type, ggl, contem_prior, contem_init, contem_prior_type, exogen_prior, exogen_init, exogen_prior_type, grp_id, own_id, cross_id, grp_mat, include_mean, seed_chain, display_progress, nthreads));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -1807,7 +1810,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_bvhar_compute_ols_spillover", (DL_FUNC) &_bvhar_compute_ols_spillover, 2},
     {"_bvhar_dynamic_var_spillover", (DL_FUNC) &_bvhar_dynamic_var_spillover, 7},
     {"_bvhar_dynamic_vhar_spillover", (DL_FUNC) &_bvhar_dynamic_vhar_spillover, 8},
-    {"_bvhar_estimate_sur", (DL_FUNC) &_bvhar_estimate_sur, 23},
+    {"_bvhar_estimate_sur", (DL_FUNC) &_bvhar_estimate_sur, 26},
     {"_bvhar_forecast_bvarldlt", (DL_FUNC) &_bvhar_forecast_bvarldlt, 11},
     {"_bvhar_forecast_bvharldlt", (DL_FUNC) &_bvhar_forecast_bvharldlt, 12},
     {"_bvhar_roll_bvarldlt", (DL_FUNC) &_bvhar_roll_bvarldlt, 32},

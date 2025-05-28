@@ -28,9 +28,13 @@ Rcpp::List estimate_sur(int num_chains, int num_iter, int num_burn, int thin,
 												Rcpp::List param_reg, Rcpp::List param_prior, Rcpp::List param_intercept,
 												Rcpp::List param_init, int prior_type, bool ggl,
 												Rcpp::List contem_prior, Rcpp::List contem_init, int contem_prior_type,
+												Rcpp::List exogen_prior, Rcpp::List exogen_init, int exogen_prior_type,
                         Eigen::VectorXi grp_id, Eigen::VectorXi own_id, Eigen::VectorXi cross_id, Eigen::MatrixXi grp_mat,
                         bool include_mean, Eigen::VectorXi seed_chain, bool display_progress, int nthreads) {
 	auto mcmc_run = [&]() -> std::unique_ptr<bvhar::McmcRun> {
+		if (exogen_prior_type != 0) {
+			// 
+		}
 		if (param_reg.containsElementNamed("initial_mean")) {
 			if (ggl) {
 				return std::make_unique<bvhar::CtaRun<bvhar::McmcSv, true>>(

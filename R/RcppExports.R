@@ -531,8 +531,8 @@ dynamic_vhar_spillover <- function(y, window, step, week, month, include_mean, m
 #' @param nthreads Number of threads for openmp
 #' 
 #' @noRd
-estimate_sur <- function(num_chains, num_iter, num_burn, thin, x, y, param_reg, param_prior, param_intercept, param_init, prior_type, ggl, contem_prior, contem_init, contem_prior_type, grp_id, own_id, cross_id, grp_mat, include_mean, seed_chain, display_progress, nthreads) {
-    .Call(`_bvhar_estimate_sur`, num_chains, num_iter, num_burn, thin, x, y, param_reg, param_prior, param_intercept, param_init, prior_type, ggl, contem_prior, contem_init, contem_prior_type, grp_id, own_id, cross_id, grp_mat, include_mean, seed_chain, display_progress, nthreads)
+estimate_sur <- function(num_chains, num_iter, num_burn, thin, x, y, param_reg, param_prior, param_intercept, param_init, prior_type, ggl, contem_prior, contem_init, contem_prior_type, exogen_prior, exogen_init, exogen_prior_type, grp_id, own_id, cross_id, grp_mat, include_mean, seed_chain, display_progress, nthreads) {
+    .Call(`_bvhar_estimate_sur`, num_chains, num_iter, num_burn, thin, x, y, param_reg, param_prior, param_intercept, param_init, prior_type, ggl, contem_prior, contem_init, contem_prior_type, exogen_prior, exogen_init, exogen_prior_type, grp_id, own_id, cross_id, grp_mat, include_mean, seed_chain, display_progress, nthreads)
 }
 
 #' Forecasting predictive density of BVAR

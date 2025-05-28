@@ -31,12 +31,14 @@ public:
 		const RegParams& params, const RegInits& inits,
 		std::unique_ptr<ShrinkageUpdater>& coef_prior,
 		std::unique_ptr<ShrinkageUpdater>& contem_prior,
-		unsigned int seed
+		unsigned int seed,
+		Optional<std::unique_ptr<ShrinkageUpdater>> exogen_prior = NULLOPT
 	)
 	: McmcAlgo(params, seed),
 		include_mean(params._mean), x(params._x), y(params._y),
 		dim(params._dim), dim_design(params._dim_design), num_design(params._num_design),
 		num_lowerchol(params._num_lowerchol), num_coef(params._num_coef), num_alpha(params._num_alpha), nrow_coef(params._nrow),
+		nrow_exogen(params._nrow_exogen), num_exogen(params._num_exogen), num_endog(num_coef - num_exogen),
 		coef_updater(std::move(coef_prior)), contem_updater(std::move(contem_prior)),
 		own_id(params._own_id), grp_id(params._grp_id), grp_vec(params._grp_vec), num_grp(grp_id.size()),
 		// reg_record(std::make_unique<RegRecords>(num_iter, dim, num_design, num_coef, num_lowerchol)),
@@ -63,6 +65,9 @@ public:
 		coef_vec.head(num_alpha) = coef_mat.topRows(nrow_coef).reshaped();
 		if (include_mean) {
 			coef_vec.segment(num_alpha, dim) = coef_mat.bottomRows(1).transpose();
+		}
+		if (exogen_prior) {
+			exogen_updater = std::move(*exogen_prior);
 		}
 		// reg_record->assignRecords(0, coef_vec, contem_coef, diag_vec);
 		sparse_record.assignRecords(0, sparse_coef, sparse_contem);
@@ -171,8 +176,10 @@ protected:
   int num_coef;
 	int num_alpha;
 	int nrow_coef;
+	int nrow_exogen, num_exogen, num_endog;
 	std::unique_ptr<ShrinkageUpdater> coef_updater;
 	std::unique_ptr<ShrinkageUpdater> contem_updater;
+	std::unique_ptr<ShrinkageUpdater> exogen_updater;
 	std::set<int> own_id;
 	Eigen::VectorXi grp_id;
 	Eigen::VectorXi grp_vec;
@@ -225,6 +232,9 @@ protected:
       num_grp, grp_vec, grp_id,
       rng
 		);
+		if (exogen_updater) {
+			exogen_updater->updateImpactPrec(prior_alpha_prec.tail(num_exogen), coef_vec.tail(num_exogen), rng);
+		}
 	}
 
 	/**
@@ -274,29 +284,47 @@ protected:
 			Eigen::VectorXd prior_mean_j(dim_design);
 			Eigen::VectorXd prior_prec_j(dim_design);
 			Eigen::VectorXd penalty_j = Eigen::VectorXd::Zero(dim_design);
+			prior_mean_j.head(nrow_coef) = prior_alpha_mean.segment(j * nrow_coef, nrow_coef);
+			prior_prec_j.head(nrow_coef) = prior_alpha_prec.segment(j * nrow_coef, nrow_coef);
+			penalty_j.head(nrow_coef) = alpha_penalty.segment(j * nrow_coef, nrow_coef);
 			if (include_mean) {
-				prior_mean_j << prior_alpha_mean.segment(j * nrow_coef, nrow_coef), prior_alpha_mean.segment(num_alpha, dim)[j];
-				prior_prec_j << prior_alpha_prec.segment(j * nrow_coef, nrow_coef), prior_alpha_prec.segment(num_alpha, dim)[j];
+				// prior_mean_j << prior_alpha_mean.segment(j * nrow_coef, nrow_coef), prior_alpha_mean.segment(num_alpha, dim)[j];
+				// prior_prec_j << prior_alpha_prec.segment(j * nrow_coef, nrow_coef), prior_alpha_prec.segment(num_alpha, dim)[j];
 				// penalty_j << alpha_penalty.segment(j * nrow_coef, nrow_coef), alpha_penalty.tail(dim)[j];
-				penalty_j.head(nrow_coef) = alpha_penalty.segment(j * nrow_coef, nrow_coef);
+				// penalty_j.head(nrow_coef) = alpha_penalty.segment(j * nrow_coef, nrow_coef);
+				prior_mean_j[nrow_coef] = prior_alpha_mean.segment(num_alpha, dim)[j];
+				prior_prec_j[nrow_coef] = prior_alpha_prec.segment(num_alpha, dim)[j];
+				if (exogen_updater) {
+					prior_mean_j.tail(nrow_exogen) = prior_alpha_mean.segment(num_endog + j * nrow_exogen, nrow_exogen);
+					prior_prec_j.tail(nrow_exogen) = prior_alpha_prec.segment(num_endog + j * nrow_exogen, nrow_exogen);
+					// penalty_j.tail(nrow_exogen): current alpha_penalty only covers VAR
+				}
 				draw_coef(
 					coef_mat.col(j), design_coef,
 					(((y - x * coef_mat) * chol_lower_j.transpose()).array() / sqrt_sv_j.array()).reshaped(), // Hadamard product between: (Y - X0 A(-j))L_(j:k)^T and D_(1:n, j:k)
 					prior_mean_j, prior_prec_j, rng
 				);
 				coef_vec.head(num_alpha) = coef_mat.topRows(nrow_coef).reshaped();
-				coef_vec.segment(num_alpha, dim) = coef_mat.bottomRows(1).transpose();
+				coef_vec.segment(num_alpha, dim) = coef_mat.middleRows<1>(nrow_coef).transpose();
 			} else {
-				prior_mean_j = prior_alpha_mean.segment(dim_design * j, dim_design);
-				prior_prec_j = prior_alpha_prec.segment(dim_design * j, dim_design);
-				penalty_j = alpha_penalty.segment(dim_design * j, dim_design);
+				// prior_mean_j = prior_alpha_mean.segment(dim_design * j, dim_design);
+				// prior_prec_j = prior_alpha_prec.segment(dim_design * j, dim_design);
+				// penalty_j = alpha_penalty.segment(dim_design * j, dim_design);
+				if (exogen_updater) {
+					prior_mean_j.tail(nrow_exogen) = prior_alpha_mean.segment(num_endog + j * nrow_exogen, nrow_exogen);
+					prior_prec_j.tail(nrow_exogen) = prior_alpha_prec.segment(num_endog + j * nrow_exogen, nrow_exogen);
+				}
 				draw_coef(
 					coef_mat.col(j),
 					design_coef,
 					(((y - x * coef_mat) * chol_lower_j.transpose()).array() / sqrt_sv_j.array()).reshaped(),
 					prior_mean_j, prior_prec_j, rng
 				);
-				coef_vec = coef_mat.reshaped();
+				// coef_vec = coef_mat.reshaped();
+				coef_vec.head(num_alpha) = coef_mat.topRows(nrow_coef).reshaped();
+			}
+			if (exogen_updater) {
+				coef_vec.tail(num_exogen) = coef_mat.bottomRows(nrow_exogen).reshaped();
 			}
 			draw_mn_savs(sparse_coef.col(j), coef_mat.col(j), x, penalty_j);
 		}

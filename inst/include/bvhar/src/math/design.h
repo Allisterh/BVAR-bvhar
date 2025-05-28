@@ -32,6 +32,15 @@ inline Eigen::MatrixXd build_x0(const Eigen::MatrixXd& y, int var_lag, bool incl
   return res;
 }
 
+inline Eigen::MatrixXd build_exogen0(int num_design, int var_lag, const Eigen::MatrixXd& exogen, int exogen_lag) {
+	int x_dim = exogen.cols();
+	Eigen::MatrixXd res(num_design, x_dim * (exogen_lag + 1));
+	for (int i = 0; i < exogen_lag + 1; ++i) {
+		res.middleCols(i * x_dim, x_dim) = exogen.middleRows(var_lag - i, num_design); // X(p + 1) to X(p + 1 - s)
+	}
+	return res;
+}
+
 inline Eigen::MatrixXd build_x0(const Eigen::MatrixXd& y, const Eigen::MatrixXd& exogen, int var_lag, int exogen_lag, bool include_mean) {
   int num_design = y.rows() - var_lag; // n = T - p
   int dim = y.cols();
@@ -49,6 +58,7 @@ inline Eigen::MatrixXd build_x0(const Eigen::MatrixXd& y, const Eigen::MatrixXd&
 		// res.middleCols(dim_endog + t * x_dim, x_dim) = exogen.middleRows(var_lag - t, num_design); // X(p + 1) to X(p - s)
 		res.middleCols(dim_endog + t * x_dim, x_dim) = exogen.middleRows(var_lag - t, num_design); // X(p + 1) to X(p + 1 - s)
   }
+	// res.rightCols(x_dim * (exogen_lag + 1)) = build_exogen0(num_design, var_lag, exogen, exogen_lag);
   // if (!include_mean) {
   //   return res.leftCols(dim_design - 1);
   // }

@@ -35,6 +35,7 @@ struct RegParams : McmcParams {
 	Eigen::MatrixXd _x, _y;
 	bool _mean;
 	int _dim, _dim_design, _num_design, _num_lowerchol, _num_coef, _num_alpha, _nrow;
+	int _nrow_exogen, _num_exogen;
 	Eigen::VectorXd _alpha_mean, _alpha_prec, _chol_mean, _chol_prec, _sig_shp, _sig_scl, _mean_non;
 	double _sd_non;
 	std::set<int> _own_id;
@@ -49,7 +50,8 @@ struct RegParams : McmcParams {
 		const Eigen::VectorXi& own_id, const Eigen::VectorXi& cross_id,
 		const Eigen::VectorXi& grp_id, const Eigen::MatrixXi& grp_mat,
 		LIST& intercept,
-		bool include_mean
+		bool include_mean,
+		Optional<int> exogen_cols = NULLOPT
 	)
 	: McmcParams(num_iter),
 		_x(x), _y(y),
@@ -57,6 +59,7 @@ struct RegParams : McmcParams {
 		_dim(y.cols()), _dim_design(x.cols()), _num_design(y.rows()),
 		_num_lowerchol(_dim * (_dim - 1) / 2), _num_coef(_dim * _dim_design),
 		_num_alpha(_mean ? _num_coef - _dim : _num_coef), _nrow(_num_alpha / _dim),
+		_nrow_exogen(exogen_cols ? *exogen_cols : 0), _num_exogen(_nrow_exogen * _dim),
 		_alpha_mean(Eigen::VectorXd::Zero(_num_coef)),
 		_alpha_prec(Eigen::VectorXd::Ones(_num_coef)),
 		_chol_mean(Eigen::VectorXd::Zero(_num_lowerchol)),
@@ -65,8 +68,7 @@ struct RegParams : McmcParams {
 		_sig_scl(CAST<Eigen::VectorXd>(spec["scale"])),
 		_mean_non(CAST<Eigen::VectorXd>(intercept["mean_non"])),
 		_sd_non(CAST_DOUBLE(intercept["sd_non"])),
-		// _grp_id(grp_id), _grp_mat(grp_mat) {
-			_grp_id(grp_id), _grp_vec(grp_mat.reshaped()) {
+		_grp_id(grp_id), _grp_vec(grp_mat.reshaped()) {
 		set_grp_id(_own_id, _cross_id, own_id, cross_id);
 	}
 };
@@ -85,9 +87,10 @@ struct SvParams : public RegParams {
 		const Eigen::VectorXi& own_id, const Eigen::VectorXi& cross_id,
 		const Eigen::VectorXi& grp_id, const Eigen::MatrixXi& grp_mat,
 		LIST& intercept,
-		bool include_mean
+		bool include_mean,
+		Optional<int> exogen_cols = NULLOPT
 	)
-	: RegParams(num_iter, x, y, spec, own_id, cross_id, grp_id, grp_mat, intercept, include_mean),
+	: RegParams(num_iter, x, y, spec, own_id, cross_id, grp_id, grp_mat, intercept, include_mean, exogen_cols),
 		_init_mean(CAST<Eigen::VectorXd>(spec["initial_mean"])),
 		_init_prec(CAST<Eigen::VectorXd>(spec["initial_prec"])) {}
 };

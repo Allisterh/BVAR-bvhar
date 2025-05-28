@@ -125,6 +125,7 @@ var_bayes <- function(y,
   exogen_prior <- list()
   exogen_init <- list()
   exogen_prior_type <- 0
+  dim_exogen_design <- 0
   if (!is.null(exogen)) {
     validate_prior(exogen_spec)
     if (!is.matrix(exogen)) {
@@ -144,12 +145,12 @@ var_bayes <- function(y,
       p = s,
       dim_data = dim_exogen
     )
-    exogen_init <- get_init(
-      param_init = list(),
-      prior_nm = exogen_spec$prior,
-      num_alpha = num_exogen,
-      num_grp = ifelse(exogen_spec$prior == "SSVS" || exogen_spec$prior == "GDP", num_exogen, 1)
-    )
+    # exogen_init <- get_init(
+    #   param_init = list(),
+    #   prior_nm = exogen_spec$prior,
+    #   num_alpha = num_exogen,
+    #   num_grp = ifelse(exogen_spec$prior == "SSVS" || exogen_spec$prior == "GDP", num_exogen, 1)
+    # )
     exogen_prior_type <- enumerate_prior(exogen_spec$prior)
     name_lag <- c(
       name_lag,
@@ -267,6 +268,14 @@ var_bayes <- function(y,
     num_alpha = num_eta,
     num_grp = ifelse(contem_spec$prior == "SSVS" || contem_spec$prior == "GDP", num_eta, 1)
   )
+  if (!is.null(exogen)) {
+    exogen_init <- get_init(
+      param_init = param_init,
+      prior_nm = exogen_spec$prior,
+      num_alpha = num_exogen,
+      num_grp = ifelse(exogen_spec$prior == "SSVS" || exogen_spec$prior == "GDP", num_exogen, 1)
+    )
+  }
   param_init <- get_init(
     param_init = param_init,
     prior_nm = coef_spec$prior,
@@ -338,6 +347,7 @@ var_bayes <- function(y,
     exogen_prior = exogen_prior,
     exogen_init = exogen_init,
     exogen_prior_type = exogen_prior_type,
+    exogen_cols = dim_exogen_design,
     grp_id = grp_id,
     own_id = own_id,
     cross_id = cross_id,

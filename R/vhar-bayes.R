@@ -117,6 +117,7 @@ vhar_bayes <- function(y,
   exogen_prior <- list()
   exogen_init <- list()
   exogen_prior_type <- 0
+  dim_exogen_design <- 0
   X0 <- build_design(y, month, include_mean)
   HARtrans <- scale_har(dim_data, week, month, include_mean)
   name_har <- concatenate_colnames(name_var, c("day", "week", "month"), include_mean) # in misc-r.R file
@@ -570,6 +571,7 @@ vhar_bayes <- function(y,
     exogen_prior = exogen_prior,
     exogen_init = exogen_init,
     exogen_prior_type = exogen_prior_type,
+    exogen_cols = dim_exogen_design,
     grp_id = grp_id,
     own_id = own_id,
     cross_id = cross_id,

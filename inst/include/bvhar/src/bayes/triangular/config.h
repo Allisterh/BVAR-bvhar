@@ -70,6 +70,8 @@ struct RegParams : McmcParams {
 		_sd_non(CAST_DOUBLE(intercept["sd_non"])),
 		_grp_id(grp_id), _grp_vec(grp_mat.reshaped()) {
 		set_grp_id(_own_id, _cross_id, own_id, cross_id);
+		_num_alpha -= _num_exogen;
+		_nrow = _num_alpha / _dim;
 	}
 };
 

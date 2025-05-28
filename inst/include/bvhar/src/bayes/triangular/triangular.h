@@ -385,9 +385,10 @@ public:
 		const RegParams& params, const LdltInits& inits,
 		std::unique_ptr<ShrinkageUpdater>& coef_prior,
 		std::unique_ptr<ShrinkageUpdater>& contem_prior,
-		unsigned int seed
+		unsigned int seed,
+		Optional<std::unique_ptr<ShrinkageUpdater>> exogen_prior = NULLOPT
 	)
-	: McmcTriangular(params, inits, coef_prior, contem_prior, seed), diag_vec(inits._diag) {
+	: McmcTriangular(params, inits, coef_prior, contem_prior, seed, std::move(exogen_prior)), diag_vec(inits._diag) {
 		reg_record = std::make_unique<LdltRecords>(num_iter, dim, num_design, num_coef, num_lowerchol);
 		reg_record->assignRecords(0, coef_vec, contem_coef, diag_vec);
 	}
@@ -415,9 +416,10 @@ public:
 		const SvParams& params, const SvInits& inits,
 		std::unique_ptr<ShrinkageUpdater>& coef_prior,
 		std::unique_ptr<ShrinkageUpdater>& contem_prior,
-		unsigned int seed
+		unsigned int seed,
+		Optional<std::unique_ptr<ShrinkageUpdater>> exogen_prior = NULLOPT
 	)
-	: McmcTriangular(params, inits, coef_prior, contem_prior, seed),
+	: McmcTriangular(params, inits, coef_prior, contem_prior, seed, std::move(exogen_prior)),
 		ortho_latent(Eigen::MatrixXd::Zero(num_design, dim)),
 		lvol_draw(inits._lvol), lvol_init(inits._lvol_init), lvol_sig(inits._lvol_sig),
 		prior_init_mean(params._init_mean), prior_init_prec(params._init_prec) {
@@ -514,6 +516,49 @@ inline std::vector<std::unique_ptr<BaseMcmc>> initialize_mcmc(
 	return mcmc_ptr;
 }
 
+template <typename BaseMcmc = McmcReg, bool isGroup = true>
+inline std::vector<std::unique_ptr<BaseMcmc>> initialize_mcmc(
+	int num_chains, int num_iter, const Eigen::MatrixXd& x, const Eigen::MatrixXd& y,
+	LIST& param_reg, LIST& param_prior, LIST& param_intercept, LIST_OF_LIST& param_init, int prior_type,
+	LIST& contem_prior, LIST_OF_LIST& contem_init, int contem_prior_type,
+	LIST& exogen_prior, LIST_OF_LIST& exogen_init, int exogen_prior_type, int exogen_cols,
+  const Eigen::VectorXi& grp_id, const Eigen::VectorXi& own_id, const Eigen::VectorXi& cross_id, const Eigen::MatrixXi& grp_mat,
+  bool include_mean, Eigen::Ref<const Eigen::VectorXi> seed_chain, Optional<int> num_design = NULLOPT
+) {
+	using PARAMS = typename std::conditional<std::is_same<BaseMcmc, McmcReg>::value, RegParams, SvParams>::type;
+	using INITS = typename std::conditional<std::is_same<BaseMcmc, McmcReg>::value, LdltInits, SvInits>::type;
+	PARAMS base_params(
+		num_iter, x, y,
+		param_reg,
+		own_id, cross_id,
+		grp_id, grp_mat,
+		param_intercept, include_mean,
+		exogen_cols
+	);
+	std::vector<std::unique_ptr<BaseMcmc>> mcmc_ptr(num_chains);
+	for (int i = 0; i < num_chains; ++i) {
+		LIST init_spec = param_init[i];
+		auto coef_updater = initialize_shrinkageupdater<isGroup>(num_iter, param_prior, init_spec, prior_type);
+		coef_updater->initCoefMean(base_params._alpha_mean.head(base_params._num_alpha));
+		coef_updater->initCoefPrec(base_params._alpha_prec.head(base_params._num_alpha), base_params._grp_vec, base_params._cross_id);
+		LIST contem_init_spec = contem_init[i];
+		auto contem_updater = initialize_shrinkageupdater<isGroup>(num_iter, contem_prior, contem_init_spec, contem_prior_type);
+		contem_updater->initImpactPrec(base_params._chol_prec);
+		LIST exogen_init_spec = exogen_init[i];
+		auto exogen_updater = initialize_shrinkageupdater<false>(num_iter, exogen_prior, exogen_init_spec, exogen_prior_type);
+		exogen_updater->initCoefMean(base_params._alpha_mean.tail(base_params._num_exogen));
+		exogen_updater->initImpactPrec(base_params._alpha_prec.tail(base_params._num_exogen));
+		INITS ldlt_inits = num_design ? INITS(init_spec, *num_design) : INITS(init_spec);
+		mcmc_ptr[i] = std::make_unique<BaseMcmc>(
+			base_params, ldlt_inits,
+			coef_updater, contem_updater,
+			static_cast<unsigned int>(seed_chain[i]),
+			std::move(exogen_updater)
+		);
+	}
+	return mcmc_ptr;
+}
+
 /**
  * @brief Class that conducts MCMC using CTA
  * 
@@ -537,6 +582,29 @@ public:
 			num_chains, num_iter - num_burn, x, y,
 			param_cov, param_prior, param_intercept, param_init, prior_type,
 			contem_prior, contem_init, contem_prior_type,
+			grp_id, own_id, cross_id, grp_mat,
+			include_mean, seed_chain
+		);
+		for (int i = 0; i < num_chains; ++i) {
+			mcmc_ptr[i] = std::move(temp_mcmc[i]);
+		}
+	}
+	CtaRun(
+		int num_chains, int num_iter, int num_burn, int thin,
+    const Eigen::MatrixXd& x, const Eigen::MatrixXd& y,
+		LIST& param_cov, LIST& param_prior, LIST& param_intercept,
+		LIST_OF_LIST& param_init, int prior_type,
+		LIST& contem_prior, LIST_OF_LIST& contem_init, int contem_prior_type,
+		LIST& exogen_prior, LIST_OF_LIST& exogen_init, int exogen_prior_type, int exogen_cols,
+    const Eigen::VectorXi& grp_id, const Eigen::VectorXi& own_id, const Eigen::VectorXi& cross_id, const Eigen::MatrixXi& grp_mat,
+    bool include_mean, const Eigen::VectorXi& seed_chain, bool display_progress, int nthreads
+	)
+	: McmcRun(num_chains, num_iter, num_burn, thin, display_progress, nthreads) {
+		auto temp_mcmc = initialize_mcmc<BaseMcmc, isGroup>(
+			num_chains, num_iter - num_burn, x, y,
+			param_cov, param_prior, param_intercept, param_init, prior_type,
+			contem_prior, contem_init, contem_prior_type,
+			exogen_prior, exogen_init, exogen_prior_type, exogen_cols,
 			grp_id, own_id, cross_id, grp_mat,
 			include_mean, seed_chain
 		);

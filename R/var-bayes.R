@@ -15,6 +15,7 @@
 #' @param thinning Thinning every thinning-th iteration
 #' @param coef_spec Coefficient prior specification by [set_bvar()], [set_ssvs()], or [set_horseshoe()].
 #' @param contem_spec Contemporaneous coefficient prior specification by [set_bvar()], [set_ssvs()], or [set_horseshoe()].
+#' @param exogen_spec Exogenous coefficient prior specification.
 #' @param cov_spec `r lifecycle::badge("experimental")` SV specification by [set_sv()].
 #' @param intercept `r lifecycle::badge("experimental")` Prior for the constant term by [set_intercept()].
 #' @param include_mean Add constant term (Default: `TRUE`) or not (`FALSE`)
@@ -382,6 +383,16 @@ var_bayes <- function(y,
     res$coefficients <- rbind(res$coefficients, colMeans(res$c_record))
     res$sparse_coef <- rbind(res$sparse_coef, colMeans(res$c_sparse_record))
   }
+  if (!is.null(exogen)) {
+    res$coefficients <- rbind(
+      res$coefficients,
+      matrix(colMeans(res$b_record), ncol = dim_data)
+    )
+    res$sparse_coef <- rbind(
+      res$sparse_coef,
+      matrix(colMeans(res$b_sparse_record), ncol = dim_data)
+    )
+  }
   mat_lower <- matrix(0L, nrow = dim_data, ncol = dim_data)
   diag(mat_lower) <- rep(1L, dim_data)
   mat_lower[lower.tri(mat_lower, diag = FALSE)] <- colMeans(res$a_record)
@@ -396,6 +407,12 @@ var_bayes <- function(y,
   res$pip <- matrix(res$pip, ncol = dim_data)
   if (include_mean) {
     res$pip <- rbind(res$pip, rep(1L, dim_data))
+  }
+  if (!is.null(exogen)) {
+    res$pip <- rbind(
+      res$pip,
+      matrix(colMeans(res$b_sparse_record != 0), ncol = dim_data)
+    )
   }
   colnames(res$pip) <- name_var
   rownames(res$pip) <- name_lag
@@ -458,6 +475,13 @@ var_bayes <- function(y,
       res$param,
       res$c_record,
       res$c_sparse_record
+    )
+  }
+  if (!is.null(exogen)) {
+    res$param <- bind_draws(
+      res$param,
+      res$b_record,
+      res$b_sparse_record
     )
   }
   if (coef_spec$prior == "SSVS") {
@@ -533,6 +557,13 @@ var_bayes <- function(y,
   res$burn <- num_burn
   res$thin <- thinning
   # data------------------
+  if (!is.null(exogen)) {
+    res$spec_exogen <- exogen_spec
+    res$exogen_data <- exogen
+    res$s <- s
+    res$exogen_m <- dim_exogen
+    res$exogen_id <- exogen_id
+  }
   res$y0 <- Y0
   res$design <- X0
   res$y <- y

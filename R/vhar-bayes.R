@@ -7,12 +7,15 @@
 #'
 #' @param y Time series data of which columns indicate the variables
 #' @param har Numeric vector for weekly and monthly order. By default, `c(5, 22)`.
+#' @param exogen Unmodeled variables
+#' @param s Lag of exogeneous variables in VARX(p, s). By default, `s = 0`.
 #' @param num_chains Number of MCMC chains
 #' @param num_iter MCMC iteration number
 #' @param num_burn Number of burn-in (warm-up). Half of the iteration is the default choice.
 #' @param thinning Thinning every thinning-th iteration
 #' @param coef_spec Coefficient prior specification by [set_bvar()], [set_ssvs()], or [set_horseshoe()].
 #' @param contem_spec Contemporaneous coefficient prior specification by [set_bvar()], [set_ssvs()], or [set_horseshoe()].
+#' @param exogen_spec Exogenous coefficient prior specification.
 #' @param cov_spec `r lifecycle::badge("experimental")` SV specification by [set_sv()].
 #' @param intercept `r lifecycle::badge("experimental")` Prior for the constant term by [set_intercept()].
 #' @param include_mean Add constant term (Default: `TRUE`) or not (`FALSE`)
@@ -75,6 +78,8 @@
 #' @export
 vhar_bayes <- function(y,
                        har = c(5, 22),
+                       exogen = NULL,
+                       s = 0,
                        num_chains = 1,
                        num_iter = 1000,
                        num_burn = floor(num_iter / 2),
@@ -83,6 +88,7 @@ vhar_bayes <- function(y,
                        contem_spec = coef_spec,
                        cov_spec = set_ldlt(),
                        intercept = set_intercept(),
+                       exogen_spec = coef_spec,
                        include_mean = TRUE,
                        minnesota = c("longrun", "short", "no"),
                        ggl = TRUE,

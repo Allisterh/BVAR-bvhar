@@ -138,20 +138,20 @@ var_bayes <- function(y,
       name_exogen <- paste0("x", seq_len(ncol(exogen)))
     }
     dim_exogen <- ncol(exogen)
+    # exogen_spec <- validate_spec(
+    #   bayes_spec = exogen_spec,
+    #   y = exogen,
+    #   dim_data = dim_exogen,
+    #   process = "BVAR"
+    # )
+    # exogen_prior <- get_spec(
+    #   bayes_spec = exogen_spec,
+    #   p = 0,
+    #   dim_data = dim_exogen
+    # )
     # dim_exogen_design <- dim_exogen * (s + 1)
     # num_exogen <- dim_data * dim_exogen_design
     # Might be better use group also in exogen!
-    exogen_prior <- get_spec(
-      bayes_spec = exogen_spec,
-      p = s,
-      dim_data = dim_exogen
-    )
-    # exogen_init <- get_init(
-    #   param_init = list(),
-    #   prior_nm = exogen_spec$prior,
-    #   num_alpha = num_exogen,
-    #   num_grp = ifelse(exogen_spec$prior == "SSVS" || exogen_spec$prior == "GDP", num_exogen, 1)
-    # )
     exogen_prior_type <- enumerate_prior(exogen_spec$prior)
     name_lag <- c(
       name_lag,
@@ -161,6 +161,17 @@ var_bayes <- function(y,
     exogen_id <- length(name_lag) + 1:((s + 1) * dim_exogen)
     dim_exogen_design <- length(exogen_id)
     num_exogen <- dim_data * dim_exogen_design
+    exogen_spec <- validate_spec(
+      bayes_spec = exogen_spec,
+      y = exogen,
+      dim_data = num_exogen,
+      process = "BVAR"
+    )
+    exogen_prior <- get_spec(
+      bayes_spec = exogen_spec,
+      p = 0,
+      dim_data = num_exogen
+    )
   }
   colnames(X0) <- name_lag
   num_design <- nrow(Y0)
@@ -242,19 +253,17 @@ var_bayes <- function(y,
     grp_id = grp_id,
     own_id = own_id,
     cross_id = cross_id,
-    process = "BVAR",
-    arg_names = "coef_spec"
+    process = "BVAR"
   )
   contem_spec <- validate_spec(
     bayes_spec = contem_spec,
     y = y,
     dim_data = num_eta,
-    num_grp = 1,
-    grp_id = grp_id,
-    own_id = own_id,
-    cross_id = cross_id,
-    process = "BVAR",
-    arg_names = "contem_spec"
+    # num_grp = 1,
+    # grp_id = grp_id,
+    # own_id = own_id,
+    # cross_id = cross_id,
+    process = "BVAR"
   )
   coef_prior <- get_spec(
     bayes_spec = coef_spec,

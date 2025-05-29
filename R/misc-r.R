@@ -218,11 +218,11 @@ validate_prior <- function(bayes_spec) {
 #' Validate prior specification
 #' @noRd
 validate_spec <- function(bayes_spec,
-                          y, dim_data, num_grp,
-                          grp_id, own_id, cross_id,
-                          process = "BVAR",
-                          arg_names = "coef_spec") {
+                          y, dim_data,
+                          num_grp = NULL, grp_id = NULL, own_id = NULL, cross_id = NULL,
+                          process = "BVAR") {
   prior_nm <- bayes_spec$prior
+  arg_names <- deparse(substitute(bayes_spec))
   if (prior_nm == "Minnesota" || prior_nm == "MN_VAR" || prior_nm == "MN_VHAR" || prior_nm == "MN_Hierarchical") {
     if (bayes_spec$process != process) {
       stop(
@@ -264,17 +264,19 @@ validate_spec <- function(bayes_spec,
       }
     }
   } else if (prior_nm == "SSVS") {
-    if (length(bayes_spec$s1) == 2) {
-      s1 <- numeric(num_grp)
-      s1[grp_id %in% own_id] <- bayes_spec$s1[1]
-      s1[grp_id %in% cross_id] <- bayes_spec$s1[2]
-      bayes_spec$s1 <- s1
-    }
-    if (length(bayes_spec$s2) == 2) {
-      s2 <- numeric(num_grp)
-      s2[grp_id %in% own_id] <- bayes_spec$s2[1]
-      s2[grp_id %in% cross_id] <- bayes_spec$s2[2]
-      bayes_spec$s2 <- s2
+    if (!is.null(num_grp)) {
+      if (length(bayes_spec$s1) == 2) {
+        s1 <- numeric(num_grp)
+        s1[grp_id %in% own_id] <- bayes_spec$s1[1]
+        s1[grp_id %in% cross_id] <- bayes_spec$s1[2]
+        bayes_spec$s1 <- s1
+      }
+      if (length(bayes_spec$s2) == 2) {
+        s2 <- numeric(num_grp)
+        s2[grp_id %in% own_id] <- bayes_spec$s2[1]
+        s2[grp_id %in% cross_id] <- bayes_spec$s2[2]
+        bayes_spec$s2 <- s2
+      }
     }
   }
   bayes_spec

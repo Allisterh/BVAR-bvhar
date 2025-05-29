@@ -39,20 +39,20 @@ Rcpp::List estimate_sur(int num_chains, int num_iter, int num_burn, int thin,
 						num_chains, num_iter, num_burn, thin, x, y,
 						param_reg, param_prior, param_intercept, param_init, prior_type,
 						contem_prior, contem_init, contem_prior_type,
-						exogen_prior, exogen_init, exogen_prior_type, exogen_cols,
 						grp_id, own_id, cross_id, grp_mat,
 						include_mean, seed_chain,
-						display_progress, nthreads
+						display_progress, nthreads,
+						exogen_prior, exogen_init, exogen_prior_type, exogen_cols
 					);
 				}
 				return std::make_unique<bvhar::CtaRun<bvhar::McmcSv, false>>(
 					num_chains, num_iter, num_burn, thin, x, y,
 					param_reg, param_prior, param_intercept, param_init, prior_type,
 					contem_prior, contem_init, contem_prior_type,
-					exogen_prior, exogen_init, exogen_prior_type, exogen_cols,
 					grp_id, own_id, cross_id, grp_mat,
 					include_mean, seed_chain,
-					display_progress, nthreads
+					display_progress, nthreads,
+					exogen_prior, exogen_init, exogen_prior_type, exogen_cols
 				);
 			}
 			if (ggl) {
@@ -60,20 +60,20 @@ Rcpp::List estimate_sur(int num_chains, int num_iter, int num_burn, int thin,
 					num_chains, num_iter, num_burn, thin, x, y,
 					param_reg, param_prior, param_intercept, param_init, prior_type,
 					contem_prior, contem_init, contem_prior_type,
-					exogen_prior, exogen_init, exogen_prior_type, exogen_cols,
 					grp_id, own_id, cross_id, grp_mat,
 					include_mean, seed_chain,
-					display_progress, nthreads
+					display_progress, nthreads,
+					exogen_prior, exogen_init, exogen_prior_type, exogen_cols
 				);
 			}
 			return std::make_unique<bvhar::CtaRun<bvhar::McmcReg, false>>(
 				num_chains, num_iter, num_burn, thin, x, y,
 				param_reg, param_prior, param_intercept, param_init, prior_type,
 				contem_prior, contem_init, contem_prior_type,
-				exogen_prior, exogen_init, exogen_prior_type, exogen_cols,
 				grp_id, own_id, cross_id, grp_mat,
 				include_mean, seed_chain,
-				display_progress, nthreads
+				display_progress, nthreads,
+				exogen_prior, exogen_init, exogen_prior_type, exogen_cols
 			);
 		}
 		if (param_reg.containsElementNamed("initial_mean")) {

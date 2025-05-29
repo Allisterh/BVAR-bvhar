@@ -200,8 +200,7 @@ vhar_bayes <- function(y,
     grp_id = grp_id,
     own_id = own_id,
     cross_id = cross_id,
-    process = "BVHAR",
-    arg_names = "coef_spec"
+    process = "BVHAR"
   )
   contem_spec <- validate_spec(
     bayes_spec = contem_spec,
@@ -211,8 +210,7 @@ vhar_bayes <- function(y,
     grp_id = grp_id,
     own_id = own_id,
     cross_id = cross_id,
-    process = "BVHAR",
-    arg_names = "contem_spec"
+    process = "BVHAR"
   )
   coef_prior <- get_spec(
     bayes_spec = coef_spec,

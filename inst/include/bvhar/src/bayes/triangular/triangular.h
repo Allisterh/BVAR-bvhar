@@ -68,6 +68,7 @@ public:
 		}
 		if (exogen_prior) {
 			exogen_updater = std::move(*exogen_prior);
+			coef_vec.tail(num_exogen) = coef_mat.bottomRows(nrow_exogen).reshaped();
 		}
 		// reg_record->assignRecords(0, coef_vec, contem_coef, diag_vec);
 		sparse_record.assignRecords(0, sparse_coef, sparse_contem);
@@ -516,7 +517,7 @@ inline std::vector<std::unique_ptr<BaseMcmc>> initialize_mcmc(
 		coef_updater->initCoefMean(base_params._alpha_mean.head(base_params._num_alpha));
 		coef_updater->initCoefPrec(base_params._alpha_prec.head(base_params._num_alpha), base_params._grp_vec, base_params._cross_id);
 		LIST contem_init_spec = contem_init[i];
-		auto contem_updater = initialize_shrinkageupdater<isGroup>(num_iter, contem_prior, contem_init_spec, contem_prior_type);
+		auto contem_updater = initialize_shrinkageupdater<false>(num_iter, contem_prior, contem_init_spec, contem_prior_type);
 		contem_updater->initImpactPrec(base_params._chol_prec);
 		INITS ldlt_inits = num_design ? INITS(init_spec, *num_design) : INITS(init_spec);
 		if (exogen_prior) {

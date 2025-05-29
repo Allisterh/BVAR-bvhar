@@ -481,7 +481,8 @@ public:
 		dl_dir_griddy(dir_concen, grid_size, local_lev, group_lev[0], rng);
 		dl_local_sparsity(local_lev, dir_concen, contem_coef, rng);
 		group_lev[0] = dl_global_sparsity(local_lev, dir_concen, contem_coef, rng);
-		dl_latent(latent_local, local_lev, contem_coef, rng);
+		// dl_latent(latent_local, local_lev, contem_coef, rng);
+		dl_latent(latent_local, group_lev[0] * local_lev, contem_coef, rng);
 		prior_chol_prec = 1 / ((group_lev[0] * local_lev.array()).square() * latent_local.array());
 	}
 

@@ -137,8 +137,8 @@ var_bayes <- function(y,
       name_exogen <- paste0("x", seq_len(ncol(exogen)))
     }
     dim_exogen <- ncol(exogen)
-    dim_exogen_design <- dim_exogen * (s + 1)
-    num_exogen <- dim_exogen * dim_exogen_design
+    # dim_exogen_design <- dim_exogen * (s + 1)
+    # num_exogen <- dim_data * dim_exogen_design
     # Might be better use group also in exogen!
     exogen_prior <- get_spec(
       bayes_spec = exogen_spec,
@@ -157,6 +157,9 @@ var_bayes <- function(y,
       concatenate_colnames(name_exogen, 0:s, FALSE)
     )
     X0 <- build_exogen_design(y, exogen, p, s, include_mean)
+    exogen_id <- length(name_lag) + 1:((s + 1) * dim_exogen)
+    dim_exogen_design <- length(exogen_id)
+    num_exogen <- dim_data * dim_exogen_design
   }
   colnames(X0) <- name_lag
   num_design <- nrow(Y0)

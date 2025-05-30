@@ -57,15 +57,7 @@
 #' @export
 predict.varlse <- function(object, n_ahead, level = .05, newxreg, ...) {
   if (!is.null(object$call$exogen)) {
-    if (missing(newxreg) || is.null(newxreg)) {
-      stop("'newxreg' should be supplied when using VARX model.")
-    }
-    if (!is.matrix(newxreg)) {
-      newxreg <- as.matrix(newxreg)
-    }
-    if (nrow(newxreg) != n_ahead) {
-      stop("Wrong row number of 'newxreg'")
-    }
+    newxreg <- validate_newxreg(newxreg = newxreg, n_ahead = n_ahead)
     pred_res <- forecast_varx(
       response = object$y0,
       coef_mat = object$coefficients[-object$exogen_id, ],
@@ -428,6 +420,8 @@ predict.bvarflat <- function(object, n_ahead, n_iter = 100L, level = .05, num_th
 #' @param object Model object
 #' @param n_ahead step to forecast
 #' @param level Specify alpha of confidence interval level 100(1 - alpha) percentage. By default, .05.
+#' @param newxreg New values for exogenous variables.
+#' Should have the same row numbers with `n_ahead`.
 #' @param stable `r lifecycle::badge("experimental")` Filter only stable coefficient draws in MCMC records.
 #' @param num_thread Number of threads
 #' @param sparse `r lifecycle::badge("experimental")` Apply restriction. By default, `FALSE`.
@@ -440,7 +434,7 @@ predict.bvarflat <- function(object, n_ahead, n_iter = 100L, level = .05, num_th
 #' @importFrom stats median
 #' @order 1
 #' @export
-predict.bvarldlt <- function(object, n_ahead, level = .05, stable = FALSE, num_thread = 1, sparse = FALSE, med = FALSE, warn = FALSE, ...) {
+predict.bvarldlt <- function(object, n_ahead, level = .05, newxreg, stable = FALSE, num_thread = 1, sparse = FALSE, med = FALSE, warn = FALSE, ...) {
   dim_data <- object$m
   num_chains <- object$chain
   alpha_record <- as_draws_matrix(subset_draws(object$param, variable = "alpha"))
@@ -488,19 +482,38 @@ predict.bvarldlt <- function(object, n_ahead, level = .05, stable = FALSE, num_t
   #   "DL" = 6,
   #   "GDP" = 7
   # )
-  pred_res <- forecast_bvarldlt(
-    num_chains,
-    object$p,
-    n_ahead,
-    object$y,
-    sparse,
-    ci_lev,
-    fit_ls,
-    sample.int(.Machine$integer.max, size = num_chains),
-    object$type == "const",
-    stable,
-    num_thread
-  )
+  if (!is.null(object$call$exogen)) {
+    newxreg <- validate_newxreg(newxreg = newxreg, n_ahead = n_ahead)
+    pred_res <- forecast_bvarxldlt(
+      num_chains = num_chains,
+      var_lag = object$p,
+      step = n_ahead,
+      response_mat = object$y,
+      sparse = sparse,
+      level = ci_lev,
+      fit_record = fit_ls,
+      seed_chain = sample.int(.Machine$integer.max, size = num_chains),
+      include_mean = object$type == "const",
+      exogen = rbind(tail(object$exogen_data, object$s), newxreg),
+      exogen_lag = object$s,
+      stable = stable,
+      nthreads = num_thread
+    )
+  } else {
+    pred_res <- forecast_bvarldlt(
+      num_chains = num_chains,
+      var_lag = object$p,
+      step = n_ahead,
+      response_mat = object$y,
+      sparse = sparse,
+      level = ci_lev,
+      fit_record = fit_ls,
+      seed_chain = sample.int(.Machine$integer.max, size = num_chains),
+      include_mean = object$type == "const",
+      stable = stable,
+      nthreads = num_thread
+    )
+  }
   var_names <- colnames(object$y0)
   # Predictive distribution------------------------------------
   num_draw <- nrow(alpha_record) # concatenate multiple chains
@@ -539,6 +552,8 @@ predict.bvarldlt <- function(object, n_ahead, level = .05, stable = FALSE, num_t
 #' @param object Model object
 #' @param n_ahead step to forecast
 #' @param level Specify alpha of confidence interval level 100(1 - alpha) percentage. By default, .05.
+#' @param newxreg New values for exogenous variables.
+#' Should have the same row numbers with `n_ahead`.
 #' @param stable `r lifecycle::badge("experimental")` Filter only stable coefficient draws in MCMC records.
 #' @param num_thread Number of threads
 #' @param sparse `r lifecycle::badge("experimental")` Apply restriction. By default, `FALSE`.
@@ -549,7 +564,7 @@ predict.bvarldlt <- function(object, n_ahead, level = .05, stable = FALSE, num_t
 #' @importFrom posterior subset_draws as_draws_matrix
 #' @order 1
 #' @export
-predict.bvharldlt <- function(object, n_ahead, level = .05, stable = FALSE, num_thread = 1, sparse = FALSE, med = FALSE, warn = FALSE, ...) {
+predict.bvharldlt <- function(object, n_ahead, level = .05, newxreg, stable = FALSE, num_thread = 1, sparse = FALSE, med = FALSE, warn = FALSE, ...) {
   dim_data <- object$m
   num_chains <- object$chain
   phi_record <- as_draws_matrix(subset_draws(object$param, variable = "phi"))
@@ -597,20 +612,40 @@ predict.bvharldlt <- function(object, n_ahead, level = .05, stable = FALSE, num_
   #   "DL" = 6,
   #   "GDP" = 7
   # )
-  pred_res <- forecast_bvharldlt(
-    num_chains,
-    object$month,
-    n_ahead,
-    object$y,
-    object$HARtrans,
-    sparse,
-    ci_lev,
-    fit_ls,
-    sample.int(.Machine$integer.max, size = num_chains),
-    object$type == "const",
-    stable,
-    num_thread
-  )
+  if (!is.null(object$call$exogen)) {
+    newxreg <- validate_newxreg(newxreg = newxreg, n_ahead = n_ahead)
+    pred_res <- forecast_bvharxldlt(
+      num_chains = num_chains,
+      month = object$month,
+      step = n_ahead,
+      response_mat = object$y,
+      HARtrans = object$HARtrans,
+      sparse = sparse,
+      level = ci_lev,
+      fit_record = fit_ls,
+      seed_chain = sample.int(.Machine$integer.max, size = num_chains),
+      include_mean = object$type == "const",
+      exogen = rbind(tail(object$exogen_data, object$s), newxreg),
+      exogen_lag = object$s,
+      stable = stable,
+      nthreads = num_thread
+    )
+  } else {
+    pred_res <- forecast_bvharldlt(
+      num_chains = num_chains,
+      month = object$month,
+      step = n_ahead,
+      response_mat = object$y,
+      HARtrans = object$HARtrans,
+      sparse = sparse,
+      level = ci_lev,
+      fit_record = fit_ls,
+      seed_chain = sample.int(.Machine$integer.max, size = num_chains),
+      include_mean = object$type == "const",
+      stable = stable,
+      nthreads = num_thread
+    )
+  }
   var_names <- colnames(object$y0)
   # Predictive distribution------------------------------------
   num_draw <- nrow(phi_record) # concatenate multiple chains
@@ -649,6 +684,8 @@ predict.bvharldlt <- function(object, n_ahead, level = .05, stable = FALSE, num_
 #' @param object Model object
 #' @param n_ahead step to forecast
 #' @param level Specify alpha of confidence interval level 100(1 - alpha) percentage. By default, .05.
+#' @param newxreg New values for exogenous variables.
+#' Should have the same row numbers with `n_ahead`.
 #' @param stable `r lifecycle::badge("experimental")` Filter only stable coefficient draws in MCMC records.
 #' @param num_thread Number of threads
 #' @param use_sv Use SV term
@@ -664,7 +701,7 @@ predict.bvharldlt <- function(object, n_ahead, level = .05, stable = FALSE, num_
 #' @importFrom posterior subset_draws as_draws_matrix
 #' @order 1
 #' @export
-predict.bvarsv <- function(object, n_ahead, level = .05, stable = FALSE, num_thread = 1, use_sv = TRUE, sparse = FALSE, med = FALSE, warn = FALSE, ...) {
+predict.bvarsv <- function(object, n_ahead, level = .05, newxreg, stable = FALSE, num_thread = 1, use_sv = TRUE, sparse = FALSE, med = FALSE, warn = FALSE, ...) {
   dim_data <- object$m
   num_chains <- object$chain
   alpha_record <- as_draws_matrix(subset_draws(object$param, variable = "alpha"))
@@ -712,20 +749,40 @@ predict.bvarsv <- function(object, n_ahead, level = .05, stable = FALSE, num_thr
   #   "DL" = 6,
   #   "GDP" = 7
   # )
-  pred_res <- forecast_bvarsv(
-    num_chains,
-    object$p,
-    n_ahead,
-    object$y,
-    use_sv,
-    sparse,
-    ci_lev,
-    fit_ls,
-    sample.int(.Machine$integer.max, size = num_chains),
-    object$type == "const",
-    stable,
-    num_thread
-  )
+  if (!is.null(object$call$exogen)) {
+    newxreg <- validate_newxreg(newxreg = newxreg, n_ahead = n_ahead)
+    pred_res <- forecast_bvarxsv(
+      num_chains = num_chains,
+      var_lag = object$p,
+      step = n_ahead,
+      response_mat = object$y,
+      sv = use_sv,
+      sparse = sparse,
+      level = ci_lev,
+      fit_record = fit_ls,
+      seed_chain = sample.int(.Machine$integer.max, size = num_chains),
+      include_mean = object$type == "const",
+      exogen = rbind(tail(object$exogen_data, object$s), newxreg),
+      exogen_lag = object$s,
+      stable = stable,
+      nthreads = num_thread
+    )
+  } else {
+    pred_res <- forecast_bvarsv(
+      num_chains = num_chains,
+      var_lag = object$p,
+      step = n_ahead,
+      response_mat = object$y,
+      sv = use_sv,
+      sparse = sparse,
+      level = ci_lev,
+      fit_record = fit_ls,
+      seed_chain = sample.int(.Machine$integer.max, size = num_chains),
+      include_mean = object$type == "const",
+      stable = stable,
+      nthreads = num_thread
+    )
+  }
   var_names <- colnames(object$y0)
   # Predictive distribution------------------------------------
   num_draw <- nrow(alpha_record) # concatenate multiple chains
@@ -764,6 +821,8 @@ predict.bvarsv <- function(object, n_ahead, level = .05, stable = FALSE, num_thr
 #' @param object Model object
 #' @param n_ahead step to forecast
 #' @param level Specify alpha of confidence interval level 100(1 - alpha) percentage. By default, .05.
+#' @param newxreg New values for exogenous variables.
+#' Should have the same row numbers with `n_ahead`.
 #' @param stable `r lifecycle::badge("experimental")` Filter only stable coefficient draws in MCMC records.
 #' @param num_thread Number of threads
 #' @param use_sv Use SV term
@@ -775,7 +834,7 @@ predict.bvarsv <- function(object, n_ahead, level = .05, stable = FALSE, num_thr
 #' @importFrom posterior subset_draws as_draws_matrix
 #' @order 1
 #' @export
-predict.bvharsv <- function(object, n_ahead, level = .05, stable = FALSE, num_thread = 1, use_sv = TRUE, sparse = FALSE, med = FALSE, warn = FALSE, ...) {
+predict.bvharsv <- function(object, n_ahead, level = .05, newxreg, stable = FALSE, num_thread = 1, use_sv = TRUE, sparse = FALSE, med = FALSE, warn = FALSE, ...) {
   dim_data <- object$m
   num_chains <- object$chain
   phi_record <- as_draws_matrix(subset_draws(object$param, variable = "phi"))
@@ -824,21 +883,41 @@ predict.bvharsv <- function(object, n_ahead, level = .05, stable = FALSE, num_th
   #   "DL" = 6,
   #   "GDP" = 7
   # )
-  pred_res <- forecast_bvharsv(
-    num_chains,
-    object$month,
-    n_ahead,
-    object$y,
-    object$HARtrans,
-    use_sv,
-    sparse,
-    ci_lev,
-    fit_ls,
-    sample.int(.Machine$integer.max, size = num_chains),
-    object$type == "const",
-    stable,
-    num_thread
-  )
+  if (!is.null(object$call$exogen)) {
+    newxreg <- validate_newxreg(newxreg = newxreg, n_ahead = n_ahead)
+    pred_res <- forecast_bvharxsv(
+      num_chains = num_chains,
+      month = object$month,
+      step = n_ahead,
+      response_mat = object$y,
+      HARtrans = object$HARtrans,
+      sv = use_sv,
+      sparse = sparse,
+      level = ci_lev,
+      fit_record = fit_ls,
+      seed_chain = sample.int(.Machine$integer.max, size = num_chains),
+      include_mean = object$type == "const",
+      exogen = rbind(tail(object$exogen_data, object$s), newxreg),
+      exogen_lag = object$s,
+      stable = stable,
+      nthreads = num_thread
+    )
+  } else {
+    pred_res <- forecast_bvharsv(
+      num_chains = num_chains,
+      month = object$month,
+      step = n_ahead,
+      response_mat = object$y,
+      sv = use_sv,
+      sparse = sparse,
+      level = ci_lev,
+      fit_record = fit_ls,
+      seed_chain = sample.int(.Machine$integer.max, size = num_chains),
+      include_mean = object$type == "const",
+      stable = stable,
+      nthreads = num_thread
+    )
+  }
   var_names <- colnames(object$y0)
   # Predictive distribution------------------------------------
   num_draw <- nrow(phi_record) # concatenate multiple chains

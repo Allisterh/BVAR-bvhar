@@ -28,7 +28,8 @@ public:
 	CtaExogenForecaster() {}
 	CtaExogenForecaster(int lag, const Eigen::MatrixXd& exogen, int dim)
 	: ExogenForecaster<Eigen::MatrixXd, Eigen::VectorXd>(lag, exogen),
-		dim(dim), dim_exogen(exogen.cols()), nrow_exogen(dim_exogen * (lag + 1)), num_exogen(dim * nrow_exogen) {
+		dim(dim), dim_exogen(exogen.cols()), nrow_exogen(dim_exogen * (lag + 1)), num_exogen(dim * nrow_exogen),
+		coef_mat(nrow_exogen, dim) {
 		last_pvec = vectorize_eigen(exogen.topRows(lag + 1).colwise().reverse().transpose().eval()); // x_(T + h), ..., x_(T + h - s)
 	}
 	virtual ~CtaExogenForecaster() = default;
@@ -71,15 +72,21 @@ public:
 		dim(response.cols()),
 		dim_design(include_mean ? lag * dim + 1 : lag * dim),
 		num_coef(records.coef_record.cols()),
-		num_alpha(include_mean ? num_coef - dim : num_coef), nrow_coef(num_alpha / dim),
+		// num_coef(dim * dim_design),
+		// num_alpha(include_mean ? num_coef - dim : num_coef), nrow_coef(num_alpha / dim),
+		num_alpha(include_mean ? num_coef - dim : num_coef),
 		sv_update(Eigen::VectorXd::Zero(dim)),
-		coef_mat(Eigen::MatrixXd::Zero(num_coef / dim, dim)),
+		// coef_mat(Eigen::MatrixXd::Zero(num_coef / dim, dim)),
 		contem_mat(Eigen::MatrixXd::Identity(dim, dim)),
 		standard_normal(Eigen::VectorXd::Zero(dim)) {
 		initLagged();
 		if (exogen_forecaster) {
 			exogen_updater = std::move(*exogen_forecaster);
+			num_coef -= exogen_updater->getSize();
+			num_alpha -= exogen_updater->getSize();
 		}
+		nrow_coef = num_alpha / dim;
+		coef_mat = Eigen::MatrixXd::Zero(num_coef / dim, dim);
 	}
 	virtual ~CtaForecaster() = default;
 
@@ -129,7 +136,7 @@ protected:
 		point_forecast = Eigen::VectorXd::Zero(dim);
 		pred_save = Eigen::MatrixXd::Zero(step, num_sim * dim);
 		tmp_vec = Eigen::VectorXd::Zero((lag - 1) * dim);
-		last_pvec[lag * dim] = 1.0; // valid when include_mean = true
+		last_pvec[dim_design - 1] = 1.0; // valid when include_mean = true
 		last_pvec.head(lag * dim) = vectorize_eigen(response.colwise().reverse().topRows(lag).transpose().eval()); // [y_T^T, y_(T - 1)^T, ... y_(T - lag + 1)^T]
 	}
 
@@ -191,7 +198,6 @@ protected:
 	void updateParams(const int i) override {
 		coef_mat.topRows(nrow_coef) = unvectorize(reg_record->coef_record.row(i).head(num_alpha).transpose(), dim);
 		if (include_mean) {
-			// coef_mat.bottomRows(1) = reg_record->coef_record.row(i).tail(dim);
 			coef_mat.bottomRows<1>() = reg_record->coef_record.row(i).segment(num_alpha, dim);
 			// coef_mat.middleRows<1>(nrow_coef) = reg_record->coef_record.row(i).segment(num_alpha, dim);
 		}
@@ -233,7 +239,7 @@ protected:
 	void updateParams(const int i) override {
 		coef_mat.topRows(nrow_coef) = unvectorize(reg_record->coef_record.row(i).head(num_alpha).transpose(), dim);
 		if (include_mean) {
-			coef_mat.bottomRows(1) = reg_record->coef_record.row(i).tail(dim);
+			coef_mat.bottomRows<1>() = reg_record->coef_record.row(i).segment(num_alpha, dim);
 		}
 		reg_record->updateDiag(i, sv_update, sv_sig); // D^1/2
 		contem_mat = build_inv_lower(dim, reg_record->contem_coef_record.row(i)); // L
@@ -461,13 +467,16 @@ inline std::vector<std::unique_ptr<BaseForecaster>> initialize_ctaforecaster(
 		} else {
 			initialize_record(reg_record, i, fit_record, include_mean, coef_name, a_name, c_name);
 		}
-		// Optional<std::unique_ptr<CtaExogenForecaster>> exogen_updater = NULLOPT;
-		std::unique_ptr<CtaExogenForecaster> exogen_updater;
+		Optional<std::unique_ptr<CtaExogenForecaster>> exogen_updater = NULLOPT;
 		if (exogen) {
 			exogen_updater = std::make_unique<CtaExogenForecaster>(*exogen_lag, *exogen, response_mat.cols());
-		} else {
-			exogen_updater = nullptr;
 		}
+		// std::unique_ptr<CtaExogenForecaster> exogen_updater;
+		// if (exogen) {
+		// 	exogen_updater = std::make_unique<CtaExogenForecaster>(*exogen_lag, *exogen, response_mat.cols());
+		// } else {
+		// 	exogen_updater = nullptr;
+		// }
 		if (har_trans && !activity) {
 			forecaster_ptr[i] = std::make_unique<CtaVharForecaster<BaseForecaster>>(
 				*reg_record, step, response_mat,

@@ -148,6 +148,22 @@ Rcpp::List forecast_bvarldlt(int num_chains, int var_lag, int step, Eigen::Matri
 	return Rcpp::wrap(forecaster->returnForecast());
 }
 
+//' @noRd
+// [[Rcpp::export]]
+Rcpp::List forecast_bvarxldlt(int num_chains, int var_lag, int step, Eigen::MatrixXd response_mat,
+													 	  bool sparse, double level, Rcpp::List fit_record,
+													 	  Eigen::VectorXi seed_chain, bool include_mean,
+															Eigen::MatrixXd exogen, int exogen_lag,
+															bool stable, int nthreads) {
+	auto forecaster = std::make_unique<bvhar::CtaForecastRun<bvhar::RegForecaster>>(
+		num_chains, var_lag, step, response_mat,
+		sparse, level, fit_record,
+		seed_chain, include_mean, stable, nthreads,
+		true, exogen, exogen_lag
+	);
+	return Rcpp::wrap(forecaster->returnForecast());
+}
+
 //' Forecasting Predictive Density of BVHAR
 //' 
 //' @param num_chains Number of MCMC chains
@@ -174,6 +190,22 @@ Rcpp::List forecast_bvharldlt(int num_chains, int month, int step, Eigen::Matrix
 		num_chains, month, step, response_mat, HARtrans,
 		sparse, level, fit_record,
 		seed_chain, include_mean, stable, nthreads
+	);
+	return Rcpp::wrap(forecaster->returnForecast());
+}
+
+//' @noRd
+// [[Rcpp::export]]
+Rcpp::List forecast_bvharxldlt(int num_chains, int month, int step, Eigen::MatrixXd response_mat, Eigen::MatrixXd HARtrans,
+													 	   bool sparse, double level, Rcpp::List fit_record,
+													 	   Eigen::VectorXi seed_chain, bool include_mean,
+															 Eigen::MatrixXd exogen, int exogen_lag,
+															 bool stable, int nthreads) {
+	auto forecaster = std::make_unique<bvhar::CtaForecastRun<bvhar::RegForecaster>>(
+		num_chains, month, step, response_mat, HARtrans,
+		sparse, level, fit_record,
+		seed_chain, include_mean, stable, nthreads,
+		true, exogen, exogen_lag
 	);
 	return Rcpp::wrap(forecaster->returnForecast());
 }
@@ -300,6 +332,22 @@ Rcpp::List forecast_bvarsv(int num_chains, int var_lag, int step, Eigen::MatrixX
 	return Rcpp::wrap(forecaster->returnForecast());
 }
 
+//' @noRd
+// [[Rcpp::export]]
+Rcpp::List forecast_bvarxsv(int num_chains, int var_lag, int step, Eigen::MatrixXd response_mat,
+													 	bool sv, bool sparse, double level, Rcpp::List fit_record,
+													 	Eigen::VectorXi seed_chain, bool include_mean,
+														Eigen::MatrixXd exogen, int exogen_lag,
+														bool stable, int nthreads) {
+	auto forecaster = std::make_unique<bvhar::CtaForecastRun<bvhar::SvForecaster>>(
+		num_chains, var_lag, step, response_mat,
+		sparse, level, fit_record,
+		seed_chain, include_mean, stable, nthreads,
+		sv, exogen, exogen_lag
+	);
+	return Rcpp::wrap(forecaster->returnForecast());
+}
+
 //' Forecasting Predictive Density of VHAR-SV
 //' 
 //' @param num_chains Number of MCMC chains
@@ -327,6 +375,22 @@ Rcpp::List forecast_bvharsv(int num_chains, int month, int step, Eigen::MatrixXd
 		sparse, level, fit_record,
 		seed_chain, include_mean, stable, nthreads,
 		sv
+	);
+	return Rcpp::wrap(forecaster->returnForecast());
+}
+
+//' @noRd
+// [[Rcpp::export]]
+Rcpp::List forecast_bvharxsv(int num_chains, int month, int step, Eigen::MatrixXd response_mat, Eigen::MatrixXd HARtrans,
+													 	 bool sv, bool sparse, double level, Rcpp::List fit_record,
+													 	 Eigen::VectorXi seed_chain, bool include_mean,
+														 Eigen::MatrixXd exogen, int exogen_lag,
+														 bool stable, int nthreads) {
+	auto forecaster = std::make_unique<bvhar::CtaForecastRun<bvhar::SvForecaster>>(
+		num_chains, month, step, response_mat, HARtrans,
+		sparse, level, fit_record,
+		seed_chain, include_mean, stable, nthreads,
+		sv, exogen, exogen_lag
 	);
 	return Rcpp::wrap(forecaster->returnForecast());
 }

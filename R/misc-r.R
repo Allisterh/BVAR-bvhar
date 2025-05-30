@@ -493,6 +493,20 @@ get_contemspec <- function(object) {
   param_prior
 }
 
+#' @noRd 
+validate_newxreg <- function(newxreg, n_ahead) {
+  if (missing(newxreg) || is.null(newxreg)) {
+    stop("'newxreg' should be supplied when using VARX model.")
+  }
+  if (!is.matrix(newxreg)) {
+    newxreg <- as.matrix(newxreg)
+  }
+  if (nrow(newxreg) != n_ahead) {
+    stop("Wrong row number of 'newxreg'")
+  }
+  newxreg
+}
+
 #' Compute Summaries from Forecast Draws
 #' 
 #' @param draws Matrix in forms of rbind(step) x cbind(draws)

@@ -241,6 +241,9 @@ protected:
 		if (include_mean) {
 			coef_mat.bottomRows<1>() = reg_record->coef_record.row(i).segment(num_alpha, dim);
 		}
+		if (exogen_updater) {
+			exogen_updater->updateCoefmat(reg_record->coef_record.row(i).transpose());
+		}
 		reg_record->updateDiag(i, sv_update, sv_sig); // D^1/2
 		contem_mat = build_inv_lower(dim, reg_record->contem_coef_record.row(i)); // L
 	}

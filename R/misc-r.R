@@ -496,7 +496,7 @@ get_contemspec <- function(object) {
 #' @noRd
 get_exogenspec <- function(object) {
   if (is.bvharspec(object$spec_exogen)) {
-    param_prior <- append(object$spec_exogen, list(p = 0))
+    param_prior <- append(object$spec_exogen, list(num = object$m * object$exogen_m * (object$s + 1)))
     if (object$spec_exogen$hierarchical) {
       param_prior$shape <- object$spec_exogen$lambda$param[1]
       param_prior$rate <- object$spec_exogen$lambda$param[2]

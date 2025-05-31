@@ -780,6 +780,7 @@ inline void initialize_record(
 			CAST<Eigen::MatrixXd>(coef_list[chain_id]),
 			CAST<Eigen::MatrixXd>(c_list[chain_id]),
 			CAST<Eigen::MatrixXd>(b_list[chain_id]),
+			CAST<Eigen::MatrixXd>(h_list[chain_id]),
 			CAST<Eigen::MatrixXd>(a_list[chain_id]),
 			CAST<Eigen::MatrixXd>(sigh_list[chain_id])
 		);

@@ -72,8 +72,7 @@ protected:
 	void initLagged() override {
 		pred_save = Eigen::MatrixXd::Zero(step, dim);
 		last_pvec = Eigen::VectorXd::Zero(dim_design);
-		// last_pvec[dim_design - 1] = 1.0;
-		last_pvec[lag * dim] = 1.0;
+		last_pvec[dim_design - 1] = 1.0;
 		last_pvec.head(lag * dim) = vectorize_eigen(response.colwise().reverse().topRows(lag).transpose().eval()); // [y_T^T, y_(T - 1)^T, ... y_(T - lag + 1)^T]
 		tmp_vec = last_pvec.segment(dim, (lag - 1) * dim); // y_(T - 1), ... y_(T - lag + 1)
 		point_forecast = last_pvec.head(dim); // y_T

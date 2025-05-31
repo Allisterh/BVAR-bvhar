@@ -200,14 +200,29 @@ get_gammaparam <- function(mode, sd) {
   )
 }
 
+#' @noRd
+validate_prior <- function(bayes_spec) {
+  spec_name <- deparse(substitute(bayes_spec))
+  if (!(
+    is.bvharspec(bayes_spec) ||
+    is.ssvsinput(bayes_spec) ||
+    is.horseshoespec(bayes_spec) ||
+    is.ngspec(bayes_spec) ||
+    is.dlspec(bayes_spec) ||
+    is.gdpspec(bayes_spec)
+  )) {
+    stop(sprintf("Provide 'bvharspec', 'ssvsinput', 'horseshoespec', 'ngspec', 'dlspec', or 'gdpspec' for '%s'.", spec_name))
+  }
+}
+
 #' Validate prior specification
 #' @noRd
 validate_spec <- function(bayes_spec,
-                          y, dim_data, num_grp,
-                          grp_id, own_id, cross_id,
-                          process = "BVAR",
-                          arg_names = "coef_spec") {
+                          y, dim_data,
+                          num_grp = NULL, grp_id = NULL, own_id = NULL, cross_id = NULL,
+                          process = "BVAR") {
   prior_nm <- bayes_spec$prior
+  arg_names <- deparse(substitute(bayes_spec))
   if (prior_nm == "Minnesota" || prior_nm == "MN_VAR" || prior_nm == "MN_VHAR" || prior_nm == "MN_Hierarchical") {
     if (bayes_spec$process != process) {
       stop(
@@ -249,17 +264,19 @@ validate_spec <- function(bayes_spec,
       }
     }
   } else if (prior_nm == "SSVS") {
-    if (length(bayes_spec$s1) == 2) {
-      s1 <- numeric(num_grp)
-      s1[grp_id %in% own_id] <- bayes_spec$s1[1]
-      s1[grp_id %in% cross_id] <- bayes_spec$s1[2]
-      bayes_spec$s1 <- s1
-    }
-    if (length(bayes_spec$s2) == 2) {
-      s2 <- numeric(num_grp)
-      s2[grp_id %in% own_id] <- bayes_spec$s2[1]
-      s2[grp_id %in% cross_id] <- bayes_spec$s2[2]
-      bayes_spec$s2 <- s2
+    if (!is.null(num_grp)) {
+      if (length(bayes_spec$s1) == 2) {
+        s1 <- numeric(num_grp)
+        s1[grp_id %in% own_id] <- bayes_spec$s1[1]
+        s1[grp_id %in% cross_id] <- bayes_spec$s1[2]
+        bayes_spec$s1 <- s1
+      }
+      if (length(bayes_spec$s2) == 2) {
+        s2 <- numeric(num_grp)
+        s2[grp_id %in% own_id] <- bayes_spec$s2[1]
+        s2[grp_id %in% cross_id] <- bayes_spec$s2[2]
+        bayes_spec$s2 <- s2
+      }
     }
   }
   bayes_spec
@@ -474,6 +491,35 @@ get_contemspec <- function(object) {
     param_prior <- object$spec_contem
   }
   param_prior
+}
+
+#' @noRd
+get_exogenspec <- function(object) {
+  if (is.bvharspec(object$spec_exogen)) {
+    param_prior <- append(object$spec_exogen, list(num = object$m * object$exogen_m * (object$s + 1)))
+    if (object$spec_exogen$hierarchical) {
+      param_prior$shape <- object$spec_exogen$lambda$param[1]
+      param_prior$rate <- object$spec_exogen$lambda$param[2]
+      param_prior$grid_size <- object$spec_exogen$lambda$grid_size
+    }
+  } else {
+    param_prior <- object$spec_exogen
+  }
+  param_prior
+}
+
+#' @noRd 
+validate_newxreg <- function(newxreg, n_ahead) {
+  if (missing(newxreg) || is.null(newxreg)) {
+    stop("'newxreg' should be supplied when using VARX model.")
+  }
+  if (!is.matrix(newxreg)) {
+    newxreg <- as.matrix(newxreg)
+  }
+  if (nrow(newxreg) != n_ahead) {
+    stop("Wrong row number of 'newxreg'")
+  }
+  newxreg
 }
 
 #' Compute Summaries from Forecast Draws

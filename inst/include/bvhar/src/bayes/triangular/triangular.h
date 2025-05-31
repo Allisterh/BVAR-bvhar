@@ -31,12 +31,14 @@ public:
 		const RegParams& params, const RegInits& inits,
 		std::unique_ptr<ShrinkageUpdater>& coef_prior,
 		std::unique_ptr<ShrinkageUpdater>& contem_prior,
-		unsigned int seed
+		unsigned int seed,
+		Optional<std::unique_ptr<ShrinkageUpdater>> exogen_prior = NULLOPT
 	)
 	: McmcAlgo(params, seed),
 		include_mean(params._mean), x(params._x), y(params._y),
 		dim(params._dim), dim_design(params._dim_design), num_design(params._num_design),
 		num_lowerchol(params._num_lowerchol), num_coef(params._num_coef), num_alpha(params._num_alpha), nrow_coef(params._nrow),
+		nrow_exogen(params._nrow_exogen), num_exogen(params._num_exogen), num_endog(num_coef - num_exogen),
 		coef_updater(std::move(coef_prior)), contem_updater(std::move(contem_prior)),
 		own_id(params._own_id), grp_id(params._grp_id), grp_vec(params._grp_vec), num_grp(grp_id.size()),
 		// reg_record(std::make_unique<RegRecords>(num_iter, dim, num_design, num_coef, num_lowerchol)),
@@ -57,12 +59,16 @@ public:
 		sqrt_sv(Eigen::MatrixXd::Zero(num_design, dim)),
 		prior_sig_shp(params._sig_shp), prior_sig_scl(params._sig_scl) {
 		if (include_mean) {
-			prior_alpha_mean.tail(dim) = params._mean_non;
-			prior_alpha_prec.tail(dim) = 1 / (params._sd_non * Eigen::VectorXd::Ones(dim)).array().square();
+			prior_alpha_mean.segment(num_alpha, dim) = params._mean_non;
+			prior_alpha_prec.segment(num_alpha, dim) = 1 / (params._sd_non * Eigen::VectorXd::Ones(dim)).array().square();
 		}
 		coef_vec.head(num_alpha) = coef_mat.topRows(nrow_coef).reshaped();
 		if (include_mean) {
-			coef_vec.tail(dim) = coef_mat.bottomRows(1).transpose();
+			coef_vec.segment(num_alpha, dim) = coef_mat.middleRows<1>(nrow_coef).transpose();
+		}
+		if (exogen_prior) {
+			exogen_updater = std::move(*exogen_prior);
+			coef_vec.tail(num_exogen) = coef_mat.bottomRows(nrow_exogen).reshaped();
 		}
 		// reg_record->assignRecords(0, coef_vec, contem_coef, diag_vec);
 		sparse_record.assignRecords(0, sparse_coef, sparse_contem);
@@ -171,8 +177,10 @@ protected:
   int num_coef;
 	int num_alpha;
 	int nrow_coef;
+	int nrow_exogen, num_exogen, num_endog;
 	std::unique_ptr<ShrinkageUpdater> coef_updater;
 	std::unique_ptr<ShrinkageUpdater> contem_updater;
+	std::unique_ptr<ShrinkageUpdater> exogen_updater;
 	std::set<int> own_id;
 	Eigen::VectorXi grp_id;
 	Eigen::VectorXi grp_vec;
@@ -221,11 +229,13 @@ protected:
 	 */
 	void updateCoefPrec() {
 		coef_updater->updateCoefPrec(
-			prior_alpha_prec, coef_vec,
-      num_alpha, num_grp,
-      grp_vec, grp_id,
+			prior_alpha_prec.head(num_alpha), coef_vec.head(num_alpha),
+      num_grp, grp_vec, grp_id,
       rng
 		);
+		if (exogen_updater) {
+			exogen_updater->updateImpactPrec(prior_alpha_prec.tail(num_exogen), coef_vec.tail(num_exogen), rng);
+		}
 	}
 
 	/**
@@ -248,11 +258,7 @@ protected:
 	 * 
 	 */
 	void updateImpactPrec() {
-		contem_updater->updateImpactPrec(
-			prior_chol_prec, contem_coef,
-      num_lowerchol,
-      rng
-		);
+		contem_updater->updateImpactPrec(prior_chol_prec, contem_coef, rng);
 	}
 
 	/**
@@ -279,29 +285,47 @@ protected:
 			Eigen::VectorXd prior_mean_j(dim_design);
 			Eigen::VectorXd prior_prec_j(dim_design);
 			Eigen::VectorXd penalty_j = Eigen::VectorXd::Zero(dim_design);
+			prior_mean_j.head(nrow_coef) = prior_alpha_mean.segment(j * nrow_coef, nrow_coef);
+			prior_prec_j.head(nrow_coef) = prior_alpha_prec.segment(j * nrow_coef, nrow_coef);
+			penalty_j.head(nrow_coef) = alpha_penalty.segment(j * nrow_coef, nrow_coef);
 			if (include_mean) {
-				prior_mean_j << prior_alpha_mean.segment(j * nrow_coef, nrow_coef), prior_alpha_mean.tail(dim)[j];
-				prior_prec_j << prior_alpha_prec.segment(j * nrow_coef, nrow_coef), prior_alpha_prec.tail(dim)[j];
+				// prior_mean_j << prior_alpha_mean.segment(j * nrow_coef, nrow_coef), prior_alpha_mean.segment(num_alpha, dim)[j];
+				// prior_prec_j << prior_alpha_prec.segment(j * nrow_coef, nrow_coef), prior_alpha_prec.segment(num_alpha, dim)[j];
 				// penalty_j << alpha_penalty.segment(j * nrow_coef, nrow_coef), alpha_penalty.tail(dim)[j];
-				penalty_j.head(nrow_coef) = alpha_penalty.segment(j * nrow_coef, nrow_coef);
+				// penalty_j.head(nrow_coef) = alpha_penalty.segment(j * nrow_coef, nrow_coef);
+				prior_mean_j[nrow_coef] = prior_alpha_mean.segment(num_alpha, dim)[j];
+				prior_prec_j[nrow_coef] = prior_alpha_prec.segment(num_alpha, dim)[j];
+				if (exogen_updater) {
+					prior_mean_j.tail(nrow_exogen) = prior_alpha_mean.segment(num_endog + j * nrow_exogen, nrow_exogen);
+					prior_prec_j.tail(nrow_exogen) = prior_alpha_prec.segment(num_endog + j * nrow_exogen, nrow_exogen);
+					// penalty_j.tail(nrow_exogen): current alpha_penalty only covers VAR
+				}
 				draw_coef(
 					coef_mat.col(j), design_coef,
 					(((y - x * coef_mat) * chol_lower_j.transpose()).array() / sqrt_sv_j.array()).reshaped(), // Hadamard product between: (Y - X0 A(-j))L_(j:k)^T and D_(1:n, j:k)
 					prior_mean_j, prior_prec_j, rng
 				);
 				coef_vec.head(num_alpha) = coef_mat.topRows(nrow_coef).reshaped();
-				coef_vec.tail(dim) = coef_mat.bottomRows(1).transpose();
+				coef_vec.segment(num_alpha, dim) = coef_mat.middleRows<1>(nrow_coef).transpose();
 			} else {
-				prior_mean_j = prior_alpha_mean.segment(dim_design * j, dim_design);
-				prior_prec_j = prior_alpha_prec.segment(dim_design * j, dim_design);
-				penalty_j = alpha_penalty.segment(dim_design * j, dim_design);
+				// prior_mean_j = prior_alpha_mean.segment(dim_design * j, dim_design);
+				// prior_prec_j = prior_alpha_prec.segment(dim_design * j, dim_design);
+				// penalty_j = alpha_penalty.segment(dim_design * j, dim_design);
+				if (exogen_updater) {
+					prior_mean_j.tail(nrow_exogen) = prior_alpha_mean.segment(num_endog + j * nrow_exogen, nrow_exogen);
+					prior_prec_j.tail(nrow_exogen) = prior_alpha_prec.segment(num_endog + j * nrow_exogen, nrow_exogen);
+				}
 				draw_coef(
 					coef_mat.col(j),
 					design_coef,
 					(((y - x * coef_mat) * chol_lower_j.transpose()).array() / sqrt_sv_j.array()).reshaped(),
 					prior_mean_j, prior_prec_j, rng
 				);
-				coef_vec = coef_mat.reshaped();
+				// coef_vec = coef_mat.reshaped();
+				coef_vec.head(num_alpha) = coef_mat.topRows(nrow_coef).reshaped();
+			}
+			if (exogen_updater) {
+				coef_vec.tail(num_exogen) = coef_mat.bottomRows(nrow_exogen).reshaped();
 			}
 			draw_mn_savs(sparse_coef.col(j), coef_mat.col(j), x, penalty_j);
 		}
@@ -345,9 +369,9 @@ protected:
 	 * @return LIST 
 	 */
 	LIST gatherRecords() {
-		LIST res = reg_record->returnListRecords(dim, num_alpha, include_mean);
+		LIST res = reg_record->returnListRecords(dim, num_alpha, num_exogen, include_mean);
 		reg_record->appendRecords(res);
-		sparse_record.appendRecords(res, dim, num_alpha, include_mean);
+		sparse_record.appendRecords(res, dim, num_alpha, num_exogen, include_mean);
 		return res;
 	}
 };
@@ -362,9 +386,10 @@ public:
 		const RegParams& params, const LdltInits& inits,
 		std::unique_ptr<ShrinkageUpdater>& coef_prior,
 		std::unique_ptr<ShrinkageUpdater>& contem_prior,
-		unsigned int seed
+		unsigned int seed,
+		Optional<std::unique_ptr<ShrinkageUpdater>> exogen_prior = NULLOPT
 	)
-	: McmcTriangular(params, inits, coef_prior, contem_prior, seed), diag_vec(inits._diag) {
+	: McmcTriangular(params, inits, coef_prior, contem_prior, seed, std::move(exogen_prior)), diag_vec(inits._diag) {
 		reg_record = std::make_unique<LdltRecords>(num_iter, dim, num_design, num_coef, num_lowerchol);
 		reg_record->assignRecords(0, coef_vec, contem_coef, diag_vec);
 	}
@@ -375,7 +400,7 @@ protected:
 	void updateSv() override { sqrt_sv = diag_vec.cwiseSqrt().transpose().replicate(num_design, 1); }
 	void updateCoefRecords() override {
 		reg_record->assignRecords(mcmc_step, coef_vec, contem_coef, diag_vec);
-		sparse_record.assignRecords(mcmc_step, num_alpha, dim, nrow_coef, sparse_coef, sparse_contem);
+		sparse_record.assignRecords(mcmc_step, num_alpha, dim, nrow_coef, num_exogen, nrow_exogen, sparse_coef, sparse_contem);
 	}
 
 private:
@@ -392,9 +417,10 @@ public:
 		const SvParams& params, const SvInits& inits,
 		std::unique_ptr<ShrinkageUpdater>& coef_prior,
 		std::unique_ptr<ShrinkageUpdater>& contem_prior,
-		unsigned int seed
+		unsigned int seed,
+		Optional<std::unique_ptr<ShrinkageUpdater>> exogen_prior = NULLOPT
 	)
-	: McmcTriangular(params, inits, coef_prior, contem_prior, seed),
+	: McmcTriangular(params, inits, coef_prior, contem_prior, seed, std::move(exogen_prior)),
 		ortho_latent(Eigen::MatrixXd::Zero(num_design, dim)),
 		lvol_draw(inits._lvol), lvol_init(inits._lvol_init), lvol_sig(inits._lvol_sig),
 		prior_init_mean(params._init_mean), prior_init_prec(params._init_prec) {
@@ -417,7 +443,7 @@ protected:
 	void updateSv() override { sqrt_sv = (lvol_draw / 2).array().exp(); }
 	void updateCoefRecords() override {
 		reg_record->assignRecords(mcmc_step, coef_vec, contem_coef, lvol_draw, lvol_sig, lvol_init);
-		sparse_record.assignRecords(mcmc_step, num_alpha, dim, nrow_coef, sparse_coef, sparse_contem);
+		sparse_record.assignRecords(mcmc_step, num_alpha, dim, nrow_coef, num_exogen, nrow_exogen, sparse_coef, sparse_contem);
 	}
 
 private:
@@ -453,6 +479,10 @@ private:
  * @param include_mean If `true`, include constant term
  * @param seed_chain Seed for each chain
  * @param num_design Number of samples
+ * @param exogen_prior Exogenous shrinkage prior configuration
+ * @param exogen_init MCMC initial values for Exogenous shrinkage prior
+ * @param exogen_prior_type Exogenous shrinkage prior number to use
+ * @param exogen_cols The number of exogenous design matrix columns
  * @return std::vector<std::unique_ptr<BaseMcmc>> 
  */
 template <typename BaseMcmc = McmcReg, bool isGroup = true>
@@ -461,11 +491,19 @@ inline std::vector<std::unique_ptr<BaseMcmc>> initialize_mcmc(
 	LIST& param_reg, LIST& param_prior, LIST& param_intercept, LIST_OF_LIST& param_init, int prior_type,
 	LIST& contem_prior, LIST_OF_LIST& contem_init, int contem_prior_type,
   const Eigen::VectorXi& grp_id, const Eigen::VectorXi& own_id, const Eigen::VectorXi& cross_id, const Eigen::MatrixXi& grp_mat,
-  bool include_mean, Eigen::Ref<const Eigen::VectorXi> seed_chain, Optional<int> num_design = NULLOPT
+  bool include_mean, Eigen::Ref<const Eigen::VectorXi> seed_chain, Optional<int> num_design = NULLOPT,
+	Optional<LIST> exogen_prior = NULLOPT, Optional<LIST_OF_LIST> exogen_init = NULLOPT, Optional<int> exogen_prior_type = NULLOPT, Optional<int> exogen_cols = NULLOPT
 ) {
 	using PARAMS = typename std::conditional<std::is_same<BaseMcmc, McmcReg>::value, RegParams, SvParams>::type;
 	using INITS = typename std::conditional<std::is_same<BaseMcmc, McmcReg>::value, LdltInits, SvInits>::type;
-	PARAMS base_params(
+	PARAMS base_params = exogen_prior ? PARAMS(
+		num_iter, x, y,
+		param_reg,
+		own_id, cross_id,
+		grp_id, grp_mat,
+		param_intercept, include_mean,
+		*exogen_cols
+	) : PARAMS(
 		num_iter, x, y,
 		param_reg,
 		own_id, cross_id,
@@ -476,17 +514,30 @@ inline std::vector<std::unique_ptr<BaseMcmc>> initialize_mcmc(
 	for (int i = 0; i < num_chains; ++i) {
 		LIST init_spec = param_init[i];
 		auto coef_updater = initialize_shrinkageupdater<isGroup>(num_iter, param_prior, init_spec, prior_type);
-		coef_updater->initCoefMean(base_params._alpha_mean, base_params._num_alpha);
-		coef_updater->initCoefPrec(base_params._alpha_prec, base_params._num_alpha, base_params._grp_vec, base_params._cross_id);
+		coef_updater->initCoefMean(base_params._alpha_mean.head(base_params._num_alpha));
+		coef_updater->initCoefPrec(base_params._alpha_prec.head(base_params._num_alpha), base_params._grp_vec, base_params._cross_id);
 		LIST contem_init_spec = contem_init[i];
-		auto contem_updater = initialize_shrinkageupdater<isGroup>(num_iter, contem_prior, contem_init_spec, contem_prior_type);
+		auto contem_updater = initialize_shrinkageupdater<false>(num_iter, contem_prior, contem_init_spec, contem_prior_type);
 		contem_updater->initImpactPrec(base_params._chol_prec);
 		INITS ldlt_inits = num_design ? INITS(init_spec, *num_design) : INITS(init_spec);
-		mcmc_ptr[i] = std::make_unique<BaseMcmc>(
-			base_params, ldlt_inits,
-			coef_updater, contem_updater,
-			static_cast<unsigned int>(seed_chain[i])
-		);
+		if (exogen_prior) {
+			LIST exogen_init_spec = (*exogen_init)[i];
+			auto exogen_updater = initialize_shrinkageupdater<false>(num_iter, *exogen_prior, exogen_init_spec, *exogen_prior_type);
+			exogen_updater->initCoefMean(base_params._alpha_mean.tail(base_params._num_exogen));
+			exogen_updater->initImpactPrec(base_params._alpha_prec.tail(base_params._num_exogen));
+			mcmc_ptr[i] = std::make_unique<BaseMcmc>(
+				base_params, ldlt_inits,
+				coef_updater, contem_updater,
+				static_cast<unsigned int>(seed_chain[i]),
+				std::move(exogen_updater)
+			);
+		} else {
+			mcmc_ptr[i] = std::make_unique<BaseMcmc>(
+				base_params, ldlt_inits,
+				coef_updater, contem_updater,
+				static_cast<unsigned int>(seed_chain[i])
+			);
+		}
 	}
 	return mcmc_ptr;
 }
@@ -507,7 +558,8 @@ public:
 		LIST_OF_LIST& param_init, int prior_type,
 		LIST& contem_prior, LIST_OF_LIST& contem_init, int contem_prior_type,
     const Eigen::VectorXi& grp_id, const Eigen::VectorXi& own_id, const Eigen::VectorXi& cross_id, const Eigen::MatrixXi& grp_mat,
-    bool include_mean, const Eigen::VectorXi& seed_chain, bool display_progress, int nthreads
+    bool include_mean, const Eigen::VectorXi& seed_chain, bool display_progress, int nthreads,
+		Optional<LIST> exogen_prior = NULLOPT, Optional<LIST_OF_LIST> exogen_init = NULLOPT, Optional<int> exogen_prior_type = NULLOPT, Optional<int> exogen_cols = NULLOPT
 	)
 	: McmcRun(num_chains, num_iter, num_burn, thin, display_progress, nthreads) {
 		auto temp_mcmc = initialize_mcmc<BaseMcmc, isGroup>(
@@ -515,7 +567,8 @@ public:
 			param_cov, param_prior, param_intercept, param_init, prior_type,
 			contem_prior, contem_init, contem_prior_type,
 			grp_id, own_id, cross_id, grp_mat,
-			include_mean, seed_chain
+			include_mean, seed_chain,
+			NULLOPT, exogen_prior, exogen_init, exogen_prior_type, exogen_cols
 		);
 		for (int i = 0; i < num_chains; ++i) {
 			mcmc_ptr[i] = std::move(temp_mcmc[i]);

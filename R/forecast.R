@@ -56,7 +56,7 @@
 #' @order 1
 #' @export
 predict.varlse <- function(object, n_ahead, level = .05, newxreg, ...) {
-  if (!is.null(object$call$exogen)) {
+  if (!is.null(eval.parent(object$call$exogen))) {
     newxreg <- validate_newxreg(newxreg = newxreg, n_ahead = n_ahead)
     pred_res <- forecast_varx(
       response = object$y0,
@@ -125,7 +125,7 @@ predict.varlse <- function(object, n_ahead, level = .05, newxreg, ...) {
 #' @order 1
 #' @export
 predict.vharlse <- function(object, n_ahead, level = .05, newxreg, ...) {
-  if (!is.null(object$call$exogen)) {
+  if (!is.null(eval.parent(object$call$exogen))) {
     if (missing(newxreg) || is.null(newxreg)) {
       stop("'newxreg' should be supplied when using VHARX model.")
     }
@@ -482,7 +482,7 @@ predict.bvarldlt <- function(object, n_ahead, level = .05, newxreg, stable = FAL
   #   "DL" = 6,
   #   "GDP" = 7
   # )
-  if (!is.null(object$call$exogen)) {
+  if (!is.null(eval.parent(object$call$exogen))) {
     newxreg <- validate_newxreg(newxreg = newxreg, n_ahead = n_ahead)
     pred_res <- forecast_bvarxldlt(
       num_chains = num_chains,
@@ -612,7 +612,7 @@ predict.bvharldlt <- function(object, n_ahead, level = .05, newxreg, stable = FA
   #   "DL" = 6,
   #   "GDP" = 7
   # )
-  if (!is.null(object$call$exogen)) {
+  if (!is.null(eval.parent(object$call$exogen))) {
     newxreg <- validate_newxreg(newxreg = newxreg, n_ahead = n_ahead)
     pred_res <- forecast_bvharxldlt(
       num_chains = num_chains,
@@ -749,7 +749,7 @@ predict.bvarsv <- function(object, n_ahead, level = .05, newxreg, stable = FALSE
   #   "DL" = 6,
   #   "GDP" = 7
   # )
-  if (!is.null(object$call$exogen)) {
+  if (!is.null(eval.parent(object$call$exogen))) {
     newxreg <- validate_newxreg(newxreg = newxreg, n_ahead = n_ahead)
     pred_res <- forecast_bvarxsv(
       num_chains = num_chains,
@@ -883,7 +883,7 @@ predict.bvharsv <- function(object, n_ahead, level = .05, newxreg, stable = FALS
   #   "DL" = 6,
   #   "GDP" = 7
   # )
-  if (!is.null(object$call$exogen)) {
+  if (!is.null(eval.parent(object$call$exogen))) {
     newxreg <- validate_newxreg(newxreg = newxreg, n_ahead = n_ahead)
     pred_res <- forecast_bvharxsv(
       num_chains = num_chains,

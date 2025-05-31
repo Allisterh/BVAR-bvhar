@@ -568,6 +568,7 @@ var_bayes <- function(y,
   # data------------------
   if (!is.null(exogen)) {
     res$spec_exogen <- exogen_spec
+    res$init_exogen <- exogen_init
     res$exogen_data <- exogen
     res$s <- s
     res$exogen_m <- dim_exogen

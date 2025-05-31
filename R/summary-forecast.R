@@ -221,6 +221,8 @@ forecast_roll.normaliw <- function(object, n_ahead, y_test, num_thread = 1, use_
 
 #' @rdname forecast_roll
 #' @param level Specify alpha of confidence interval level 100(1 - alpha) percentage. By default, .05.
+#' @param newxreg New values for exogenous variables.
+#' Should have the same row numbers as `y_test`.
 #' @param stable `r lifecycle::badge("experimental")` Filter only stable coefficient draws in MCMC records.
 #' @param sparse `r lifecycle::badge("experimental")` Apply restriction. By default, `FALSE`.
 #' @param med `r lifecycle::badge("experimental")` If `TRUE`, use median of forecast draws instead of mean (default).
@@ -232,6 +234,7 @@ forecast_roll.normaliw <- function(object, n_ahead, y_test, num_thread = 1, use_
 forecast_roll.ldltmod <- function(object, n_ahead, y_test,
                                   num_thread = 1,
                                   level = .05,
+                                  newxreg,
                                   stable = FALSE,
                                   sparse = FALSE,
                                   med = FALSE,
@@ -280,50 +283,48 @@ forecast_roll.ldltmod <- function(object, n_ahead, y_test,
   prior_type <- enumerate_prior(object$spec_coef$prior)
   contem_prior <- get_contemspec(object)
   contem_prior_type <- enumerate_prior(object$spec_contem$prior)
+  is_exogen <- !is.null(eval.parent(object$call$exogen))
+  if (is_exogen) {
+    newxreg <- validate_newxreg(newxreg = newxreg, n_ahead = nrow(y_test))
+    exogen_prior <- get_exogenspec(object)
+    exogen_prior_type <- enumerate_prior(object$spec_exogen$prior)
+  }
   res_mat <- switch(model_type,
     "bvarldlt" = {
       grp_mat <- object$group
       grp_id <- unique(c(grp_mat))
       own_id <- 2
       cross_id <- seq_len(object$p + 1)[-2]
-      # if (is.bvharspec(object$spec_coef)) {
-      #   param_prior <- append(object$spec_coef, list(p = object$p))
-      #   if (object$spec_coef$hierarchical) {
-      #     param_prior$shape <- object$spec_coef$lambda$param[1]
-      #     param_prior$rate <- object$spec_coef$lambda$param[2]
-      #     param_prior$grid_size <- object$spec_coef$lambda$grid_size
-      #     prior_type <- 4
-      #   } else {
-      #     prior_type <- 1
-      #   }
-      # } else if (is.ssvsinput(object$spec_coef)) {
-      #   param_prior <- object$spec_coef
-      #   prior_type <- 2
-      # } else if (is.horseshoespec(object$spec_coef)) {
-      #   param_prior <- list()
-      #   prior_type <- 3
-      # } else if (is.ngspec(object$spec_coef)) {
-      #   param_prior <- object$spec_coef
-      #   prior_type <- 5
-      # } else if (is.dlspec(object$spec_coef)) {
-      #   param_prior <- object$spec_coef
-      #   prior_type <- 6
-      # } else if (is.gdpspec(object$spec_coef)) {
-      #   param_prior <- object$spec_coef
-      #   prior_type <- 7
-      # }
-      roll_bvarldlt(
-        y, object$p, num_chains, object$iter, object$burn, object$thin,
-        sparse, ci_lev, fit_ls, mcmc,
-        object$sv[c("shape", "scale")], param_prior, object$intercept, object$init_coef, prior_type, object$ggl,
-        contem_prior, object$init_contem, contem_prior_type,
-        grp_id, own_id, cross_id, grp_mat,
-        include_mean, stable, n_ahead, y_test,
-        lpl,
-        sample.int(.Machine$integer.max, size = num_chains * num_horizon) |> matrix(ncol = num_chains),
-        sample.int(.Machine$integer.max, size = num_chains),
-        verbose, num_thread
-      )
+      if (is_exogen) {
+        roll_bvarxldlt(
+          y = y, lag = object$p, num_chains = num_chains, num_iter = object$iter, num_burn = object$burn, thinning = object$thin,
+          sparse = sparse, level = ci_lev, fit_record = fit_ls, run_mcmc = mcmc,
+          param_reg = object$sv[c("shape", "scale")],
+          param_prior = param_prior, param_intercept = object$intercept, param_init = object$init_coef, prior_type = prior_type, ggl = object$ggl,
+          contem_prior = contem_prior, contem_init = object$init_contem, contem_prior_type = contem_prior_type,
+          grp_id = grp_id, own_id = own_id, cross_id = cross_id, grp_mat = grp_mat,
+          include_mean = include_mean, stable = stable, step = n_ahead, y_test = y_test, get_lpl = lpl,
+          seed_chain = sample.int(.Machine$integer.max, size = num_chains * num_horizon) |> matrix(ncol = num_chains),
+          seed_forecast = sample.int(.Machine$integer.max, size = num_chains),
+          display_progress = verbose, nthreads = num_thread,
+          # exogen = rbind(tail(object$exogen_data, object$s), newxreg), exogen_lag = object$s,
+          exogen = rbind(object$exogen_data, newxreg), exogen_lag = object$s,
+          exogen_prior = exogen_prior, exogen_init = object$init_exogen, exogen_prior_type = exogen_prior_type
+        )
+      } else {
+        roll_bvarldlt(
+          y = y, lag = object$p, num_chains = num_chains, num_iter = object$iter, num_burn = object$burn, thinning = object$thin,
+          sparse = sparse, level = ci_lev, fit_record = fit_ls, run_mcmc = mcmc,
+          param_reg = object$sv[c("shape", "scale")],
+          param_prior = param_prior, param_intercept = object$intercept, param_init = object$init_coef, prior_type = prior_type, ggl = object$ggl,
+          contem_prior = contem_prior, contem_init = object$init_contem, contem_prior_type = contem_prior_type,
+          grp_id = grp_id, own_id = own_id, cross_id = cross_id, grp_mat = grp_mat,
+          include_mean = include_mean, stable = stable, step = n_ahead, y_test = y_test, get_lpl = lpl,
+          seed_chain = sample.int(.Machine$integer.max, size = num_chains * num_horizon) |> matrix(ncol = num_chains),
+          seed_forecast = sample.int(.Machine$integer.max, size = num_chains),
+          display_progress = verbose, nthreads = num_thread
+        )
+      }
     },
     "bvharldlt" = {
       grp_mat <- object$group
@@ -335,45 +336,39 @@ forecast_roll.ldltmod <- function(object, n_ahead, y_test,
         own_id <- 2
         cross_id <- c(1, 3, 4)
       }
-      # param_init <- object$init
-      # if (is.bvharspec(object$spec_coef)) {
-      #   param_prior <- append(object$spec_coef, list(p = 3))
-      #   if (object$spec_coef$hierarchical) {
-      #     param_prior$shape <- object$spec_coef$lambda$param[1]
-      #     param_prior$rate <- object$spec_coef$lambda$param[2]
-      #     param_prior$grid_size <- object$spec_coef$lambda$grid_size
-      #     prior_type <- 4
-      #   } else {
-      #     prior_type <- 1
-      #   }
-      # } else if (is.ssvsinput(object$spec_coef)) {
-      #   param_prior <- object$spec_coef
-      #   prior_type <- 2
-      # } else if (is.horseshoespec(object$spec)) {
-      #   param_prior <- list()
-      #   prior_type <- 3
-      # } else if (is.ngspec(object$spec_coef)) {
-      #   param_prior <- object$spec_coef
-      #   prior_type <- 5
-      # } else if (is.dlspec(object$spec_coef)) {
-      #   param_prior <- object$spec_coef
-      #   prior_type <- 6
-      # } else if (is.gdpspec(object$spec_coef)) {
-      #   param_prior <- object$spec_coef
-      #   prior_type <- 7
-      # }
-      roll_bvharldlt(
-        y, object$week, object$month, num_chains, object$iter, object$burn, object$thin,
-        sparse, ci_lev, fit_ls, mcmc,
-        object$sv[c("shape", "scale")], param_prior, object$intercept, object$init_coef, prior_type, object$ggl,
-        contem_prior, object$init_contem, contem_prior_type,
-        grp_id, own_id, cross_id, grp_mat,
-        include_mean, stable, n_ahead, y_test,
-        lpl,
-        sample.int(.Machine$integer.max, size = num_chains * num_horizon) |> matrix(ncol = num_chains),
-        sample.int(.Machine$integer.max, size = num_chains),
-        verbose, num_thread
-      )
+      if (is_exogen) {
+        roll_bvharxldlt(
+          y = y, week = object$week, month = object$month,
+          num_chains = num_chains, num_iter = object$iter, num_burn = object$burn, thinning = object$thin,
+          sparse = sparse, level = ci_lev, fit_record = fit_ls, run_mcmc = mcmc,
+          param_reg = object$sv[c("shape", "scale")],
+          param_prior = param_prior, param_intercept = object$intercept, param_init = object$init_coef, prior_type = prior_type, ggl = object$ggl,
+          contem_prior = contem_prior, contem_init = object$init_contem, contem_prior_type = contem_prior_type,
+          grp_id = grp_id, own_id = own_id, cross_id = cross_id, grp_mat = grp_mat,
+          include_mean = include_mean, stable = stable, step = n_ahead, y_test = y_test,
+          get_lpl = lpl,
+          seed_chain = sample.int(.Machine$integer.max, size = num_chains * num_horizon) |> matrix(ncol = num_chains),
+          seed_forecast = sample.int(.Machine$integer.max, size = num_chains),
+          display_progress = verbose, nthreads = num_thread,
+          exogen = rbind(object$exogen_data, newxreg), exogen_lag = object$s,
+          exogen_prior = exogen_prior, exogen_init = object$init_exogen, exogen_prior_type = exogen_prior_type
+        )
+      } else {
+        roll_bvharldlt(
+          y = y, week = object$week, month = object$month,
+          num_chains = num_chains, num_iter = object$iter, num_burn = object$burn, thinning = object$thin,
+          sparse = sparse, level = ci_lev, fit_record = fit_ls, run_mcmc = mcmc,
+          param_reg = object$sv[c("shape", "scale")],
+          param_prior = param_prior, param_intercept = object$intercept, param_init = object$init_coef, prior_type = prior_type, ggl = object$ggl,
+          contem_prior = contem_prior, contem_init = object$init_contem, contem_prior_type = contem_prior_type,
+          grp_id = grp_id, own_id = own_id, cross_id = cross_id, grp_mat = grp_mat,
+          include_mean = include_mean, stable = stable, step = n_ahead, y_test = y_test,
+          get_lpl = lpl,
+          seed_chain = sample.int(.Machine$integer.max, size = num_chains * num_horizon) |> matrix(ncol = num_chains),
+          seed_forecast = sample.int(.Machine$integer.max, size = num_chains),
+          display_progress = verbose, nthreads = num_thread
+        )
+      }
     }
   )
   num_draw <- nrow(object$param) # concatenate multiple chains
@@ -417,6 +412,8 @@ forecast_roll.ldltmod <- function(object, n_ahead, y_test,
 
 #' @rdname forecast_roll
 #' @param level Specify alpha of confidence interval level 100(1 - alpha) percentage. By default, .05.
+#' @param newxreg New values for exogenous variables.
+#' Should have the same row numbers as `y_test`.
 #' @param use_sv Use SV term
 #' @param stable `r lifecycle::badge("experimental")` Filter only stable coefficient draws in MCMC records.
 #' @param sparse `r lifecycle::badge("experimental")` Apply restriction. By default, `FALSE`.
@@ -429,6 +426,7 @@ forecast_roll.ldltmod <- function(object, n_ahead, y_test,
 forecast_roll.svmod <- function(object, n_ahead, y_test,
                                 num_thread = 1,
                                 level = .05,
+                                newxreg,
                                 use_sv = TRUE,
                                 stable = FALSE,
                                 sparse = FALSE,
@@ -484,51 +482,48 @@ forecast_roll.svmod <- function(object, n_ahead, y_test,
   prior_type <- enumerate_prior(object$spec_coef$prior)
   contem_prior <- get_contemspec(object)
   contem_prior_type <- enumerate_prior(object$spec_contem$prior)
+  is_exogen <- !is.null(eval.parent(object$call$exogen))
+  if (is_exogen) {
+    newxreg <- validate_newxreg(newxreg = newxreg, n_ahead = nrow(y_test))
+    exogen_prior <- get_exogenspec(object)
+    exogen_prior_type <- enumerate_prior(object$spec_exogen$prior)
+  }
   res_mat <- switch(model_type,
     "bvarsv" = {
       grp_mat <- object$group
       grp_id <- unique(c(grp_mat))
       own_id <- 2
       cross_id <- seq_len(object$p + 1)[-2]
-      # param_init <- object$init
-      # if (is.bvharspec(object$spec)) {
-      #   param_prior <- append(object$spec, list(p = object$p))
-      #   if (object$spec$hierarchical) {
-      #     param_prior$shape <- object$spec$lambda$param[1]
-      #     param_prior$rate <- object$spec$lambda$param[2]
-      #     param_prior$grid_size <- object$spec$lambda$grid_size
-      #     prior_type <- 4
-      #   } else {
-      #     prior_type <- 1
-      #   }
-      # } else if (is.ssvsinput(object$spec)) {
-      #   param_prior <- object$spec
-      #   prior_type <- 2
-      # } else if (is.horseshoespec(object$spec)) {
-      #   param_prior <- list()
-      #   prior_type <- 3
-      # } else if (is.ngspec(object$spec)) {
-      #   param_prior <- object$spec
-      #   prior_type <- 5
-      # } else if (is.dlspec(object$spec)) {
-      #   param_prior <- object$spec
-      #   prior_type <- 6
-      # } else if (is.gdpspec(object$spec)) {
-      #   param_prior <- object$spec
-      #   prior_type <- 7
-      # }
-      roll_bvarsv(
-        y, object$p, num_chains, object$iter, object$burn, object$thin,
-        use_sv, sparse, ci_lev, fit_ls, mcmc,
-        object$sv[c("shape", "scale", "initial_mean", "initial_prec")], param_prior, object$intercept, object$init_coef, prior_type, object$ggl,
-        contem_prior, object$init_contem, contem_prior_type,
-        grp_id, own_id, cross_id, grp_mat,
-        include_mean, stable, n_ahead, y_test,
-        lpl,
-        sample.int(.Machine$integer.max, size = num_chains * num_horizon) |> matrix(ncol = num_chains),
-        sample.int(.Machine$integer.max, size = num_chains),
-        verbose, num_thread
-      )
+      if (is_exogen) {
+        roll_bvarxsv(
+          y = y, lag = object$p, num_chains = num_chains, num_iter = object$iter, num_burn = object$burn, thinning = object$thin,
+          sv = use_sv, sparse = sparse, level = ci_lev, fit_record = fit_ls, run_mcmc = mcmc,
+          param_sv = object$sv[c("shape", "scale", "initial_mean", "initial_prec")],
+          param_prior = param_prior, param_intercept = object$intercept, param_init = object$init_coef, prior_type = prior_type, ggl = object$ggl,
+          contem_prior = contem_prior, contem_init = object$init_contem, contem_prior_type = contem_prior_type,
+          grp_id = grp_id, own_id = own_id, cross_id = cross_id, grp_mat = grp_mat,
+          include_mean = include_mean, stable = stable, step = n_ahead, y_test = y_test, get_lpl = lpl,
+          seed_chain = sample.int(.Machine$integer.max, size = num_chains * num_horizon) |> matrix(ncol = num_chains),
+          seed_forecast = sample.int(.Machine$integer.max, size = num_chains),
+          display_progress = verbose, nthreads = num_thread,
+          # exogen = rbind(tail(object$exogen_data, object$s), newxreg), exogen_lag = object$s,
+          exogen = rbind(object$exogen_data, newxreg), exogen_lag = object$s,
+          exogen_prior = exogen_prior, exogen_init = object$init_exogen, exogen_prior_type = exogen_prior_type
+        )
+      } else {
+        roll_bvarsv(
+          y = y, lag = object$p, num_chains = num_chains, num_iter = object$iter, num_burn = object$burn, thinning = object$thin,
+          sv = use_sv, sparse = sparse, level = ci_lev, fit_record = fit_ls, run_mcmc = mcmc,
+          param_sv = object$sv[c("shape", "scale", "initial_mean", "initial_prec")],
+          param_prior = param_prior, param_intercept = object$intercept, param_init = object$init_coef, prior_type = prior_type, ggl = object$ggl,
+          contem_prior = contem_prior, contem_init = object$init_contem, contem_prior_type = contem_prior_type,
+          grp_id = grp_id, own_id = own_id, cross_id = cross_id, grp_mat = grp_mat,
+          include_mean = include_mean, stable = stable, step = n_ahead, y_test = y_test, get_lpl = lpl,
+          seed_chain = sample.int(.Machine$integer.max, size = num_chains * num_horizon) |> matrix(ncol = num_chains),
+          seed_forecast = sample.int(.Machine$integer.max, size = num_chains),
+          display_progress = verbose, nthreads = num_thread
+        )
+      }
     },
     "bvharsv" = {
       grp_mat <- object$group
@@ -540,45 +535,35 @@ forecast_roll.svmod <- function(object, n_ahead, y_test,
         own_id <- 2
         cross_id <- c(1, 3, 4)
       }
-      # param_init <- object$init
-      # if (is.bvharspec(object$spec)) {
-      #   param_prior <- append(object$spec, list(p = 3))
-      #   if (object$spec$hierarchical) {
-      #     param_prior$shape <- object$spec$lambda$param[1]
-      #     param_prior$rate <- object$spec$lambda$param[2]
-      #     param_prior$grid_size <- object$spec$lambda$grid_size
-      #     prior_type <- 4
-      #   } else {
-      #     prior_type <- 1
-      #   }
-      # } else if (is.ssvsinput(object$spec)) {
-      #   param_prior <- object$spec
-      #   prior_type <- 2
-      # } else if (is.horseshoespec(object$spec)) {
-      #   param_prior <- list()
-      #   prior_type <- 3
-      # } else if (is.ngspec(object$spec)) {
-      #   param_prior <- object$spec
-      #   prior_type <- 5
-      # } else if (is.dlspec(object$spec)) {
-      #   param_prior <- object$spec
-      #   prior_type <- 6
-      # } else if (is.gdpspec(object$spec)) {
-      #   param_prior <- object$spec
-      #   prior_type <- 7
-      # }
-      roll_bvharsv(
-        y, object$week, object$month, num_chains, object$iter, object$burn, object$thin,
-        use_sv, sparse, ci_lev, fit_ls, mcmc,
-        object$sv[c("shape", "scale", "initial_mean", "initial_prec")], param_prior, object$intercept, object$init_coef, prior_type, object$ggl,
-        contem_prior, object$init_contem, contem_prior_type,
-        grp_id, own_id, cross_id, grp_mat,
-        include_mean, stable, n_ahead, y_test,
-        lpl,
-        sample.int(.Machine$integer.max, size = num_chains * num_horizon) |> matrix(ncol = num_chains),
-        sample.int(.Machine$integer.max, size = num_chains),
-        verbose, num_thread
-      )
+      if (is_exogen) {
+        roll_bvharxsv(
+          y = y, week = object$week, month = object$month, num_chains = num_chains, num_iter = object$iter, num_burn = object$burn, thinning = object$thin,
+          sv = use_sv, sparse = sparse, level = ci_lev, fit_record = fit_ls, run_mcmc = mcmc,
+          param_sv = object$sv[c("shape", "scale", "initial_mean", "initial_prec")],
+          param_prior = param_prior, param_intercept = object$intercept, param_init = object$init_coef, prior_type = prior_type, ggl = object$ggl,
+          contem_prior = contem_prior, contem_init = object$init_contem, contem_prior_type = contem_prior_type,
+          grp_id = grp_id, own_id = own_id, cross_id = cross_id, grp_mat = grp_mat,
+          include_mean = include_mean, stable = stable, step = n_ahead, y_test = y_test, get_lpl = lpl,
+          seed_chain = sample.int(.Machine$integer.max, size = num_chains * num_horizon) |> matrix(ncol = num_chains),
+          seed_forecast = sample.int(.Machine$integer.max, size = num_chains),
+          display_progress = verbose, nthreads = num_thread,
+          exogen = rbind(object$exogen_data, newxreg), exogen_lag = object$s,
+          exogen_prior = exogen_prior, exogen_init = object$init_exogen, exogen_prior_type = exogen_prior_type
+        )
+      } else {
+        roll_bvharsv(
+          y = y, week = object$week, month = object$month, num_chains = num_chains, num_iter = object$iter, num_burn = object$burn, thinning = object$thin,
+          sv = use_sv, sparse = sparse, level = ci_lev, fit_record = fit_ls, run_mcmc = mcmc,
+          param_sv = object$sv[c("shape", "scale", "initial_mean", "initial_prec")],
+          param_prior = param_prior, param_intercept = object$intercept, param_init = object$init_coef, prior_type = prior_type, ggl = object$ggl,
+          contem_prior = contem_prior, contem_init = object$init_contem, contem_prior_type = contem_prior_type,
+          grp_id = grp_id, own_id = own_id, cross_id = cross_id, grp_mat = grp_mat,
+          include_mean = include_mean, stable = stable, step = n_ahead, y_test = y_test, get_lpl = lpl,
+          seed_chain = sample.int(.Machine$integer.max, size = num_chains * num_horizon) |> matrix(ncol = num_chains),
+          seed_forecast = sample.int(.Machine$integer.max, size = num_chains),
+          display_progress = verbose, nthreads = num_thread
+        )
+      }
     }
   )
   num_draw <- nrow(object$param) # concatenate multiple chains
@@ -784,6 +769,8 @@ forecast_expand.normaliw <- function(object, n_ahead, y_test, num_thread = 1, us
 
 #' @rdname forecast_expand
 #' @param level Specify alpha of confidence interval level 100(1 - alpha) percentage. By default, .05.
+#' @param newxreg New values for exogenous variables.
+#' Should have the same row numbers as `y_test`.
 #' @param stable `r lifecycle::badge("experimental")` Filter only stable coefficient draws in MCMC records.
 #' @param sparse `r lifecycle::badge("experimental")` Apply restriction. By default, `FALSE`.
 #' @param med `r lifecycle::badge("experimental")` If `TRUE`, use median of forecast draws instead of mean (default).
@@ -795,6 +782,7 @@ forecast_expand.normaliw <- function(object, n_ahead, y_test, num_thread = 1, us
 forecast_expand.ldltmod <- function(object, n_ahead, y_test,
                                     num_thread = 1,
                                     level = .05,
+                                    newxreg,
                                     stable = FALSE,
                                     sparse = FALSE,
                                     med = FALSE,
@@ -843,51 +831,48 @@ forecast_expand.ldltmod <- function(object, n_ahead, y_test,
   prior_type <- enumerate_prior(object$spec_coef$prior)
   contem_prior <- get_contemspec(object)
   contem_prior_type <- enumerate_prior(object$spec_contem$prior)
+  is_exogen <- !is.null(eval.parent(object$call$exogen))
+  if (is_exogen) {
+    newxreg <- validate_newxreg(newxreg = newxreg, n_ahead = nrow(y_test))
+    exogen_prior <- get_exogenspec(object)
+    exogen_prior_type <- enumerate_prior(object$spec_exogen$prior)
+  }
   res_mat <- switch(model_type,
     "bvarldlt" = {
       grp_mat <- object$group
       grp_id <- unique(c(grp_mat))
       own_id <- 2
       cross_id <- seq_len(object$p + 1)[-2]
-      # param_init <- object$init
-      # if (is.bvharspec(object$spec)) {
-      #   param_prior <- append(object$spec, list(p = object$p))
-      #   if (object$spec$hierarchical) {
-      #     param_prior$shape <- object$spec$lambda$param[1]
-      #     param_prior$rate <- object$spec$lambda$param[2]
-      #     param_prior$grid_size <- object$spec$lambda$grid_size
-      #     prior_type <- 4
-      #   } else {
-      #     prior_type <- 1
-      #   }
-      # } else if (is.ssvsinput(object$spec)) {
-      #   param_prior <- object$spec
-      #   prior_type <- 2
-      # } else if (is.horseshoespec(object$spec)) {
-      #   param_prior <- list()
-      #   prior_type <- 3
-      # } else if (is.ngspec(object$spec)) {
-      #   param_prior <- object$spec
-      #   prior_type <- 5
-      # } else if (is.dlspec(object$spec)) {
-      #   param_prior <- object$spec
-      #   prior_type <- 6
-      # } else if (is.gdpspec(object$spec)) {
-      #   param_prior <- object$spec
-      #   prior_type <- 7
-      # }
-      expand_bvarldlt(
-        y, object$p, num_chains, object$iter, object$burn, object$thin,
-        sparse, ci_lev, fit_ls, mcmc,
-        object$sv[c("shape", "scale")], param_prior, object$intercept, object$init_coef, prior_type, object$ggl,
-        contem_prior, object$init_contem, contem_prior_type,
-        grp_id, own_id, cross_id, grp_mat,
-        include_mean, stable, n_ahead, y_test,
-        lpl,
-        sample.int(.Machine$integer.max, size = num_chains * num_horizon) |> matrix(ncol = num_chains),
-        sample.int(.Machine$integer.max, size = num_chains),
-        verbose, num_thread
-      )
+      if (is_exogen) {
+        expand_bvarxldlt(
+          y = y, lag = object$p, num_chains = num_chains, num_iter = object$iter, num_burn = object$burn, thinning = object$thin,
+          sparse = sparse, level = ci_lev, fit_record = fit_ls, run_mcmc = mcmc,
+          param_reg = object$sv[c("shape", "scale")],
+          param_prior = param_prior, param_intercept = object$intercept, param_init = object$init_coef, prior_type = prior_type, ggl = object$ggl,
+          contem_prior = contem_prior, contem_init = object$init_contem, contem_prior_type = contem_prior_type,
+          grp_id = grp_id, own_id = own_id, cross_id = cross_id, grp_mat = grp_mat,
+          include_mean = include_mean, stable = stable, step = n_ahead, y_test = y_test, get_lpl = lpl,
+          seed_chain = sample.int(.Machine$integer.max, size = num_chains * num_horizon) |> matrix(ncol = num_chains),
+          seed_forecast = sample.int(.Machine$integer.max, size = num_chains),
+          display_progress = verbose, nthreads = num_thread,
+          # exogen = rbind(tail(object$exogen_data, object$s), newxreg), exogen_lag = object$s,
+          exogen = rbind(object$exogen_data, newxreg), exogen_lag = object$s,
+          exogen_prior = exogen_prior, exogen_init = object$init_exogen, exogen_prior_type = exogen_prior_type
+        )
+      } else {
+        expand_bvarldlt(
+          y = y, lag = object$p, num_chains = num_chains, num_iter = object$iter, num_burn = object$burn, thinning = object$thin,
+          sparse = sparse, level = ci_lev, fit_record = fit_ls, run_mcmc = mcmc,
+          param_reg = object$sv[c("shape", "scale")],
+          param_prior = param_prior, param_intercept = object$intercept, param_init = object$init_coef, prior_type = prior_type, ggl = object$ggl,
+          contem_prior = contem_prior, contem_init = object$init_contem, contem_prior_type = contem_prior_type,
+          grp_id = grp_id, own_id = own_id, cross_id = cross_id, grp_mat = grp_mat,
+          include_mean = include_mean, stable = stable, step = n_ahead, y_test = y_test, get_lpl = lpl,
+          seed_chain = sample.int(.Machine$integer.max, size = num_chains * num_horizon) |> matrix(ncol = num_chains),
+          seed_forecast = sample.int(.Machine$integer.max, size = num_chains),
+          display_progress = verbose, nthreads = num_thread
+        )
+      }
     },
     "bvharldlt" = {
       grp_mat <- object$group
@@ -899,45 +884,39 @@ forecast_expand.ldltmod <- function(object, n_ahead, y_test,
         own_id <- 2
         cross_id <- c(1, 3, 4)
       }
-      # param_init <- object$init
-      # if (is.bvharspec(object$spec)) {
-      #   param_prior <- append(object$spec, list(p = 3))
-      #   if (object$spec$hierarchical) {
-      #     param_prior$shape <- object$spec$lambda$param[1]
-      #     param_prior$rate <- object$spec$lambda$param[2]
-      #     param_prior$grid_size <- object$spec$lambda$grid_size
-      #     prior_type <- 4
-      #   } else {
-      #     prior_type <- 1
-      #   }
-      # } else if (is.ssvsinput(object$spec)) {
-      #   param_prior <- object$spec
-      #   prior_type <- 2
-      # } else if (is.horseshoespec(object$spec)) {
-      #   param_prior <- list()
-      #   prior_type <- 3
-      # } else if (is.ngspec(object$spec)) {
-      #   param_prior <- object$spec
-      #   prior_type <- 5
-      # } else if (is.dlspec(object$spec)) {
-      #   param_prior <- object$spec
-      #   prior_type <- 6
-      # } else if (is.gdpspec(object$spec)) {
-      #   param_prior <- object$spec
-      #   prior_type <- 7
-      # }
-      expand_bvharldlt(
-        y, object$week, object$month, num_chains, object$iter, object$burn, object$thin,
-        sparse, ci_lev, fit_ls, mcmc,
-        object$sv[c("shape", "scale")], param_prior, object$intercept, object$init_coef, prior_type, object$ggl,
-        contem_prior, object$init_contem, contem_prior_type,
-        grp_id, own_id, cross_id, grp_mat,
-        include_mean, stable, n_ahead, y_test,
-        lpl,
-        sample.int(.Machine$integer.max, size = num_chains * num_horizon) |> matrix(ncol = num_chains),
-        sample.int(.Machine$integer.max, size = num_chains),
-        verbose, num_thread
-      )
+      if (is_exogen) {
+        expand_bvharxldlt(
+          y = y, week = object$week, month = object$month,
+          num_chains = num_chains, num_iter = object$iter, num_burn = object$burn, thinning = object$thin,
+          sparse = sparse, level = ci_lev, fit_record = fit_ls, run_mcmc = mcmc,
+          param_reg = object$sv[c("shape", "scale")],
+          param_prior = param_prior, param_intercept = object$intercept, param_init = object$init_coef, prior_type = prior_type, ggl = object$ggl,
+          contem_prior = contem_prior, contem_init = object$init_contem, contem_prior_type = contem_prior_type,
+          grp_id = grp_id, own_id = own_id, cross_id = cross_id, grp_mat = grp_mat,
+          include_mean = include_mean, stable = stable, step = n_ahead, y_test = y_test,
+          get_lpl = lpl,
+          seed_chain = sample.int(.Machine$integer.max, size = num_chains * num_horizon) |> matrix(ncol = num_chains),
+          seed_forecast = sample.int(.Machine$integer.max, size = num_chains),
+          display_progress = verbose, nthreads = num_thread,
+          exogen = rbind(object$exogen_data, newxreg), exogen_lag = object$s,
+          exogen_prior = exogen_prior, exogen_init = object$init_exogen, exogen_prior_type = exogen_prior_type
+        )
+      } else {
+        expand_bvharldlt(
+          y = y, week = object$week, month = object$month,
+          num_chains = num_chains, num_iter = object$iter, num_burn = object$burn, thinning = object$thin,
+          sparse = sparse, level = ci_lev, fit_record = fit_ls, run_mcmc = mcmc,
+          param_reg = object$sv[c("shape", "scale")],
+          param_prior = param_prior, param_intercept = object$intercept, param_init = object$init_coef, prior_type = prior_type, ggl = object$ggl,
+          contem_prior = contem_prior, contem_init = object$init_contem, contem_prior_type = contem_prior_type,
+          grp_id = grp_id, own_id = own_id, cross_id = cross_id, grp_mat = grp_mat,
+          include_mean = include_mean, stable = stable, step = n_ahead, y_test = y_test,
+          get_lpl = lpl,
+          seed_chain = sample.int(.Machine$integer.max, size = num_chains * num_horizon) |> matrix(ncol = num_chains),
+          seed_forecast = sample.int(.Machine$integer.max, size = num_chains),
+          display_progress = verbose, nthreads = num_thread
+        )
+      }
     }
   )
   num_draw <- nrow(object$param) # concatenate multiple chains
@@ -981,6 +960,8 @@ forecast_expand.ldltmod <- function(object, n_ahead, y_test,
 
 #' @rdname forecast_expand
 #' @param level Specify alpha of confidence interval level 100(1 - alpha) percentage. By default, .05.
+#' @param newxreg New values for exogenous variables.
+#' Should have the same row numbers as `y_test`.
 #' @param use_sv Use SV term
 #' @param stable `r lifecycle::badge("experimental")` Filter only stable coefficient draws in MCMC records.
 #' @param sparse `r lifecycle::badge("experimental")` Apply restriction. By default, `FALSE`.
@@ -993,6 +974,7 @@ forecast_expand.ldltmod <- function(object, n_ahead, y_test,
 forecast_expand.svmod <- function(object, n_ahead, y_test,
                                   num_thread = 1,
                                   level = .05,
+                                  newxreg,
                                   use_sv = TRUE,
                                   stable = FALSE,
                                   sparse = FALSE,
@@ -1042,51 +1024,48 @@ forecast_expand.svmod <- function(object, n_ahead, y_test,
   prior_type <- enumerate_prior(object$spec_coef$prior)
   contem_prior <- get_contemspec(object)
   contem_prior_type <- enumerate_prior(object$spec_contem$prior)
+  is_exogen <- !is.null(eval.parent(object$call$exogen))
+  if (is_exogen) {
+    newxreg <- validate_newxreg(newxreg = newxreg, n_ahead = nrow(y_test))
+    exogen_prior <- get_exogenspec(object)
+    exogen_prior_type <- enumerate_prior(object$spec_exogen$prior)
+  }
   res_mat <- switch(model_type,
     "bvarsv" = {
       grp_mat <- object$group
       grp_id <- unique(c(grp_mat))
       own_id <- 2
       cross_id <- seq_len(object$p + 1)[-2]
-      # param_init <- object$init
-      # if (is.bvharspec(object$spec)) {
-      #   param_prior <- append(object$spec, list(p = object$p))
-      #   if (object$spec$hierarchical) {
-      #     param_prior$shape <- object$spec$lambda$param[1]
-      #     param_prior$rate <- object$spec$lambda$param[2]
-      #     param_prior$grid_size <- object$spec$lambda$grid_size
-      #     prior_type <- 4
-      #   } else {
-      #     prior_type <- 1
-      #   }
-      # } else if (is.ssvsinput(object$spec)) {
-      #   param_prior <- object$spec
-      #   prior_type <- 2
-      # } else if (is.horseshoespec(object$spec)) {
-      #   param_prior <- list()
-      #   prior_type <- 3
-      # } else if (is.ngspec(object$spec)) {
-      #   param_prior <- object$spec
-      #   prior_type <- 5
-      # } else if (is.dlspec(object$spec)) {
-      #   param_prior <- object$spec
-      #   prior_type <- 6
-      # } else if (is.gdpspec(object$spec)) {
-      #   param_prior <- object$spec
-      #   prior_type <- 7
-      # }
-      expand_bvarsv(
-        y, object$p, num_chains, object$iter, object$burn, object$thin,
-        use_sv, sparse, ci_lev, fit_ls, mcmc,
-        object$sv[c("shape", "scale", "initial_mean", "initial_prec")], param_prior, object$intercept, object$init_coef, prior_type, object$ggl,
-        contem_prior, object$init_contem, contem_prior_type,
-        grp_id, own_id, cross_id, grp_mat,
-        include_mean, stable, n_ahead, y_test,
-        lpl,
-        sample.int(.Machine$integer.max, size = num_chains * num_horizon) |> matrix(ncol = num_chains),
-        sample.int(.Machine$integer.max, size = num_chains),
-        verbose, num_thread
-      )
+      if (is_exogen) {
+        expand_bvarxsv(
+          y = y, lag = object$p, num_chains = num_chains, num_iter = object$iter, num_burn = object$burn, thinning = object$thin,
+          sv = use_sv, sparse = sparse, level = ci_lev, fit_record = fit_ls, run_mcmc = mcmc,
+          param_sv = object$sv[c("shape", "scale", "initial_mean", "initial_prec")],
+          param_prior = param_prior, param_intercept = object$intercept, param_init = object$init_coef, prior_type = prior_type, ggl = object$ggl,
+          contem_prior = contem_prior, contem_init = object$init_contem, contem_prior_type = contem_prior_type,
+          grp_id = grp_id, own_id = own_id, cross_id = cross_id, grp_mat = grp_mat,
+          include_mean = include_mean, stable = stable, step = n_ahead, y_test = y_test, get_lpl = lpl,
+          seed_chain = sample.int(.Machine$integer.max, size = num_chains * num_horizon) |> matrix(ncol = num_chains),
+          seed_forecast = sample.int(.Machine$integer.max, size = num_chains),
+          display_progress = verbose, nthreads = num_thread,
+          # exogen = rbind(tail(object$exogen_data, object$s), newxreg), exogen_lag = object$s,
+          exogen = rbind(object$exogen_data, newxreg), exogen_lag = object$s,
+          exogen_prior = exogen_prior, exogen_init = object$init_exogen, exogen_prior_type = exogen_prior_type
+        )
+      } else {
+        expand_bvarsv(
+          y = y, lag = object$p, num_chains = num_chains, num_iter = object$iter, num_burn = object$burn, thinning = object$thin,
+          sv = use_sv, sparse = sparse, level = ci_lev, fit_record = fit_ls, run_mcmc = mcmc,
+          param_sv = object$sv[c("shape", "scale", "initial_mean", "initial_prec")],
+          param_prior = param_prior, param_intercept = object$intercept, param_init = object$init_coef, prior_type = prior_type, ggl = object$ggl,
+          contem_prior = contem_prior, contem_init = object$init_contem, contem_prior_type = contem_prior_type,
+          grp_id = grp_id, own_id = own_id, cross_id = cross_id, grp_mat = grp_mat,
+          include_mean = include_mean, stable = stable, step = n_ahead, y_test = y_test, get_lpl = lpl,
+          seed_chain = sample.int(.Machine$integer.max, size = num_chains * num_horizon) |> matrix(ncol = num_chains),
+          seed_forecast = sample.int(.Machine$integer.max, size = num_chains),
+          display_progress = verbose, nthreads = num_thread
+        )
+      }
     },
     "bvharsv" = {
       grp_mat <- object$group
@@ -1098,45 +1077,35 @@ forecast_expand.svmod <- function(object, n_ahead, y_test,
         own_id <- 2
         cross_id <- c(1, 3, 4)
       }
-      # param_init <- object$init
-      # if (is.bvharspec(object$spec)) {
-      #   param_prior <- append(object$spec, list(p = 3))
-      #   if (object$spec$hierarchical) {
-      #     param_prior$shape <- object$spec$lambda$param[1]
-      #     param_prior$rate <- object$spec$lambda$param[2]
-      #     param_prior$grid_size <- object$spec$lambda$grid_size
-      #     prior_type <- 4
-      #   } else {
-      #     prior_type <- 1
-      #   }
-      # } else if (is.ssvsinput(object$spec)) {
-      #   param_prior <- object$spec
-      #   prior_type <- 2
-      # } else if (is.horseshoespec(object$spec)) {
-      #   param_prior <- list()
-      #   prior_type <- 3
-      # } else if (is.ngspec(object$spec)) {
-      #   param_prior <- object$spec
-      #   prior_type <- 5
-      # } else if (is.dlspec(object$spec)) {
-      #   param_prior <- object$spec
-      #   prior_type <- 6
-      # } else if (is.gdpspec(object$spec)) {
-      #   param_prior <- object$spec
-      #   prior_type <- 7
-      # }
-      expand_bvharsv(
-        y, object$week, object$month, num_chains, object$iter, object$burn, object$thin,
-        use_sv, sparse, ci_lev, fit_ls, mcmc,
-        object$sv[c("shape", "scale", "initial_mean", "initial_prec")], param_prior, object$intercept, object$init_coef, prior_type, object$ggl,
-        contem_prior, object$init_contem, contem_prior_type,
-        grp_id, own_id, cross_id, grp_mat,
-        include_mean, stable, n_ahead, y_test,
-        lpl,
-        sample.int(.Machine$integer.max, size = num_chains * num_horizon) |> matrix(ncol = num_chains),
-        sample.int(.Machine$integer.max, size = num_chains),
-        verbose, num_thread
-      )
+      if (is_exogen) {
+        expand_bvharxsv(
+          y = y, week = object$week, month = object$month, num_chains = num_chains, num_iter = object$iter, num_burn = object$burn, thinning = object$thin,
+          sv = use_sv, sparse = sparse, level = ci_lev, fit_record = fit_ls, run_mcmc = mcmc,
+          param_sv = object$sv[c("shape", "scale", "initial_mean", "initial_prec")],
+          param_prior = param_prior, param_intercept = object$intercept, param_init = object$init_coef, prior_type = prior_type, ggl = object$ggl,
+          contem_prior = contem_prior, contem_init = object$init_contem, contem_prior_type = contem_prior_type,
+          grp_id = grp_id, own_id = own_id, cross_id = cross_id, grp_mat = grp_mat,
+          include_mean = include_mean, stable = stable, step = n_ahead, y_test = y_test, get_lpl = lpl,
+          seed_chain = sample.int(.Machine$integer.max, size = num_chains * num_horizon) |> matrix(ncol = num_chains),
+          seed_forecast = sample.int(.Machine$integer.max, size = num_chains),
+          display_progress = verbose, nthreads = num_thread,
+          exogen = rbind(object$exogen_data, newxreg), exogen_lag = object$s,
+          exogen_prior = exogen_prior, exogen_init = object$init_exogen, exogen_prior_type = exogen_prior_type
+        )
+      } else {
+        expand_bvharsv(
+          y = y, week = object$week, month = object$month, num_chains = num_chains, num_iter = object$iter, num_burn = object$burn, thinning = object$thin,
+          sv = use_sv, sparse = sparse, level = ci_lev, fit_record = fit_ls, run_mcmc = mcmc,
+          param_sv = object$sv[c("shape", "scale", "initial_mean", "initial_prec")],
+          param_prior = param_prior, param_intercept = object$intercept, param_init = object$init_coef, prior_type = prior_type, ggl = object$ggl,
+          contem_prior = contem_prior, contem_init = object$init_contem, contem_prior_type = contem_prior_type,
+          grp_id = grp_id, own_id = own_id, cross_id = cross_id, grp_mat = grp_mat,
+          include_mean = include_mean, stable = stable, step = n_ahead, y_test = y_test, get_lpl = lpl,
+          seed_chain = sample.int(.Machine$integer.max, size = num_chains * num_horizon) |> matrix(ncol = num_chains),
+          seed_forecast = sample.int(.Machine$integer.max, size = num_chains),
+          display_progress = verbose, nthreads = num_thread
+        )
+      }
     }
   )
   num_draw <- nrow(object$param) # concatenate multiple chains

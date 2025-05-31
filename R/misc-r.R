@@ -493,6 +493,21 @@ get_contemspec <- function(object) {
   param_prior
 }
 
+#' @noRd
+get_exogenspec <- function(object) {
+  if (is.bvharspec(object$spec_exogen)) {
+    param_prior <- append(object$spec_exogen, list(p = 0))
+    if (object$spec_exogen$hierarchical) {
+      param_prior$shape <- object$spec_exogen$lambda$param[1]
+      param_prior$rate <- object$spec_exogen$lambda$param[2]
+      param_prior$grid_size <- object$spec_exogen$lambda$grid_size
+    }
+  } else {
+    param_prior <- object$spec_exogen
+  }
+  param_prior
+}
+
 #' @noRd 
 validate_newxreg <- function(newxreg, n_ahead) {
   if (missing(newxreg) || is.null(newxreg)) {

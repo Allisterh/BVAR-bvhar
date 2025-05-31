@@ -20,6 +20,7 @@ forecast_expand(object, n_ahead, y_test, num_thread = 1, ...)
   y_test,
   num_thread = 1,
   level = 0.05,
+  newxreg,
   stable = FALSE,
   sparse = FALSE,
   med = FALSE,
@@ -36,6 +37,7 @@ forecast_expand(object, n_ahead, y_test, num_thread = 1, ...)
   y_test,
   num_thread = 1,
   level = 0.05,
+  newxreg,
   use_sv = TRUE,
   stable = FALSE,
   sparse = FALSE,
@@ -61,6 +63,9 @@ forecast_expand(object, n_ahead, y_test, num_thread = 1, ...)
 \item{use_fit}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}} Use \code{object} result for the first window. By default, \code{TRUE}.}
 
 \item{level}{Specify alpha of confidence interval level 100(1 - alpha) percentage. By default, .05.}
+
+\item{newxreg}{New values for exogenous variables.
+Should have the same row numbers as \code{y_test}.}
 
 \item{stable}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}} Filter only stable coefficient draws in MCMC records.}
 

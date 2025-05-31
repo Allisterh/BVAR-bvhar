@@ -201,7 +201,8 @@ public:
 		int num_window, int lag,
 		int num_chains, int num_iter, int num_burn, int thin,
 		int step, const ReturnType& y_test, bool get_lpl,
-		const Eigen::MatrixXi& seed_chain, const Eigen::VectorXi& seed_forecast, bool display_progress, int nthreads
+		const Eigen::MatrixXi& seed_chain, const Eigen::VectorXi& seed_forecast, bool display_progress, int nthreads,
+		Optional<int> exogen_lag = NULLOPT
 	)
 	: num_window(num_window), num_test(y_test.rows()), num_horizon(num_test - step + 1), step(step),
 		lag(lag), num_chains(num_chains), num_iter(num_iter), num_burn(num_burn), thin(thin), nthreads(nthreads),
@@ -210,7 +211,8 @@ public:
 		model(num_horizon), forecaster(num_horizon),
 		// out_forecast(num_horizon, std::vector<ReturnType>(num_chains)),
 		out_forecast(num_horizon, std::vector<DataType>(num_chains)),
-		lpl_record(Eigen::MatrixXd::Zero(num_horizon, num_chains)) {
+		lpl_record(Eigen::MatrixXd::Zero(num_horizon, num_chains)),
+		roll_exogen_mat(num_horizon), roll_exogen(num_horizon), lag_exogen(exogen_lag) {
 		for (auto &reg_chain : model) {
 			reg_chain.resize(num_chains);
 			for (auto &ptr : reg_chain) {
@@ -222,6 +224,10 @@ public:
 			for (auto &ptr : reg_forecast) {
 				ptr = nullptr;
 			}
+		}
+		for (int i = 0; i < num_horizon; ++i) {
+			roll_exogen_mat[i] = NULLOPT;
+			roll_exogen[i] = NULLOPT;
 		}
 	}
 	virtual ~McmcOutForecastRun() = default;
@@ -277,6 +283,9 @@ protected:
 	// std::vector<std::vector<ReturnType>> out_forecast;
 	std::vector<std::vector<DataType>> out_forecast;
 	Eigen::MatrixXd lpl_record;
+	std::vector<Optional<ReturnType>> roll_exogen_mat;
+	std::vector<Optional<ReturnType>> roll_exogen;
+	Optional<int> lag_exogen;
 
 	/**
 	 * @brief Replace the forecast smart pointer given MCMC result

@@ -4,7 +4,15 @@
 
 * Added `mcmc` option in `forecast_roll()` and `forecast_expand()` for `ldltmod` and `svmod` classes.
 
-* `var_lm()` and `vhar_lm()` can run frequentist VARX and VHARX via `exogen` and `s`.
+## Exogenous variables
+
+* `var_lm()` and `vhar_lm()` can run VARX and VHARX via `exogen` and `s`.
+
+* `var_bayes()` and `vhar_bayes()` can run Bayesian VARX and VHARX via `exogen`, `s`, and `exogen_spec`.
+
+* `exogen_spec` determines the prior for the exogenous term.
+
+* When forecasting these VARX and VHARX models, `predict()` requires `newxreg`.
 
 ## Internal changes (C++)
 

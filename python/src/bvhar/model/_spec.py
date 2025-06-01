@@ -245,12 +245,16 @@ class MinnesotaConfig(_BayesConfig):
             self.delt = self.validate(delt, "delt")
         self.eps = self.validate(eps, "eps")
         self.p = None
+        self.num = None
         if is_long:
             self.weekly = None
             self.monthly = None
     
     def update(self, y: np.array, p, n_dim: int):
-        self.p = p
+        if p > 0:
+            self.p = p
+        else:
+            self.num = n_dim
         if self.sig is None:
             self.sig = np.apply_along_axis(np.std, 0, y)
         if self.delt is None:
@@ -262,6 +266,53 @@ class MinnesotaConfig(_BayesConfig):
     def to_dict(self):
         if hasattr(self, "weekly"):
             if isinstance(self.lam, list):
+                if self.p > 0:
+                    return {
+                        "shape": self.lam[0],
+                        "rate": self.lam[1],
+                        "grid_size": self.lam[2],
+                        "p": self.p,
+                        "sigma": self.sig,
+                        "eps": self.eps,
+                        "daily": self.delt,
+                        "weekly": self.weekly,
+                        "monthly": self.monthly
+                    }
+                else:
+                    return {
+                        "shape": self.lam[0],
+                        "rate": self.lam[1],
+                        "grid_size": self.lam[2],
+                        "num": self.num,
+                        "sigma": self.sig,
+                        "eps": self.eps,
+                        "daily": self.delt,
+                        "weekly": self.weekly,
+                        "monthly": self.monthly
+                    }
+            else:
+                if self.p > 0:
+                    return {
+                        "lambda": self.lam,
+                        "p": self.p,
+                        "sigma": self.sig,
+                        "eps": self.eps,
+                        "daily": self.delt,
+                        "weekly": self.weekly,
+                        "monthly": self.monthly
+                    }
+                else:
+                    return {
+                        "lambda": self.lam,
+                        "num": self.num,
+                        "sigma": self.sig,
+                        "eps": self.eps,
+                        "daily": self.delt,
+                        "weekly": self.weekly,
+                        "monthly": self.monthly
+                    }
+        if isinstance(self.lam, list):
+            if self.p > 0:
                 return {
                     "shape": self.lam[0],
                     "rate": self.lam[1],
@@ -269,37 +320,33 @@ class MinnesotaConfig(_BayesConfig):
                     "p": self.p,
                     "sigma": self.sig,
                     "eps": self.eps,
-                    "daily": self.delt,
-                    "weekly": self.weekly,
-                    "monthly": self.monthly
+                    "delta": self.delt
                 }
             else:
                 return {
+                    "shape": self.lam[0],
+                    "rate": self.lam[1],
+                    "grid_size": self.lam[2],
+                    "num": self.num,
+                    "sigma": self.sig,
+                    "eps": self.eps,
+                    "delta": self.delt
+                }
+        if self.p > 0:
+            return {
                     "lambda": self.lam,
                     "p": self.p,
                     "sigma": self.sig,
                     "eps": self.eps,
-                    "daily": self.delt,
-                    "weekly": self.weekly,
-                    "monthly": self.monthly
+                    "delta": self.delt
                 }
-        if isinstance(self.lam, list):
-            return {
-                "shape": self.lam[0],
-                "rate": self.lam[1],
-                "grid_size": self.lam[2],
-                "p": self.p,
-                "sigma": self.sig,
-                "eps": self.eps,
-                "delta": self.delt
-            }
         return {
-                "lambda": self.lam,
-                "p": self.p,
-                "sigma": self.sig,
-                "eps": self.eps,
-                "delta": self.delt
-            }
+            "lambda": self.lam,
+            "num": self.num,
+            "sigma": self.sig,
+            "eps": self.eps,
+            "delta": self.delt
+        }
 
 class LambdaConfig:
     r"""Hierarchical structure of Minnesota prior
@@ -388,24 +435,14 @@ class GdpConfig(_BayesConfig):
             "grid_rate": self.grid_rate
         }
 
-def validate_spec(bayes_spec_ : _BayesConfig, group_id = None, own_id = None, cross_id = None):
+def validate_spec(bayes_spec_: _BayesConfig, y: np.array, p: int, n_features_in_: int, group_id = None, own_id = None, cross_id = None):
     if type(bayes_spec_) == SsvsConfig:
         bayes_spec_.update(group_id, own_id, cross_id)
-    # if type(self.coef_spec_) == SsvsConfig:
-        # self.coef_spec_.update(self._group_id, self._own_id, self._cross_id)
-    # elif type(self.coef_spec_) == HorseshoeConfig:
-        # pass
-    # elif type(self.coef_spec_) == MinnesotaConfig:
-        # self.coef_spec_.update(self.y_, self.p_, self.n_features_in_)
-    # elif type(self.coef_spec_) == DlConfig:
-        # pass
-    # elif type(self.coef_spec_) == NgConfig:
-        # pass
-    # # elif type(self.coef_spec_) == GdpConfig:
-    #     pass
-    return _BayesConfig
+    elif type(bayes_spec_) == MinnesotaConfig:
+        bayes_spec_.update(y, p, n_features_in_)
+    return bayes_spec_
 
-def get_init(init_ : list, bayes_spec_ : _BayesConfig, n_alpha : int, n_grp : int):
+def get_init(init_: list, bayes_spec_: _BayesConfig, n_alpha: int, n_grp: int):
     if type(bayes_spec_) == SsvsConfig:
         for init in init_:
             init_mixture = np.random.uniform(-1, 1, n_grp)
@@ -425,7 +462,7 @@ def get_init(init_ : list, bayes_spec_ : _BayesConfig, n_alpha : int, n_grp : in
             group_sparsity = np.exp(np.random.uniform(-1, 1, n_grp))
             init.update({
                 'local_sparsity': local_sparsity,
-                'global_sparsity': global_sparsity,
+                'global_sparsity': np.array([global_sparsity]),
                 'group_sparsity': group_sparsity
             })
     elif type(bayes_spec_) == MinnesotaConfig:
@@ -441,7 +478,7 @@ def get_init(init_ : list, bayes_spec_ : _BayesConfig, n_alpha : int, n_grp : in
             group_sparsity = np.exp(np.random.uniform(-1, 1, n_grp))
             init.update({
                 'local_sparsity': local_sparsity,
-                'global_sparsity': global_sparsity,
+                'global_sparsity': np.array([global_sparsity]),
                 'group_sparsity': group_sparsity
             })
     elif type(bayes_spec_) == NgConfig:
@@ -453,7 +490,7 @@ def get_init(init_ : list, bayes_spec_ : _BayesConfig, n_alpha : int, n_grp : in
             init.update({
                 'local_shape': local_shape,
                 'local_sparsity': local_sparsity,
-                'global_sparsity': global_sparsity,
+                'global_sparsity': np.array([global_sparsity]),
                 'group_sparsity': group_sparsity
             })
     elif type(bayes_spec_) == GdpConfig:
@@ -469,7 +506,7 @@ def get_init(init_ : list, bayes_spec_ : _BayesConfig, n_alpha : int, n_grp : in
         })
     return init_
 
-def enumerate_prior_type(bayes_spec : _BayesConfig):
+def enumerate_prior_type(bayes_spec: _BayesConfig):
     return {
         "Minnesota": 1,
         "SSVS": 2,

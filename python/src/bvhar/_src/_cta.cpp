@@ -60,7 +60,7 @@ PYBIND11_MODULE(_cta, m) {
 			bool, bool, int, const Eigen::MatrixXd&, bool,
 			const Eigen::MatrixXi&, const Eigen::VectorXi&, bool, int, bool>()
 		)
-		.def("returnForecast", &bvhar::CtaVarforecastRun<bvhar::McmcRollforecastRun, bvhar::RegForecaster>::returnForecast);
+		.def("returnForecast", &bvhar::CtaVarforecastRun<bvhar::CtaRollforecastRun, bvhar::RegForecaster>::returnForecast);
 	
 	py::class_<bvhar::CtaVarforecastRun<bvhar::CtaExpandforecastRun, bvhar::RegForecaster>>(m, "LdltVarExpand")
 		.def(
@@ -72,7 +72,7 @@ PYBIND11_MODULE(_cta, m) {
 			bool, bool, int, const Eigen::MatrixXd&, bool,
 			const Eigen::MatrixXi&, const Eigen::VectorXi&, bool, int, bool>()
 		)
-		.def("returnForecast", &bvhar::CtaVarforecastRun<bvhar::McmcExpandforecastRun, bvhar::RegForecaster>::returnForecast);
+		.def("returnForecast", &bvhar::CtaVarforecastRun<bvhar::CtaExpandforecastRun, bvhar::RegForecaster>::returnForecast);
 	
 	py::class_<bvhar::CtaVharforecastRun<bvhar::CtaRollforecastRun, bvhar::RegForecaster>>(m, "LdltVharRoll")
 		.def(
@@ -84,7 +84,7 @@ PYBIND11_MODULE(_cta, m) {
 			bool, bool, int, const Eigen::MatrixXd&, bool,
 			const Eigen::MatrixXi&, const Eigen::VectorXi&, bool, int, bool>()
 		)
-		.def("returnForecast", &bvhar::CtaVharforecastRun<bvhar::McmcRollforecastRun, bvhar::RegForecaster>::returnForecast);
+		.def("returnForecast", &bvhar::CtaVharforecastRun<bvhar::CtaRollforecastRun, bvhar::RegForecaster>::returnForecast);
 	
 	py::class_<bvhar::CtaVharforecastRun<bvhar::CtaExpandforecastRun, bvhar::RegForecaster>>(m, "LdltVharExpand")
 		.def(
@@ -161,7 +161,7 @@ PYBIND11_MODULE(_cta, m) {
 			bool, bool, int, const Eigen::MatrixXd&, bool,
 			const Eigen::MatrixXi&, const Eigen::VectorXi&, bool, int, bool>()
 		)
-		.def("returnForecast", &bvhar::McmcVarforecastRun<bvhar::McmcRollforecastRun, bvhar::SvForecaster>::returnForecast);
+		.def("returnForecast", &bvhar::CtaVarforecastRun<bvhar::CtaRollforecastRun, bvhar::SvForecaster>::returnForecast);
 	
 	py::class_<bvhar::CtaVarforecastRun<bvhar::CtaExpandforecastRun, bvhar::SvForecaster>>(m, "SvVarExpand")
 		.def(
@@ -175,7 +175,7 @@ PYBIND11_MODULE(_cta, m) {
 		)
 		.def("returnForecast", &bvhar::CtaVarforecastRun<bvhar::CtaExpandforecastRun, bvhar::SvForecaster>::returnForecast);
 	
-	py::class_<bvhar::McmcVharforecastRun<bvhar::McmcRollforecastRun, bvhar::SvForecaster>>(m, "SvVharRoll")
+	py::class_<bvhar::CtaVharforecastRun<bvhar::CtaRollforecastRun, bvhar::SvForecaster>>(m, "SvVharRoll")
 		.def(
 			py::init<const Eigen::MatrixXd&, int, int, int, int, int, int,
 			bool, double, py::dict&, py::dict&, py::dict&,

@@ -57,12 +57,15 @@ class _AutoregBayes:
         self.contem_spec_ = contem_config
         self.intercept_spec_ = intercept_config
         self.init_ = get_coef_init(self.chains_, self.n_features_in_, self.n_design, self.n_eta)
-        self.contem_init_ = get_init(self.init_, contem_config, self.n_eta, self.n_eta if contem_config.prior in ["SSVS", "GDP"] else 1)
-        self.init_ = get_init(self.init_, coef_config, self.n_alpha, self.n_grp)
-        self.init_ = get_cov_init(self.init_, self.cov_spec_, self.n_features_in_, self.n_design)
+        self.contem_init_ = get_init(self.init_.copy(), contem_config, self.n_eta, self.n_eta if contem_config.prior in ["SSVS", "GDP"] else 1)
+        print(f"n_eta: {self.n_eta}")
+        print(f"contem_init_: {self.contem_init_}")
+        self.init_ = get_init(self.init_.copy(), coef_config, self.n_alpha, self.n_grp)
+        self.init_ = get_cov_init(self.init_.copy(), self.cov_spec_, self.n_features_in_, self.n_design)
         self.init_ = make_fortran_array(self.init_)
-        self._coef_prior_type = enumerate_prior_type(self.coef_spec_)
-        self._contem_prior_type = enumerate_prior_type(self.contem_spec_)
+        self.contem_init_ = make_fortran_array(self.contem_init_)
+        self._coef_prior_type = enumerate_prior_type(coef_config)
+        self._contem_prior_type = enumerate_prior_type(contem_config)
         self.is_fitted_ = False
         self.coef_ = None
         self.intercept_ = None
@@ -168,17 +171,18 @@ class VarBayes(_AutoregBayes):
         verbose = False,
         n_thread = 1
     ):
-        super().__init__(data, lag, lag, n_chain, n_iter, n_burn, n_thin, coef_config, contem_config, cov_config, intercept_config, fit_intercept, "short" if minnesota else "no", ggl, verbose)
+        super().__init__(data, lag, lag, n_chain, n_iter, n_burn, n_thin, coef_config, contem_config, cov_config, intercept_config, fit_intercept, "longrun" if minnesota else "no", ggl, verbose)
         self.design_ = build_design(self.y_, lag, fit_intercept)
         self.response_ = build_response(self.y_, lag, lag + 1)
         if minnesota:
             # self._own_id = np.array([2], dtype=np.int32)
             # self._cross_id = np.arange(1, self.p_ + 2, dtype=np.int32)
             # self._cross_id = np.delete(self._cross_id, 1)
-            self._own_id = np.arange(2, 2 * self.p_, 2, dtype=np.int32)
+            # self._own_id = np.arange(2, 2 * self.p_, 2, dtype=np.int32)
+            self._own_id = np.arange(2, 2 * self.p_ + 1, 2, dtype=np.int32) # longrun => p + 1
             self._cross_id = np.arange(1, 2 * self.p_, 2, dtype=np.int32)
         else:
-            self._own_id = np.array([2], dtype=np.int32)
+            self._own_id = np.array([1], dtype=np.int32)
             self._cross_id = np.array([2], dtype=np.int32)
         self._validate()
         self.thread_ = n_thread
@@ -188,6 +192,7 @@ class VarBayes(_AutoregBayes):
             warnings.warn(f"'n_thread = {self.thread_} > 'n_chain' = {n_chain}' will not use every thread. Specify as 'n_thread <= 'n_chain'.")
         if type(self.cov_spec_) == LdltConfig:
             if self._ggl:
+                print(f"contem_init_: {self.contem_init_}")
                 self.__model = McmcLdlt(
                     self.chains_, self.iter_, self.burn_, self.thin_,
                     self.design_, self.response_,

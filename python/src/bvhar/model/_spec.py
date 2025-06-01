@@ -80,7 +80,8 @@ class SvConfig(LdltConfig):
         if isinstance(self.initial_mean, (int, float, np.number)) or (hasattr(self.initial_mean, '__len__') and len(self.initial_mean) == 1):
             self.initial_mean = np.repeat(self.initial_mean, n_dim)
         if isinstance(self.initial_prec, (int, float, np.number)) or (hasattr(self.initial_prec, '__len__') and len(self.initial_prec) == 1):
-            self.initial_prec = self.initial_prec[0] * np.identity(n_dim)
+            # self.initial_prec = self.initial_prec[0] * np.identity(n_dim)
+            self.initial_prec = np.repeat(self.initial_prec[0], n_dim)
 
     def to_dict(self):
         return {
@@ -437,7 +438,8 @@ class GdpConfig(_BayesConfig):
 
 def validate_spec(bayes_spec_: _BayesConfig, y: np.array, p: int, n_features_in_: int, group_id = None, own_id = None, cross_id = None):
     if type(bayes_spec_) == SsvsConfig:
-        bayes_spec_.update(group_id, own_id, cross_id)
+        if group_id is not None:
+            bayes_spec_.update(group_id, own_id, cross_id)
     elif type(bayes_spec_) == MinnesotaConfig:
         bayes_spec_.update(y, p, n_features_in_)
     return bayes_spec_
@@ -462,7 +464,7 @@ def get_init(init_: list, bayes_spec_: _BayesConfig, n_alpha: int, n_grp: int):
             group_sparsity = np.exp(np.random.uniform(-1, 1, n_grp))
             init.update({
                 'local_sparsity': local_sparsity,
-                'global_sparsity': np.array([global_sparsity]),
+                'global_sparsity': global_sparsity,
                 'group_sparsity': group_sparsity
             })
     elif type(bayes_spec_) == MinnesotaConfig:
@@ -490,7 +492,7 @@ def get_init(init_: list, bayes_spec_: _BayesConfig, n_alpha: int, n_grp: int):
             init.update({
                 'local_shape': local_shape,
                 'local_sparsity': local_sparsity,
-                'global_sparsity': np.array([global_sparsity]),
+                'global_sparsity': global_sparsity,
                 'group_sparsity': group_sparsity
             })
     elif type(bayes_spec_) == GdpConfig:

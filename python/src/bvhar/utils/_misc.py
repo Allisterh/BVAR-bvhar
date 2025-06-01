@@ -92,6 +92,15 @@ def check_np(data):
         # Add polars?
         raise ValueError("Unsupported data type.")
 
+def get_coef_init(n_chain, n_features_in_, n_design, n_eta):
+    return [
+        {
+            'init_coef': np.random.uniform(-1, 1, (n_design, n_features_in_)),
+            'init_contem': np.exp(np.random.uniform(-1, 0, n_eta))
+        }
+        for _ in range(n_chain)
+    ]
+
 def get_var_intercept(coef : np.array, lag: int, fit_intercept : bool):
     dim_design, dim_data = coef.shape
     if not fit_intercept:

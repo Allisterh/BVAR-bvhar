@@ -90,6 +90,21 @@ class SvConfig(LdltConfig):
             "initial_prec": self.initial_prec
         }
 
+def get_cov_init(init_ : list, cov_spec_ : LdltConfig, n_features_in_ : int, n_design : int):
+    if type(cov_spec_) == LdltConfig:
+        for init in init_:
+            init.update({
+                'init_diag': np.exp(np.random.uniform(-1, 1, n_features_in_))
+            })
+    elif type(cov_spec_) == SvConfig:
+        for init in init_:
+            init.update({
+                'lvol_init': np.random.uniform(-1, 1, n_features_in_),
+                'lvol': np.exp(np.random.uniform(-1, 1, n_features_in_ * n_design)).reshape(n_features_in_, -1).T,
+                'lvol_sig': [np.exp(np.random.uniform(-1, 1))]
+            })
+    return init_
+
 class InterceptConfig:
     """Prior for Constant term
 
@@ -165,46 +180,38 @@ class SsvsConfig(_BayesConfig):
     Specifies SSVS prior for coefficient.
     """
     def __init__(
-        self, coef_spike_grid = 100, coef_slab_shape = .01, coef_slab_scl = .01, coef_s1 = [1, 1], coef_s2 = [1, 1],
-        chol_spike_grid = 100, chol_slab_shape = .01, chol_slab_scl = .01,
-        chol_s1 = 1, chol_s2 = 1
+        self,
+        spike_grid = 100, slab_shape = .01, slab_scl = .01,
+        s1 = [1, 1], s2 = [1, 1]
     ):
         super().__init__("SSVS")
-        self.coef_spike_grid = self.validate(coef_spike_grid, "coef_spike_grid")
-        self.coef_slab_shape = self.validate(coef_slab_shape, "coef_slab_shape")
-        self.coef_slab_scl = self.validate(coef_slab_scl, "coef_slab_scl")
-        self.coef_s1 = self.validate(coef_s1, "coef_s1", 2)
-        self.coef_s2 = self.validate(coef_s2, "coef_s1", 2)
-        self.chol_spike_grid = self.validate(chol_spike_grid, "chol_spike_grid")
-        self.chol_slab_shape = self.validate(chol_slab_shape, "chol_slab_shape")
-        self.chol_slab_scl = self.validate(chol_slab_scl, "chol_slab_scl")
-        self.chol_s1 = self.validate(chol_s1, "chol_s1")
-        self.chol_s2 = self.validate(chol_s2, "chol_s1")
+        self.spike_grid = self.validate(spike_grid, "spike_grid")
+        self.slab_shape = self.validate(slab_shape, "slab_shape")
+        self.slab_scl = self.validate(slab_scl, "slab_scl")
+        self.s1 = self.validate(s1, "s1", 2)
+        self.s2 = self.validate(s2, "s1", 2)
+        # self.chol_s1 = self.validate(chol_s1, "chol_s1")
+        # self.chol_s2 = self.validate(chol_s2, "chol_s1")
 
     def update(self, grp_id: np.array, own_id: np.array, cross_id: np.array):
-        if len(self.coef_s1) == 2:
-            coef_s1 = np.zeros(len(grp_id))
-            coef_s1[np.isin(grp_id, own_id)] = self.coef_s1[0]
-            coef_s1[np.isin(grp_id, cross_id)] = self.coef_s1[1]
-            self.coef_s1 = coef_s1
-        if len(self.coef_s2) == 2:
-            coef_s2 = np.zeros(len(grp_id))
-            coef_s2[np.isin(grp_id, own_id)] = self.coef_s2[0]
-            coef_s2[np.isin(grp_id, cross_id)] = self.coef_s2[1]
-            self.coef_s2 = coef_s2
+        if len(self.s1) == 2:
+            s1 = np.zeros(len(grp_id))
+            s1[np.isin(grp_id, own_id)] = self.s1[0]
+            s1[np.isin(grp_id, cross_id)] = self.s1[1]
+            self.s1 = s1
+        if len(self.s2) == 2:
+            s2 = np.zeros(len(grp_id))
+            s2[np.isin(grp_id, own_id)] = self.s2[0]
+            s2[np.isin(grp_id, cross_id)] = self.s2[1]
+            self.s2 = s2
 
     def to_dict(self):
         return {
-            "coef_grid": self.coef_spike_grid,
-            "coef_slab_shape": self.coef_slab_shape,
-            "coef_slab_scl": self.coef_slab_scl,
-            "coef_s1": self.coef_s1,
-            "coef_s2": self.coef_s2,
-            "chol_grid": self.chol_spike_grid,
-            "chol_slab_shape": self.chol_slab_shape,
-            "chol_slab_scl": self.chol_slab_scl,
-            "chol_s1": self.chol_s1,
-            "chol_s2": self.chol_s2
+            "grid_size": self.spike_grid,
+            "slab_shape": self.slab_shape,
+            "slab_scl": self.slab_scl,
+            "s1": self.s1,
+            "s2": self.s2
         }
 
 class HorseshoeConfig(_BayesConfig):
@@ -345,8 +352,7 @@ class NgConfig(_BayesConfig):
     """
     def __init__(
         self, shape_sd = .01, group_shape = .01, group_scale = .01,
-        global_shape = .01, global_scale = .01,
-        contem_global_shape = .01, contem_global_scale = .01
+        global_shape = .01, global_scale = .01
     ):
         super().__init__("NG")
         self.shape_sd = self.validate(shape_sd, "shape_sd")
@@ -354,8 +360,8 @@ class NgConfig(_BayesConfig):
         self.group_scale = self.validate(group_scale, "group_scale")
         self.global_shape = self.validate(global_shape, "global_shape")
         self.global_scale = self.validate(global_scale, "global_scale")
-        self.contem_global_shape = self.validate(contem_global_shape, "contem_global_shape")
-        self.contem_global_scale = self.validate(contem_global_scale, "contem_global_scale")
+        # self.contem_global_shape = self.validate(contem_global_shape, "contem_global_shape")
+        # self.contem_global_scale = self.validate(contem_global_scale, "contem_global_scale")
 
     def to_dict(self):
         return {
@@ -363,9 +369,7 @@ class NgConfig(_BayesConfig):
             "group_shape": self.group_shape,
             "group_scale": self.group_scale,
             "global_shape": self.global_shape,
-            "global_scale": self.global_scale,
-            "contem_global_shape": self.contem_global_shape,
-            "contem_global_scale": self.contem_global_scale
+            "global_scale": self.global_scale
         }
     
 class GdpConfig(_BayesConfig):
@@ -383,3 +387,95 @@ class GdpConfig(_BayesConfig):
             "grid_shape": self.grid_shape,
             "grid_rate": self.grid_rate
         }
+
+def validate_spec(bayes_spec_ : _BayesConfig, group_id = None, own_id = None, cross_id = None):
+    if type(bayes_spec_) == SsvsConfig:
+        bayes_spec_.update(group_id, own_id, cross_id)
+    # if type(self.coef_spec_) == SsvsConfig:
+        # self.coef_spec_.update(self._group_id, self._own_id, self._cross_id)
+    # elif type(self.coef_spec_) == HorseshoeConfig:
+        # pass
+    # elif type(self.coef_spec_) == MinnesotaConfig:
+        # self.coef_spec_.update(self.y_, self.p_, self.n_features_in_)
+    # elif type(self.coef_spec_) == DlConfig:
+        # pass
+    # elif type(self.coef_spec_) == NgConfig:
+        # pass
+    # # elif type(self.coef_spec_) == GdpConfig:
+    #     pass
+    return _BayesConfig
+
+def get_init(init_ : list, bayes_spec_ : _BayesConfig, n_alpha : int, n_grp : int):
+    if type(bayes_spec_) == SsvsConfig:
+        for init in init_:
+            init_mixture = np.random.uniform(-1, 1, n_grp)
+            init_mixture = np.exp(init_mixture) / (1 + np.exp(init_mixture))
+            init_dummy = np.random.binomial(1, 0.5, n_alpha)
+            init_slab = np.exp(np.random.uniform(-1, 1, n_alpha))
+            init.update({
+                'dummy': init_dummy,
+                'mixture': init_mixture,
+                'slab': init_slab,
+                'spike_scl': np.random.uniform(0, 1)
+            })
+    elif type(bayes_spec_) == HorseshoeConfig:
+        for init in init_:
+            local_sparsity = np.exp(np.random.uniform(-1, 1, n_alpha))
+            global_sparsity = np.exp(np.random.uniform(-1, 1))
+            group_sparsity = np.exp(np.random.uniform(-1, 1, n_grp))
+            init.update({
+                'local_sparsity': local_sparsity,
+                'global_sparsity': global_sparsity,
+                'group_sparsity': group_sparsity
+            })
+    elif type(bayes_spec_) == MinnesotaConfig:
+        for init in init_:
+            init.update({
+                'own_lambda': np.random.uniform(0, 1),
+                'cross_lambda': np.random.uniform(0, 1)
+            })
+    elif type(bayes_spec_) == DlConfig:
+        for init in init_:
+            local_sparsity = np.exp(np.random.uniform(-1, 1, n_alpha))
+            global_sparsity = np.exp(np.random.uniform(-1, 1))
+            group_sparsity = np.exp(np.random.uniform(-1, 1, n_grp))
+            init.update({
+                'local_sparsity': local_sparsity,
+                'global_sparsity': global_sparsity,
+                'group_sparsity': group_sparsity
+            })
+    elif type(bayes_spec_) == NgConfig:
+        for init in init_:
+            local_sparsity = np.exp(np.random.uniform(-1, 1, n_alpha))
+            global_sparsity = np.exp(np.random.uniform(-1, 1))
+            group_sparsity = np.exp(np.random.uniform(-1, 1, n_grp))
+            local_shape = np.random.uniform(0, 1, n_grp)
+            init.update({
+                'local_shape': local_shape,
+                'local_sparsity': local_sparsity,
+                'global_sparsity': global_sparsity,
+                'group_sparsity': group_sparsity
+            })
+    elif type(bayes_spec_) == GdpConfig:
+        local_sparsity = np.exp(np.random.uniform(-1, 1, n_alpha))
+        group_rate = np.exp(np.random.uniform(-1, 1, n_grp))
+        coef_shape = np.random.uniform(0, 1)
+        coef_rate = np.random.uniform(0, 1)
+        init.update({
+            'local_sparsity': local_sparsity,
+            'group_rate': group_rate,
+            'gamma_shape': coef_shape,
+            'gamma_rate': coef_rate
+        })
+    return init_
+
+def enumerate_prior_type(bayes_spec : _BayesConfig):
+    return {
+        "Minnesota": 1,
+        "SSVS": 2,
+        "Horseshoe": 3,
+        "HMN": 4,
+        "NG": 5,
+        "DL": 6,
+        "GDP": 7
+    }.get(bayes_spec.prior)

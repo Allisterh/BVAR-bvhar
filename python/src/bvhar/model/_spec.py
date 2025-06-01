@@ -445,8 +445,9 @@ def validate_spec(bayes_spec_: _BayesConfig, y: np.array, p: int, n_features_in_
     return bayes_spec_
 
 def get_init(init_: list, bayes_spec_: _BayesConfig, n_alpha: int, n_grp: int):
+    res = [dict(init) for init in init_]
     if type(bayes_spec_) == SsvsConfig:
-        for init in init_:
+        for init in res:
             init_mixture = np.random.uniform(-1, 1, n_grp)
             init_mixture = np.exp(init_mixture) / (1 + np.exp(init_mixture))
             init_dummy = np.random.binomial(1, 0.5, n_alpha)
@@ -458,7 +459,7 @@ def get_init(init_: list, bayes_spec_: _BayesConfig, n_alpha: int, n_grp: int):
                 'spike_scl': np.random.uniform(0, 1)
             })
     elif type(bayes_spec_) == HorseshoeConfig:
-        for init in init_:
+        for init in res:
             local_sparsity = np.exp(np.random.uniform(-1, 1, n_alpha))
             global_sparsity = np.exp(np.random.uniform(-1, 1))
             group_sparsity = np.exp(np.random.uniform(-1, 1, n_grp))
@@ -468,13 +469,13 @@ def get_init(init_: list, bayes_spec_: _BayesConfig, n_alpha: int, n_grp: int):
                 'group_sparsity': group_sparsity
             })
     elif type(bayes_spec_) == MinnesotaConfig:
-        for init in init_:
+        for init in res:
             init.update({
                 'own_lambda': np.random.uniform(0, 1),
                 'cross_lambda': np.random.uniform(0, 1)
             })
     elif type(bayes_spec_) == DlConfig:
-        for init in init_:
+        for init in res:
             local_sparsity = np.exp(np.random.uniform(-1, 1, n_alpha))
             global_sparsity = np.exp(np.random.uniform(-1, 1))
             group_sparsity = np.exp(np.random.uniform(-1, 1, n_grp))
@@ -484,7 +485,7 @@ def get_init(init_: list, bayes_spec_: _BayesConfig, n_alpha: int, n_grp: int):
                 'group_sparsity': group_sparsity
             })
     elif type(bayes_spec_) == NgConfig:
-        for init in init_:
+        for init in res:
             local_sparsity = np.exp(np.random.uniform(-1, 1, n_alpha))
             global_sparsity = np.exp(np.random.uniform(-1, 1))
             group_sparsity = np.exp(np.random.uniform(-1, 1, n_grp))
@@ -496,17 +497,18 @@ def get_init(init_: list, bayes_spec_: _BayesConfig, n_alpha: int, n_grp: int):
                 'group_sparsity': group_sparsity
             })
     elif type(bayes_spec_) == GdpConfig:
-        local_sparsity = np.exp(np.random.uniform(-1, 1, n_alpha))
-        group_rate = np.exp(np.random.uniform(-1, 1, n_grp))
-        coef_shape = np.random.uniform(0, 1)
-        coef_rate = np.random.uniform(0, 1)
-        init.update({
-            'local_sparsity': local_sparsity,
-            'group_rate': group_rate,
-            'gamma_shape': coef_shape,
-            'gamma_rate': coef_rate
-        })
-    return init_
+        for init in res:
+            local_sparsity = np.exp(np.random.uniform(-1, 1, n_alpha))
+            group_rate = np.exp(np.random.uniform(-1, 1, n_grp))
+            coef_shape = np.random.uniform(0, 1)
+            coef_rate = np.random.uniform(0, 1)
+            init.update({
+                'local_sparsity': local_sparsity,
+                'group_rate': group_rate,
+                'gamma_shape': coef_shape,
+                'gamma_rate': coef_rate
+            })
+    return res
 
 def enumerate_prior_type(bayes_spec: _BayesConfig):
     return {

@@ -57,11 +57,9 @@ class _AutoregBayes:
         self.contem_spec_ = contem_config
         self.intercept_spec_ = intercept_config
         self.init_ = get_coef_init(self.chains_, self.n_features_in_, self.n_design, self.n_eta)
-        self.contem_init_ = get_init(self.init_.copy(), contem_config, self.n_eta, self.n_eta if contem_config.prior in ["SSVS", "GDP"] else 1)
-        print(f"n_eta: {self.n_eta}")
-        print(f"contem_init_: {self.contem_init_}")
-        self.init_ = get_init(self.init_.copy(), coef_config, self.n_alpha, self.n_grp)
-        self.init_ = get_cov_init(self.init_.copy(), self.cov_spec_, self.n_features_in_, self.n_design)
+        self.contem_init_ = get_init(self.init_, contem_config, self.n_eta, self.n_eta if contem_config.prior in ["SSVS", "GDP"] else 1)
+        self.init_ = get_init(self.init_, coef_config, self.n_alpha, self.n_grp)
+        self.init_ = get_cov_init(self.init_, self.cov_spec_, self.n_features_in_, self.n_design)
         self.init_ = make_fortran_array(self.init_)
         self.contem_init_ = make_fortran_array(self.contem_init_)
         self._coef_prior_type = enumerate_prior_type(coef_config)
@@ -192,7 +190,6 @@ class VarBayes(_AutoregBayes):
             warnings.warn(f"'n_thread = {self.thread_} > 'n_chain' = {n_chain}' will not use every thread. Specify as 'n_thread <= 'n_chain'.")
         if type(self.cov_spec_) == LdltConfig:
             if self._ggl:
-                print(f"contem_init_: {self.contem_init_}")
                 self.__model = McmcLdlt(
                     self.chains_, self.iter_, self.burn_, self.thin_,
                     self.design_, self.response_,

@@ -1,11 +1,13 @@
-#include <bvhar/deprecated_triangular>
+#include <bvhar/triangular>
 
 PYBIND11_MODULE(_cta, m) {
 	py::class_<bvhar::CtaRun<bvhar::McmcReg>>(m, "McmcLdlt")
 		.def(
 			py::init<int, int, int, int, const Eigen::MatrixXd&, const Eigen::MatrixXd&,
-			py::dict&, py::dict&, py::dict&,
-			std::vector<py::dict>&, int, const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::VectorXi&,
+			py::dict&, py::dict&,
+			py::dict&, std::vector<py::dict>&, int,
+			py::dict&, std::vector<py::dict>&, int,
+			const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::VectorXi&,
 			const Eigen::MatrixXi&, bool, const Eigen::VectorXi&, bool, int>()
 		)
 		.def("returnRecords", &bvhar::CtaRun<bvhar::McmcReg>::returnRecords);
@@ -13,8 +15,10 @@ PYBIND11_MODULE(_cta, m) {
 	py::class_<bvhar::CtaRun<bvhar::McmcReg, false>>(m, "McmcLdltGrp")
 		.def(
 			py::init<int, int, int, int, const Eigen::MatrixXd&, const Eigen::MatrixXd&,
-			py::dict&, py::dict&, py::dict&,
-			std::vector<py::dict>&, int, const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::VectorXi&,
+			py::dict&, py::dict&,
+			py::dict&, std::vector<py::dict>&, int,
+			py::dict&, std::vector<py::dict>&, int,
+			const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::VectorXi&,
 			const Eigen::MatrixXi&, bool, const Eigen::VectorXi&, bool, int>()
 		)
 		.def("returnRecords", &bvhar::CtaRun<bvhar::McmcReg, false>::returnRecords);
@@ -22,8 +26,10 @@ PYBIND11_MODULE(_cta, m) {
 	py::class_<bvhar::CtaRun<bvhar::McmcSv>>(m, "SvMcmc")
 		.def(
 			py::init<int, int, int, int, const Eigen::MatrixXd&, const Eigen::MatrixXd&,
-			py::dict&, py::dict&, py::dict&,
-			std::vector<py::dict>&, int, const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::VectorXi&,
+			py::dict&, py::dict&,
+			py::dict&, std::vector<py::dict>&, int,
+			py::dict&, std::vector<py::dict>&, int,
+			const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::VectorXi&,
 			const Eigen::MatrixXi&, bool, const Eigen::VectorXi&, bool, int>()
 		)
 		.def("returnRecords", &bvhar::CtaRun<bvhar::McmcSv>::returnRecords);
@@ -31,181 +37,215 @@ PYBIND11_MODULE(_cta, m) {
 	py::class_<bvhar::CtaRun<bvhar::McmcSv, false>>(m, "SvGrpMcmc")
 		.def(
 			py::init<int, int, int, int, const Eigen::MatrixXd&, const Eigen::MatrixXd&,
-			py::dict&, py::dict&, py::dict&,
-			std::vector<py::dict>&, int, const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::VectorXi&,
+			py::dict&, py::dict&,
+			py::dict&, std::vector<py::dict>&, int,
+			py::dict&, std::vector<py::dict>&, int,
+			const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::VectorXi&,
 			const Eigen::MatrixXi&, bool, const Eigen::VectorXi&, bool, int>()
 		)
 		.def("returnRecords", &bvhar::CtaRun<bvhar::McmcSv, false>::returnRecords);
 	
-	py::class_<bvhar::McmcForecastRun<bvhar::RegForecaster>>(m, "LdltForecast")
+	py::class_<bvhar::CtaForecastRun<bvhar::RegForecaster>>(m, "LdltForecast")
 		.def(py::init<int, int, int, const Eigen::MatrixXd&, bool, double, py::dict&, const Eigen::VectorXi&, bool, bool, int, bool>())
 		.def(py::init<int, int, int, int, const Eigen::MatrixXd&, bool, double, py::dict&, const Eigen::VectorXi&, bool, bool, int, bool>())
-		.def("returnForecast", &bvhar::McmcForecastRun<bvhar::RegForecaster>::returnForecast);
+		.def("returnForecast", &bvhar::CtaForecastRun<bvhar::RegForecaster>::returnForecast);
 	
-	py::class_<bvhar::McmcVarforecastRun<bvhar::McmcRollforecastRun, bvhar::RegForecaster>>(m, "LdltVarRoll")
+	py::class_<bvhar::CtaVarforecastRun<bvhar::CtaRollforecastRun, bvhar::RegForecaster>>(m, "LdltVarRoll")
 		.def(
 			py::init<const Eigen::MatrixXd&, int, int, int, int, int,
-			bool, double, py::dict&, py::dict&, py::dict&, py::dict&, std::vector<py::dict>&, int,
+			bool, double, py::dict&, py::dict&, py::dict&,
+			py::dict&, std::vector<py::dict>&, int,
+			py::dict&, std::vector<py::dict>&, int,
 			const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::MatrixXi&,
 			bool, bool, int, const Eigen::MatrixXd&, bool,
 			const Eigen::MatrixXi&, const Eigen::VectorXi&, bool, int, bool>()
 		)
-		.def("returnForecast", &bvhar::McmcVarforecastRun<bvhar::McmcRollforecastRun, bvhar::RegForecaster>::returnForecast);
+		.def("returnForecast", &bvhar::CtaVarforecastRun<bvhar::McmcRollforecastRun, bvhar::RegForecaster>::returnForecast);
 	
-	py::class_<bvhar::McmcVarforecastRun<bvhar::McmcExpandforecastRun, bvhar::RegForecaster>>(m, "LdltVarExpand")
+	py::class_<bvhar::CtaVarforecastRun<bvhar::CtaExpandforecastRun, bvhar::RegForecaster>>(m, "LdltVarExpand")
 		.def(
 			py::init<const Eigen::MatrixXd&, int, int, int, int, int,
-			bool, double, py::dict&, py::dict&, py::dict&, py::dict&, std::vector<py::dict>&, int,
+			bool, double, py::dict&, py::dict&, py::dict&,
+			py::dict&, std::vector<py::dict>&, int,
+			py::dict&, std::vector<py::dict>&, int,
 			const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::MatrixXi&,
 			bool, bool, int, const Eigen::MatrixXd&, bool,
 			const Eigen::MatrixXi&, const Eigen::VectorXi&, bool, int, bool>()
 		)
-		.def("returnForecast", &bvhar::McmcVarforecastRun<bvhar::McmcExpandforecastRun, bvhar::RegForecaster>::returnForecast);
+		.def("returnForecast", &bvhar::CtaVarforecastRun<bvhar::McmcExpandforecastRun, bvhar::RegForecaster>::returnForecast);
 	
-	py::class_<bvhar::McmcVharforecastRun<bvhar::McmcRollforecastRun, bvhar::RegForecaster>>(m, "LdltVharRoll")
+	py::class_<bvhar::CtaVharforecastRun<bvhar::CtaRollforecastRun, bvhar::RegForecaster>>(m, "LdltVharRoll")
 		.def(
 			py::init<const Eigen::MatrixXd&, int, int, int, int, int, int,
-			bool, double, py::dict&, py::dict&, py::dict&, py::dict&, std::vector<py::dict>&, int,
+			bool, double, py::dict&, py::dict&, py::dict&,
+			py::dict&, std::vector<py::dict>&, int,
+			py::dict&, std::vector<py::dict>&, int,
 			const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::MatrixXi&,
 			bool, bool, int, const Eigen::MatrixXd&, bool,
 			const Eigen::MatrixXi&, const Eigen::VectorXi&, bool, int, bool>()
 		)
-		.def("returnForecast", &bvhar::McmcVharforecastRun<bvhar::McmcRollforecastRun, bvhar::RegForecaster>::returnForecast);
+		.def("returnForecast", &bvhar::CtaVharforecastRun<bvhar::McmcRollforecastRun, bvhar::RegForecaster>::returnForecast);
 	
-	py::class_<bvhar::McmcVharforecastRun<bvhar::McmcExpandforecastRun, bvhar::RegForecaster>>(m, "LdltVharExpand")
+	py::class_<bvhar::CtaVharforecastRun<bvhar::CtaExpandforecastRun, bvhar::RegForecaster>>(m, "LdltVharExpand")
 		.def(
 			py::init<const Eigen::MatrixXd&, int, int, int, int, int, int,
-			bool, double, py::dict&, py::dict&, py::dict&, py::dict&, std::vector<py::dict>&, int,
+			bool, double, py::dict&, py::dict&, py::dict&,
+			py::dict&, std::vector<py::dict>&, int,
+			py::dict&, std::vector<py::dict>&, int,
 			const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::MatrixXi&,
 			bool, bool, int, const Eigen::MatrixXd&, bool,
 			const Eigen::MatrixXi&, const Eigen::VectorXi&, bool, int, bool>()
 		)
-		.def("returnForecast", &bvhar::McmcVharforecastRun<bvhar::McmcExpandforecastRun, bvhar::RegForecaster>::returnForecast);
+		.def("returnForecast", &bvhar::CtaVharforecastRun<bvhar::CtaExpandforecastRun, bvhar::RegForecaster>::returnForecast);
 	
-	py::class_<bvhar::McmcVarforecastRun<bvhar::McmcRollforecastRun, bvhar::RegForecaster, false>>(m, "LdltGrpVarRoll")
+	py::class_<bvhar::CtaVarforecastRun<bvhar::CtaRollforecastRun, bvhar::RegForecaster, false>>(m, "LdltGrpVarRoll")
 		.def(
 			py::init<const Eigen::MatrixXd&, int, int, int, int, int,
-			bool, double, py::dict&, py::dict&, py::dict&, py::dict&, std::vector<py::dict>&, int,
+			bool, double, py::dict&, py::dict&, py::dict&,
+			py::dict&, std::vector<py::dict>&, int,
+			py::dict&, std::vector<py::dict>&, int,
 			const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::MatrixXi&,
 			bool, bool, int, const Eigen::MatrixXd&, bool,
 			const Eigen::MatrixXi&, const Eigen::VectorXi&, bool, int, bool>()
 		)
-		.def("returnForecast", &bvhar::McmcVarforecastRun<bvhar::McmcRollforecastRun, bvhar::RegForecaster, false>::returnForecast);
+		.def("returnForecast", &bvhar::CtaVarforecastRun<bvhar::CtaRollforecastRun, bvhar::RegForecaster, false>::returnForecast);
 	
-	py::class_<bvhar::McmcVarforecastRun<bvhar::McmcExpandforecastRun, bvhar::RegForecaster, false>>(m, "LdltGrpVarExpand")
+	py::class_<bvhar::CtaVarforecastRun<bvhar::CtaExpandforecastRun, bvhar::RegForecaster, false>>(m, "LdltGrpVarExpand")
 		.def(
 			py::init<const Eigen::MatrixXd&, int, int, int, int, int,
-			bool, double, py::dict&, py::dict&, py::dict&, py::dict&, std::vector<py::dict>&, int,
+			bool, double, py::dict&, py::dict&, py::dict&,
+			py::dict&, std::vector<py::dict>&, int,
+			py::dict&, std::vector<py::dict>&, int,
 			const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::MatrixXi&,
 			bool, bool, int, const Eigen::MatrixXd&, bool,
 			const Eigen::MatrixXi&, const Eigen::VectorXi&, bool, int, bool>()
 		)
-		.def("returnForecast", &bvhar::McmcVarforecastRun<bvhar::McmcExpandforecastRun, bvhar::RegForecaster, false>::returnForecast);
+		.def("returnForecast", &bvhar::CtaVarforecastRun<bvhar::CtaExpandforecastRun, bvhar::RegForecaster, false>::returnForecast);
 	
-	py::class_<bvhar::McmcVharforecastRun<bvhar::McmcRollforecastRun, bvhar::RegForecaster, false>>(m, "LdltGrpVharRoll")
+	py::class_<bvhar::CtaVharforecastRun<bvhar::CtaRollforecastRun, bvhar::RegForecaster, false>>(m, "LdltGrpVharRoll")
 		.def(
 			py::init<const Eigen::MatrixXd&, int, int, int, int, int, int,
-			bool, double, py::dict&, py::dict&, py::dict&, py::dict&, std::vector<py::dict>&, int,
+			bool, double, py::dict&, py::dict&, py::dict&,
+			py::dict&, std::vector<py::dict>&, int,
+			py::dict&, std::vector<py::dict>&, int,
 			const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::MatrixXi&,
 			bool, bool, int, const Eigen::MatrixXd&, bool,
 			const Eigen::MatrixXi&, const Eigen::VectorXi&, bool, int, bool>()
 		)
-		.def("returnForecast", &bvhar::McmcVharforecastRun<bvhar::McmcRollforecastRun, bvhar::RegForecaster, false>::returnForecast);
+		.def("returnForecast", &bvhar::CtaVharforecastRun<bvhar::CtaRollforecastRun, bvhar::RegForecaster, false>::returnForecast);
 	
-	py::class_<bvhar::McmcVharforecastRun<bvhar::McmcExpandforecastRun, bvhar::RegForecaster, false>>(m, "LdltGrpVharExpand")
+	py::class_<bvhar::CtaVharforecastRun<bvhar::CtaExpandforecastRun, bvhar::RegForecaster, false>>(m, "LdltGrpVharExpand")
 		.def(
 			py::init<const Eigen::MatrixXd&, int, int, int, int, int, int,
-			bool, double, py::dict&, py::dict&, py::dict&, py::dict&, std::vector<py::dict>&, int,
+			bool, double, py::dict&, py::dict&, py::dict&,
+			py::dict&, std::vector<py::dict>&, int,
+			py::dict&, std::vector<py::dict>&, int,
 			const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::MatrixXi&,
 			bool, bool, int, const Eigen::MatrixXd&, bool,
 			const Eigen::MatrixXi&, const Eigen::VectorXi&, bool, int, bool>()
 		)
-		.def("returnForecast", &bvhar::McmcVharforecastRun<bvhar::McmcExpandforecastRun, bvhar::RegForecaster, false>::returnForecast);
+		.def("returnForecast", &bvhar::CtaVharforecastRun<bvhar::CtaExpandforecastRun, bvhar::RegForecaster, false>::returnForecast);
 	
-	py::class_<bvhar::McmcForecastRun<bvhar::SvForecaster>>(m, "SvForecast")
+	py::class_<bvhar::CtaForecastRun<bvhar::SvForecaster>>(m, "SvForecast")
 		.def(py::init<int, int, int, const Eigen::MatrixXd&, bool, double, py::dict&, const Eigen::VectorXi&, bool, bool, int, bool>())
 		.def(py::init<int, int, int, int, const Eigen::MatrixXd&, bool, double, py::dict&, const Eigen::VectorXi&, bool, bool, int, bool>())
-		.def("returnForecast", &bvhar::McmcForecastRun<bvhar::SvForecaster>::returnForecast);
+		.def("returnForecast", &bvhar::CtaForecastRun<bvhar::SvForecaster>::returnForecast);
 	
-	py::class_<bvhar::McmcVarforecastRun<bvhar::McmcRollforecastRun, bvhar::SvForecaster>>(m, "SvVarRoll")
+	py::class_<bvhar::CtaVarforecastRun<bvhar::CtaRollforecastRun, bvhar::SvForecaster>>(m, "SvVarRoll")
 		.def(
 			py::init<const Eigen::MatrixXd&, int, int, int, int, int,
-			bool, double, py::dict&, py::dict&, py::dict&, py::dict&, std::vector<py::dict>&, int,
+			bool, double, py::dict&, py::dict&, py::dict&,
+			py::dict&, std::vector<py::dict>&, int,
+			py::dict&, std::vector<py::dict>&, int,
 			const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::MatrixXi&,
 			bool, bool, int, const Eigen::MatrixXd&, bool,
 			const Eigen::MatrixXi&, const Eigen::VectorXi&, bool, int, bool>()
 		)
 		.def("returnForecast", &bvhar::McmcVarforecastRun<bvhar::McmcRollforecastRun, bvhar::SvForecaster>::returnForecast);
 	
-	py::class_<bvhar::McmcVarforecastRun<bvhar::McmcExpandforecastRun, bvhar::SvForecaster>>(m, "SvVarExpand")
+	py::class_<bvhar::CtaVarforecastRun<bvhar::CtaExpandforecastRun, bvhar::SvForecaster>>(m, "SvVarExpand")
 		.def(
 			py::init<const Eigen::MatrixXd&, int, int, int, int, int,
-			bool, double, py::dict&, py::dict&, py::dict&, py::dict&, std::vector<py::dict>&, int,
+			bool, double, py::dict&, py::dict&, py::dict&,
+			py::dict&, std::vector<py::dict>&, int,
+			py::dict&, std::vector<py::dict>&, int,
 			const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::MatrixXi&,
 			bool, bool, int, const Eigen::MatrixXd&, bool,
 			const Eigen::MatrixXi&, const Eigen::VectorXi&, bool, int, bool>()
 		)
-		.def("returnForecast", &bvhar::McmcVarforecastRun<bvhar::McmcExpandforecastRun, bvhar::SvForecaster>::returnForecast);
+		.def("returnForecast", &bvhar::CtaVarforecastRun<bvhar::CtaExpandforecastRun, bvhar::SvForecaster>::returnForecast);
 	
 	py::class_<bvhar::McmcVharforecastRun<bvhar::McmcRollforecastRun, bvhar::SvForecaster>>(m, "SvVharRoll")
 		.def(
 			py::init<const Eigen::MatrixXd&, int, int, int, int, int, int,
-			bool, double, py::dict&, py::dict&, py::dict&, py::dict&, std::vector<py::dict>&, int,
+			bool, double, py::dict&, py::dict&, py::dict&,
+			py::dict&, std::vector<py::dict>&, int,
+			py::dict&, std::vector<py::dict>&, int,
 			const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::MatrixXi&,
 			bool, bool, int, const Eigen::MatrixXd&, bool,
 			const Eigen::MatrixXi&, const Eigen::VectorXi&, bool, int, bool>()
 		)
-		.def("returnForecast", &bvhar::McmcVharforecastRun<bvhar::McmcRollforecastRun, bvhar::SvForecaster>::returnForecast);
+		.def("returnForecast", &bvhar::CtaVharforecastRun<bvhar::CtaRollforecastRun, bvhar::SvForecaster>::returnForecast);
 	
-	py::class_<bvhar::McmcVharforecastRun<bvhar::McmcExpandforecastRun, bvhar::SvForecaster>>(m, "SvVharExpand")
+	py::class_<bvhar::CtaVharforecastRun<bvhar::CtaExpandforecastRun, bvhar::SvForecaster>>(m, "SvVharExpand")
 		.def(
 			py::init<const Eigen::MatrixXd&, int, int, int, int, int, int,
-			bool, double, py::dict&, py::dict&, py::dict&, py::dict&, std::vector<py::dict>&, int,
+			bool, double, py::dict&, py::dict&, py::dict&,
+			py::dict&, std::vector<py::dict>&, int,
+			py::dict&, std::vector<py::dict>&, int,
 			const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::MatrixXi&,
 			bool, bool, int, const Eigen::MatrixXd&, bool,
 			const Eigen::MatrixXi&, const Eigen::VectorXi&, bool, int, bool>()
 		)
-		.def("returnForecast", &bvhar::McmcVharforecastRun<bvhar::McmcExpandforecastRun, bvhar::SvForecaster>::returnForecast);
+		.def("returnForecast", &bvhar::CtaVharforecastRun<bvhar::CtaExpandforecastRun, bvhar::SvForecaster>::returnForecast);
 	
-	py::class_<bvhar::McmcVarforecastRun<bvhar::McmcRollforecastRun, bvhar::SvForecaster, false>>(m, "SvGrpVarRoll")
+	py::class_<bvhar::CtaVarforecastRun<bvhar::CtaRollforecastRun, bvhar::SvForecaster, false>>(m, "SvGrpVarRoll")
 		.def(
 			py::init<const Eigen::MatrixXd&, int, int, int, int, int,
-			bool, double, py::dict&, py::dict&, py::dict&, py::dict&, std::vector<py::dict>&, int,
+			bool, double, py::dict&, py::dict&, py::dict&,
+			py::dict&, std::vector<py::dict>&, int,
+			py::dict&, std::vector<py::dict>&, int,
 			const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::MatrixXi&,
 			bool, bool, int, const Eigen::MatrixXd&, bool,
 			const Eigen::MatrixXi&, const Eigen::VectorXi&, bool, int, bool>()
 		)
-		.def("returnForecast", &bvhar::McmcVarforecastRun<bvhar::McmcRollforecastRun, bvhar::SvForecaster, false>::returnForecast);
+		.def("returnForecast", &bvhar::CtaVarforecastRun<bvhar::CtaRollforecastRun, bvhar::SvForecaster, false>::returnForecast);
 	
-	py::class_<bvhar::McmcVarforecastRun<bvhar::McmcExpandforecastRun, bvhar::SvForecaster, false>>(m, "SvGrpVarExpand")
+	py::class_<bvhar::CtaVarforecastRun<bvhar::CtaExpandforecastRun, bvhar::SvForecaster, false>>(m, "SvGrpVarExpand")
 		.def(
 			py::init<const Eigen::MatrixXd&, int, int, int, int, int,
-			bool, double, py::dict&, py::dict&, py::dict&, py::dict&, std::vector<py::dict>&, int,
+			bool, double, py::dict&, py::dict&, py::dict&,
+			py::dict&, std::vector<py::dict>&, int,
+			py::dict&, std::vector<py::dict>&, int,
 			const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::MatrixXi&,
 			bool, bool, int, const Eigen::MatrixXd&, bool,
 			const Eigen::MatrixXi&, const Eigen::VectorXi&, bool, int, bool>()
 		)
-		.def("returnForecast", &bvhar::McmcVarforecastRun<bvhar::McmcExpandforecastRun, bvhar::SvForecaster, false>::returnForecast);
+		.def("returnForecast", &bvhar::CtaVarforecastRun<bvhar::CtaExpandforecastRun, bvhar::SvForecaster, false>::returnForecast);
 	
-	py::class_<bvhar::McmcVharforecastRun<bvhar::McmcRollforecastRun, bvhar::SvForecaster, false>>(m, "SvGrpVharRoll")
+	py::class_<bvhar::CtaVharforecastRun<bvhar::CtaRollforecastRun, bvhar::SvForecaster, false>>(m, "SvGrpVharRoll")
 		.def(
 			py::init<const Eigen::MatrixXd&, int, int, int, int, int, int,
-			bool, double, py::dict&, py::dict&, py::dict&, py::dict&, std::vector<py::dict>&, int,
+			bool, double, py::dict&, py::dict&, py::dict&,
+			py::dict&, std::vector<py::dict>&, int,
+			py::dict&, std::vector<py::dict>&, int,
 			const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::MatrixXi&,
 			bool, bool, int, const Eigen::MatrixXd&, bool,
 			const Eigen::MatrixXi&, const Eigen::VectorXi&, bool, int, bool>()
 		)
-		.def("returnForecast", &bvhar::McmcVharforecastRun<bvhar::McmcRollforecastRun, bvhar::SvForecaster, false>::returnForecast);
+		.def("returnForecast", &bvhar::CtaVharforecastRun<bvhar::CtaRollforecastRun, bvhar::SvForecaster, false>::returnForecast);
 	
-	py::class_<bvhar::McmcVharforecastRun<bvhar::McmcExpandforecastRun, bvhar::SvForecaster, false>>(m, "SvGrpVharExpand")
+	py::class_<bvhar::CtaVharforecastRun<bvhar::CtaExpandforecastRun, bvhar::SvForecaster, false>>(m, "SvGrpVharExpand")
 		.def(
 			py::init<const Eigen::MatrixXd&, int, int, int, int, int, int,
-			bool, double, py::dict&, py::dict&, py::dict&, py::dict&, std::vector<py::dict>&, int,
+			bool, double, py::dict&, py::dict&, py::dict&,
+			py::dict&, std::vector<py::dict>&, int,
+			py::dict&, std::vector<py::dict>&, int,
 			const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::MatrixXi&,
 			bool, bool, int, const Eigen::MatrixXd&, bool,
 			const Eigen::MatrixXi&, const Eigen::VectorXi&, bool, int, bool>()
 		)
-		.def("returnForecast", &bvhar::McmcVharforecastRun<bvhar::McmcExpandforecastRun, bvhar::SvForecaster, false>::returnForecast);
+		.def("returnForecast", &bvhar::CtaVharforecastRun<bvhar::CtaExpandforecastRun, bvhar::SvForecaster, false>::returnForecast);
 	
 	py::class_<bvhar::McmcSpilloverRun<bvhar::LdltRecords>>(m, "LdltSpillover")
 		.def(py::init<int, int, py::dict&, bool>())
@@ -216,12 +256,14 @@ PYBIND11_MODULE(_cta, m) {
 		.def(
 			py::init<const Eigen::MatrixXd&, int, int, int, int, int, int, int, bool,
 			py::dict&, py::dict&, py::dict&, std::vector<py::dict>&, int, bool,
+			py::dict&, std::vector<py::dict>&, int,
 			const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::MatrixXi&,
 			bool, const Eigen::MatrixXi&, int>()
 		)
 		.def(
 			py::init<const Eigen::MatrixXd&, int, int, int, int, int, int, int, int, bool,
 			py::dict&, py::dict&, py::dict&, std::vector<py::dict>&, int, bool,
+			py::dict&, std::vector<py::dict>&, int,
 			const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::VectorXi&, const Eigen::MatrixXi&,
 			bool, const Eigen::MatrixXi&, int>()
 		)

@@ -8,7 +8,7 @@ import numpy as np
 def help_var_bayes(
     dim_data, var_lag, data,
     num_chains, num_threads, num_iter, num_burn, thin, intercept, minnesota, ggl,
-    bayes_config, cov_config,
+    coef_config, contem_config, cov_config,
     test_y = None, n_ahead = None, pred = False, roll = False, expand = False, spillover = False, win_size = None
 ):
     np.random.seed(1)
@@ -18,7 +18,8 @@ def help_var_bayes(
         num_iter,
         num_burn,
         thin,
-        bayes_config,
+        coef_config,
+        contem_config,
         cov_config,
         InterceptConfig(),
         intercept,
@@ -86,29 +87,29 @@ def test_var_bayes():
 
     help_var_bayes(
         dim_data, var_lag, data, num_chains, num_threads, num_iter, num_burn, thin, intercept, minnesota, ggl,
-        SsvsConfig(), LdltConfig(),
+        SsvsConfig(), SsvsConfig(), LdltConfig(),
         data_out, n_ahead, True, True, True, True, win_size = win_size
     )
     help_var_bayes(
         dim_data, var_lag, data, num_chains, num_threads, num_iter, num_burn, thin, intercept, minnesota, ggl,
-        HorseshoeConfig(), LdltConfig(),
+        HorseshoeConfig(), HorseshoeConfig(), LdltConfig(),
         data_out, n_ahead
     )
     help_var_bayes(
         dim_data, var_lag, data, num_chains, num_threads, num_iter, num_burn, thin, intercept, minnesota, ggl,
-        MinnesotaConfig(lam=LambdaConfig()), LdltConfig()
+        MinnesotaConfig(lam=LambdaConfig()), MinnesotaConfig(lam=LambdaConfig()), LdltConfig()
     )
     help_var_bayes(
         dim_data, var_lag, data, num_chains, num_threads, num_iter, num_burn, thin, intercept, minnesota, ggl,
-        NgConfig(), LdltConfig()
+        NgConfig(), NgConfig(), LdltConfig()
     )
     help_var_bayes(
         dim_data, var_lag, data, num_chains, num_threads, num_iter, num_burn, thin, intercept, minnesota, ggl,
-        DlConfig(), LdltConfig()
+        DlConfig(), DlConfig(), LdltConfig()
     )
     help_var_bayes(
         dim_data, var_lag, data, num_chains, num_threads, num_iter, num_burn, thin, intercept, minnesota, ggl,
-        GdpConfig(), LdltConfig()
+        GdpConfig(), GdpConfig(), LdltConfig()
     )
 
     # help_var_bayes(
@@ -119,7 +120,7 @@ def test_var_bayes():
     with pytest.warns(UserWarning, match=f"'n_thread = 3 > 'n_chain' = 2' will not use every thread. Specify as 'n_thread <= 'n_chain'."):
         VarBayes(
             data, var_lag, 2, num_iter, num_burn, thin,
-            SsvsConfig(), LdltConfig(), InterceptConfig(),
+            SsvsConfig(), SsvsConfig(), LdltConfig(), InterceptConfig(),
             intercept, minnesota, False, True, 3
         )
     
@@ -128,14 +129,14 @@ def test_var_bayes():
         data = etf_vix.iloc[:(var_lag - 1), :dim_data]
         VarBayes(
             data, var_lag, num_chains, num_iter, num_burn, thin,
-            SsvsConfig(), LdltConfig(), InterceptConfig(),
+            SsvsConfig(), SsvsConfig(), LdltConfig(), InterceptConfig(),
             intercept, minnesota, False, True, num_threads
         )
 
 def help_vhar_bayes(
     dim_data, week, month, data,
     num_chains, num_threads, num_iter, num_burn, thin, intercept, minnesota, ggl,
-    bayes_config, cov_config,
+    coef_config, contem_config, cov_config,
     test_y = None, n_ahead = None, pred = False, roll = False, expand = False, spillover = False, win_size = None
 ):
     np.random.seed(1)
@@ -145,7 +146,8 @@ def help_vhar_bayes(
         num_iter,
         num_burn,
         thin,
-        bayes_config,
+        coef_config,
+        contem_config,
         cov_config,
         InterceptConfig(),
         intercept,
@@ -214,28 +216,28 @@ def test_vhar_bayes():
 
     help_vhar_bayes(
         dim_data, week, month, data, num_chains, num_threads, num_iter, num_burn, thin, intercept, minnesota, ggl,
-        SsvsConfig(), LdltConfig(),
+        SsvsConfig(), SsvsConfig(), LdltConfig(),
         data_out, n_ahead, True, True, True, True, win_size
     )
     help_vhar_bayes(
         dim_data, week, month, data, num_chains, num_threads, num_iter, num_burn, thin, intercept, minnesota, ggl,
-        HorseshoeConfig(), LdltConfig()
+        HorseshoeConfig(), HorseshoeConfig(), LdltConfig()
     )
     help_vhar_bayes(
         dim_data, week, month, data, num_chains, num_threads, num_iter, num_burn, thin, intercept, minnesota, ggl,
-        MinnesotaConfig(lam=LambdaConfig()), LdltConfig()
+        MinnesotaConfig(lam=LambdaConfig()), MinnesotaConfig(lam=LambdaConfig()), LdltConfig()
     )
     help_vhar_bayes(
         dim_data, week, month, data, num_chains, num_threads, num_iter, num_burn, thin, intercept, minnesota, ggl,
-        NgConfig(), LdltConfig()
+        NgConfig(), NgConfig(), LdltConfig()
     )
     help_vhar_bayes(
         dim_data, week, month, data, num_chains, num_threads, num_iter, num_burn, thin, intercept, minnesota, ggl,
-        DlConfig(), LdltConfig()
+        DlConfig(), DlConfig(), LdltConfig()
     )
     help_vhar_bayes(
         dim_data, week, month, data, num_chains, num_threads, num_iter, num_burn, thin, intercept, minnesota, ggl,
-        GdpConfig(), LdltConfig()
+        GdpConfig(), GdpConfig(), LdltConfig()
     )
 
     # help_vhar_bayes(
@@ -246,7 +248,7 @@ def test_vhar_bayes():
     with pytest.warns(UserWarning, match=f"'n_thread = 3 > 'n_chain' = 2' will not use every thread. Specify as 'n_thread <= 'n_chain'."):
         VharBayes(
             data, week, month, 2, num_iter, num_burn, thin,
-            SsvsConfig(), LdltConfig(), InterceptConfig(),
+            SsvsConfig(), SsvsConfig(), LdltConfig(), InterceptConfig(),
             intercept, minnesota, False, True, 3
         )
     
@@ -254,6 +256,6 @@ def test_vhar_bayes():
         data = etf_vix.iloc[:(month - 1), :dim_data]
         VharBayes(
             data, week, month, num_chains, num_iter, num_burn, thin,
-            SsvsConfig(), LdltConfig(), InterceptConfig(),
+            SsvsConfig(), SsvsConfig(), LdltConfig(), InterceptConfig(),
             intercept, minnesota, False, True, num_threads
         )

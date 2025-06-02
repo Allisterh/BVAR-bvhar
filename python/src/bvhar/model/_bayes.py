@@ -398,7 +398,7 @@ class VarBayes(_AutoregBayes):
                 )
         out_forecast = forecaster.returnForecast()
         # y_distn = list(map(lambda x: process_dens_forecast(x, self.n_features_in_), out_forecast.get('forecast')))
-        forecast_elem = next(iter(out_forecast.values()))
+        forecast_elem = next(iter(out_forecast.values())) # list(n_horizon) of list(chain) of (n_dim * n_draw,)
         y_distn = list(map(lambda x: process_dens_forecast(x, self.n_features_in_), forecast_elem))
         return {
             "forecast": np.concatenate(list(map(lambda x: np.median(x, axis = 0), y_distn)), axis = 0) if med else np.concatenate(list(map(lambda x: np.mean(x, axis = 0), y_distn)), axis = 0),

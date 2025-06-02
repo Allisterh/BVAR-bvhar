@@ -172,7 +172,9 @@ def process_dens_forecast(pred_list: list, n_dim: int):
     # shape_pred = pred_list[0].shape # (step, dim * draw)
     # n_ahead = shape_pred[0]
     # n_draw = int(shape_pred[1] / n_dim)
-    n_draw = int(pred_list[0].shape[1] / n_dim)
+    if len(pred_list[0].shape) == 1:
+        pred_list = [item.reshape(1, -1) for item in pred_list]
+    n_draw = int(pred_list[0].shape[1] / n_dim) # pred_list: list(chains) of array(step, n_dim * draw)
     res = []
     for arr in pred_list:
         res.append([arr[:, range(id * n_dim, id * n_dim + n_dim)] for id in range(n_draw)])

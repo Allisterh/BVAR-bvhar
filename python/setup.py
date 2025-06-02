@@ -8,6 +8,20 @@ import tempfile
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
+def get_rpkgs_version():
+    desc_path = os.path.abspath(
+        os.path.join(
+            os.path.dirname(__file__),
+            "..",
+            "DESCRIPTION"
+        )
+    )
+    with open(desc_path, "r") as rpkgs_meta:
+        for line in rpkgs_meta:
+            if line.startswith("Version:"):
+                return line.split(":")[1].strip()
+    return '0.0.0.9000'
+
 # include_path = os.path.abspath('../inst/include')
 include_path = os.path.abspath(
     os.path.join(
@@ -135,7 +149,7 @@ def find_module(base_dir):
 
 setup(
     name='bvhar',
-    version='0.0.0.9000',
+    version=get_rpkgs_version(),
     packages=find_packages(where='src'),
     package_dir={'': 'src'},
     description='Bayesian multivariate time series modeling',

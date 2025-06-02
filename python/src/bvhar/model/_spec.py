@@ -238,10 +238,12 @@ class MinnesotaConfig(_BayesConfig):
             self.sig = self.validate(sig, "sig")
         # self.lam = self.validate(lam, "lam")
         self.lam = lam
+        self.hierarchical = False
         if type(self.lam) == LambdaConfig:
             self.lam = [lam.shape_, lam.rate_, lam.grid_size] # shape and rate
             self.prior = "HMN"
-        self.delt = None
+            self.hierarchical = True
+        self.delt = delt
         if delt is not None or isinstance(delt, np.ndarray):
             self.delt = self.validate(delt, "delt")
         self.eps = self.validate(eps, "eps")
@@ -252,102 +254,51 @@ class MinnesotaConfig(_BayesConfig):
             self.monthly = None
     
     def update(self, y: np.array, p, n_dim: int):
-        if p > 0:
-            self.p = p
-        else:
-            self.num = n_dim
+        self.p = p
+        self.num = n_dim
         if self.sig is None:
             self.sig = np.apply_along_axis(np.std, 0, y)
-        if self.delt is None:
+        if self.delt is not None and len(self.delt) == 1:
+            self.delt = np.repeat(self.delt, n_dim)
+        elif self.delt is None:
             self.delt = np.repeat(0, n_dim)
         if hasattr(self, "weekly"):
             self.weekly = np.repeat(0, n_dim)
             self.monthly = np.repeat(0, n_dim)
 
     def to_dict(self):
-        if hasattr(self, "weekly"):
-            if isinstance(self.lam, list):
-                if self.p > 0:
-                    return {
-                        "shape": self.lam[0],
-                        "rate": self.lam[1],
-                        "grid_size": self.lam[2],
-                        "p": self.p,
-                        "sigma": self.sig,
-                        "eps": self.eps,
-                        "daily": self.delt,
-                        "weekly": self.weekly,
-                        "monthly": self.monthly
-                    }
-                else:
-                    return {
-                        "shape": self.lam[0],
-                        "rate": self.lam[1],
-                        "grid_size": self.lam[2],
-                        "num": self.num,
-                        "sigma": self.sig,
-                        "eps": self.eps,
-                        "daily": self.delt,
-                        "weekly": self.weekly,
-                        "monthly": self.monthly
-                    }
-            else:
-                if self.p > 0:
-                    return {
-                        "lambda": self.lam,
-                        "p": self.p,
-                        "sigma": self.sig,
-                        "eps": self.eps,
-                        "daily": self.delt,
-                        "weekly": self.weekly,
-                        "monthly": self.monthly
-                    }
-                else:
-                    return {
-                        "lambda": self.lam,
-                        "num": self.num,
-                        "sigma": self.sig,
-                        "eps": self.eps,
-                        "daily": self.delt,
-                        "weekly": self.weekly,
-                        "monthly": self.monthly
-                    }
-        if isinstance(self.lam, list):
-            if self.p > 0:
-                return {
-                    "shape": self.lam[0],
-                    "rate": self.lam[1],
-                    "grid_size": self.lam[2],
-                    "p": self.p,
-                    "sigma": self.sig,
-                    "eps": self.eps,
-                    "delta": self.delt
-                }
-            else:
-                return {
-                    "shape": self.lam[0],
-                    "rate": self.lam[1],
-                    "grid_size": self.lam[2],
-                    "num": self.num,
-                    "sigma": self.sig,
-                    "eps": self.eps,
-                    "delta": self.delt
-                }
-        if self.p > 0:
-            return {
-                    "lambda": self.lam,
-                    "p": self.p,
-                    "sigma": self.sig,
-                    "eps": self.eps,
-                    "delta": self.delt
-                }
-        return {
-            "lambda": self.lam,
+        res = {
+            "p": self.p,
             "num": self.num,
             "sigma": self.sig,
             "eps": self.eps,
-            "delta": self.delt
+            "hierarchical": self.hierarchical
         }
+        if hasattr(self, "weekly"):
+            delt_term = {
+                "daily": self.delt,
+                "weekly": self.weekly,
+                "monthly": self.monthly
+            }
+            res.update(delt_term)
+        else:
+            delt_term = {"delta": self.delt}
+            res.update(delt_term)
+        if self.p > 0:
+            del res["num"]
+        else:
+            del res["p"]
+        if self.hierarchical:
+            lam_term = {
+                "shape": self.lam[0],
+                "rate": self.lam[1],
+                "grid_size": self.lam[2]
+            }
+            res.update(lam_term)
+        else:
+            lam_term = {"lambda": self.lam}
+            res.update(lam_term)
+        return res
 
 class LambdaConfig:
     r"""Hierarchical structure of Minnesota prior

@@ -8,11 +8,19 @@
 \alias{forecast_expand.svmod}
 \title{Out-of-sample Forecasting based on Expanding Window}
 \usage{
-forecast_expand(object, n_ahead, y_test, num_thread = 1, ...)
+forecast_expand(object, n_ahead, y_test, newxreg, num_thread = 1, ...)
 
-\method{forecast_expand}{olsmod}(object, n_ahead, y_test, num_thread = 1, ...)
+\method{forecast_expand}{olsmod}(object, n_ahead, y_test, newxreg, num_thread = 1, ...)
 
-\method{forecast_expand}{normaliw}(object, n_ahead, y_test, num_thread = 1, use_fit = TRUE, ...)
+\method{forecast_expand}{normaliw}(
+  object,
+  n_ahead,
+  y_test,
+  newxreg,
+  num_thread = 1,
+  use_fit = TRUE,
+  ...
+)
 
 \method{forecast_expand}{ldltmod}(
   object,
@@ -56,6 +64,9 @@ forecast_expand(object, n_ahead, y_test, num_thread = 1, ...)
 
 \item{y_test}{Test data to be compared. Use \code{\link[=divide_ts]{divide_ts()}} if you don't have separate evaluation dataset.}
 
+\item{newxreg}{New values for exogenous variables.
+Should have the same row numbers as \code{y_test}.}
+
 \item{num_thread}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}} Number of threads}
 
 \item{...}{Additional arguments.}
@@ -63,9 +74,6 @@ forecast_expand(object, n_ahead, y_test, num_thread = 1, ...)
 \item{use_fit}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}} Use \code{object} result for the first window. By default, \code{TRUE}.}
 
 \item{level}{Specify alpha of confidence interval level 100(1 - alpha) percentage. By default, .05.}
-
-\item{newxreg}{New values for exogenous variables.
-Should have the same row numbers as \code{y_test}.}
 
 \item{stable}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}} Filter only stable coefficient draws in MCMC records.}
 

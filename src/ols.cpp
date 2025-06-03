@@ -259,6 +259,19 @@ Eigen::MatrixXd roll_var(Eigen::MatrixXd y, int lag, bool include_mean, int step
 	return forecaster->returnForecast();
 }
 
+//' @noRd
+// [[Rcpp::export]]
+Eigen::MatrixXd roll_varx(Eigen::MatrixXd y, int lag, bool include_mean,
+												  int step, Eigen::MatrixXd y_test, int method, int nthreads,
+												  Eigen::MatrixXd exogen, int exogen_lag) {
+	auto forecaster = std::make_unique<bvhar::VarOutforecastRun<bvhar::OlsRollforecastRun>>(
+		y, lag, include_mean, step, y_test,
+		method, nthreads,
+		exogen, exogen_lag
+	);
+	return forecaster->returnForecast();
+}
+
 //' Out-of-Sample Forecasting of VHAR based on Rolling Window
 //' 
 //' This function conducts an rolling window forecasting of VHAR.
@@ -278,6 +291,19 @@ Eigen::MatrixXd roll_vhar(Eigen::MatrixXd y, int week, int month, bool include_m
 	auto forecaster = std::make_unique<bvhar::VharOutforecastRun<bvhar::OlsRollforecastRun>>(
 		y, week, month, include_mean, step, y_test,
 		method, nthreads
+	);
+	return forecaster->returnForecast();
+}
+
+//' @noRd
+// [[Rcpp::export]]
+Eigen::MatrixXd roll_vharx(Eigen::MatrixXd y, int week, int month, bool include_mean,
+													 int step, Eigen::MatrixXd y_test, int method, int nthreads,
+													 Eigen::MatrixXd exogen, int exogen_lag) {
+	auto forecaster = std::make_unique<bvhar::VharOutforecastRun<bvhar::OlsRollforecastRun>>(
+		y, week, month, include_mean, step, y_test,
+		method, nthreads,
+		exogen, exogen_lag
 	);
 	return forecaster->returnForecast();
 }
@@ -304,6 +330,19 @@ Eigen::MatrixXd expand_var(Eigen::MatrixXd y, int lag, bool include_mean, int st
 	return forecaster->returnForecast();
 }
 
+//' @noRd
+// [[Rcpp::export]]
+Eigen::MatrixXd expand_varx(Eigen::MatrixXd y, int lag, bool include_mean,
+														int step, Eigen::MatrixXd y_test, int method, int nthreads,
+														Eigen::MatrixXd exogen, int exogen_lag) {
+	auto forecaster = std::make_unique<bvhar::VarOutforecastRun<bvhar::OlsExpandforecastRun>>(
+		y, lag, include_mean, step, y_test,
+		method, nthreads,
+		exogen, exogen_lag
+	);
+	return forecaster->returnForecast();
+}
+
 //' Out-of-Sample Forecasting of VHAR based on Expanding Window
 //' 
 //' This function conducts an expanding window forecasting of VHAR.
@@ -323,6 +362,19 @@ Eigen::MatrixXd expand_vhar(Eigen::MatrixXd y, int week, int month, bool include
 	auto forecaster = std::make_unique<bvhar::VharOutforecastRun<bvhar::OlsExpandforecastRun>>(
 		y, week, month, include_mean, step, y_test,
 		method, nthreads
+	);
+	return forecaster->returnForecast();
+}
+
+//' @noRd
+// [[Rcpp::export]]
+Eigen::MatrixXd expand_vharx(Eigen::MatrixXd y, int week, int month, bool include_mean,
+														 int step, Eigen::MatrixXd y_test, int method, int nthreads,
+														 Eigen::MatrixXd exogen, int exogen_lag) {
+	auto forecaster = std::make_unique<bvhar::VharOutforecastRun<bvhar::OlsExpandforecastRun>>(
+		y, week, month, include_mean, step, y_test,
+		method, nthreads,
+		exogen, exogen_lag
 	);
 	return forecaster->returnForecast();
 }

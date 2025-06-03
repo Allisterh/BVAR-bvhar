@@ -25,6 +25,8 @@ divide_ts <- function(y, n_ahead) {
 #' @param object Model object
 #' @param n_ahead Step to forecast in rolling window scheme
 #' @param y_test Test data to be compared. Use [divide_ts()] if you don't have separate evaluation dataset.
+#' @param newxreg New values for exogenous variables.
+#' Should have the same row numbers as `y_test`.
 #' @param num_thread `r lifecycle::badge("experimental")` Number of threads
 #' @param ... Additional arguments
 #' @details 
@@ -34,13 +36,13 @@ divide_ts <- function(y, n_ahead) {
 #' @references Hyndman, R. J., & Athanasopoulos, G. (2021). *Forecasting: Principles and practice* (3rd ed.). OTEXTS.
 #' @order 1
 #' @export
-forecast_roll <- function(object, n_ahead, y_test, num_thread = 1, ...) {
+forecast_roll <- function(object, n_ahead, y_test, newxreg, num_thread = 1, ...) {
   UseMethod("forecast_roll", object)
 }
 
 #' @rdname forecast_roll
 #' @export
-forecast_roll.olsmod <- function(object, n_ahead, y_test, num_thread = 1, ...) {
+forecast_roll.olsmod <- function(object, n_ahead, y_test, newxreg, num_thread = 1, ...) {
   y <- object$y
   if (!is.null(colnames(y))) {
     name_var <- colnames(y)
@@ -73,12 +75,24 @@ forecast_roll.olsmod <- function(object, n_ahead, y_test, num_thread = 1, ...) {
   if (num_thread > num_horizon) {
     warning(sprintf("'num_thread' > number of horizon will use not every thread. Specify as 'num_thread' <= 'nrow(y_test) - n_ahead + 1' = %d.", num_horizon))
   }
+  is_exogen <- !is.null(eval.parent(object$call$exogen))
+  if (is_exogen) {
+    newxreg <- validate_newxreg(newxreg = newxreg, n_ahead = nrow(y_test))
+  }
   res_mat <- switch(model_type,
     "varlse" = {
-      roll_var(y, object$p, include_mean, n_ahead, y_test, method, num_thread)
+      if (is_exogen) {
+        roll_varx(y, object$p, include_mean, n_ahead, y_test, method, num_thread, rbind(object$exogen_data, newxreg), object$s)
+      } else {
+        roll_var(y, object$p, include_mean, n_ahead, y_test, method, num_thread)
+      }
     },
     "vharlse" = {
-      roll_vhar(y, object$week, object$month, include_mean, n_ahead, y_test, method, num_thread)
+      if (is_exogen) {
+        roll_vharx(y, object$week, object$month, include_mean, n_ahead, y_test, method, num_thread, rbind(object$exogen_data, newxreg), object$s)
+      } else {
+        roll_vhar(y, object$week, object$month, include_mean, n_ahead, y_test, method, num_thread)
+      }
     }
   )
   colnames(res_mat) <- name_var
@@ -95,7 +109,7 @@ forecast_roll.olsmod <- function(object, n_ahead, y_test, num_thread = 1, ...) {
 #' @rdname forecast_roll
 #' @param use_fit `r lifecycle::badge("experimental")` Use `object` result for the first window. By default, `TRUE`.
 #' @export
-forecast_roll.normaliw <- function(object, n_ahead, y_test, num_thread = 1, use_fit = TRUE, ...) {
+forecast_roll.normaliw <- function(object, n_ahead, y_test, newxreg, num_thread = 1, use_fit = TRUE, ...) {
   y <- object$y
   if (!is.null(colnames(y))) {
     name_var <- colnames(y)
@@ -221,8 +235,6 @@ forecast_roll.normaliw <- function(object, n_ahead, y_test, num_thread = 1, use_
 
 #' @rdname forecast_roll
 #' @param level Specify alpha of confidence interval level 100(1 - alpha) percentage. By default, .05.
-#' @param newxreg New values for exogenous variables.
-#' Should have the same row numbers as `y_test`.
 #' @param stable `r lifecycle::badge("experimental")` Filter only stable coefficient draws in MCMC records.
 #' @param sparse `r lifecycle::badge("experimental")` Apply restriction. By default, `FALSE`.
 #' @param med `r lifecycle::badge("experimental")` If `TRUE`, use median of forecast draws instead of mean (default).
@@ -412,8 +424,6 @@ forecast_roll.ldltmod <- function(object, n_ahead, y_test,
 
 #' @rdname forecast_roll
 #' @param level Specify alpha of confidence interval level 100(1 - alpha) percentage. By default, .05.
-#' @param newxreg New values for exogenous variables.
-#' Should have the same row numbers as `y_test`.
 #' @param use_sv Use SV term
 #' @param stable `r lifecycle::badge("experimental")` Filter only stable coefficient draws in MCMC records.
 #' @param sparse `r lifecycle::badge("experimental")` Apply restriction. By default, `FALSE`.
@@ -612,6 +622,8 @@ forecast_roll.svmod <- function(object, n_ahead, y_test,
 #' @param object Model object
 #' @param n_ahead Step to forecast in rolling window scheme
 #' @param y_test Test data to be compared. Use [divide_ts()] if you don't have separate evaluation dataset.
+#' @param newxreg New values for exogenous variables.
+#' Should have the same row numbers as `y_test`.
 #' @param num_thread `r lifecycle::badge("experimental")` Number of threads
 #' @param ... Additional arguments.
 #' @details
@@ -621,13 +633,13 @@ forecast_roll.svmod <- function(object, n_ahead, y_test,
 #' @references Hyndman, R. J., & Athanasopoulos, G. (2021). *Forecasting: Principles and practice* (3rd ed.). OTEXTS. [https://otexts.com/fpp3/](https://otexts.com/fpp3/)
 #' @order 1
 #' @export
-forecast_expand <- function(object, n_ahead, y_test, num_thread = 1, ...) {
+forecast_expand <- function(object, n_ahead, y_test, newxreg, num_thread = 1, ...) {
   UseMethod("forecast_expand", object)
 }
 
 #' @rdname forecast_expand
 #' @export
-forecast_expand.olsmod <- function(object, n_ahead, y_test, num_thread = 1, ...) {
+forecast_expand.olsmod <- function(object, n_ahead, y_test, newxreg, num_thread = 1, ...) {
   y <- object$y
   if (!is.null(colnames(y))) {
     name_var <- colnames(y)
@@ -660,12 +672,24 @@ forecast_expand.olsmod <- function(object, n_ahead, y_test, num_thread = 1, ...)
   if (num_thread > num_horizon) {
     warning(sprintf("'num_thread' > number of horizon will use not every thread. Specify as 'num_thread' <= 'nrow(y_test) - n_ahead + 1' = %d.", num_horizon))
   }
+  is_exogen <- !is.null(eval.parent(object$call$exogen))
+  if (is_exogen) {
+    newxreg <- validate_newxreg(newxreg = newxreg, n_ahead = nrow(y_test))
+  }
   res_mat <- switch(model_type,
     "varlse" = {
-      expand_var(y, object$p, include_mean, n_ahead, y_test, method, num_thread)
+      if (is_exogen) {
+        expand_varx(y, object$p, include_mean, n_ahead, y_test, method, num_thread, rbind(object$exogen_data, newxreg), object$s)
+      } else {
+        expand_var(y, object$p, include_mean, n_ahead, y_test, method, num_thread)
+      }
     },
     "vharlse" = {
-      expand_vhar(y, object$week, object$month, include_mean, n_ahead, y_test, method, num_thread)
+      if (is_exogen) {
+        expand_vharx(y, object$week, object$month, include_mean, n_ahead, y_test, method, num_thread, rbind(object$exogen_data, newxreg), object$s)
+      } else {
+        expand_vhar(y, object$week, object$month, include_mean, n_ahead, y_test, method, num_thread)
+      }
     }
   )
   colnames(res_mat) <- name_var
@@ -682,7 +706,7 @@ forecast_expand.olsmod <- function(object, n_ahead, y_test, num_thread = 1, ...)
 #' @rdname forecast_expand
 #' @param use_fit `r lifecycle::badge("experimental")` Use `object` result for the first window. By default, `TRUE`.
 #' @export
-forecast_expand.normaliw <- function(object, n_ahead, y_test, num_thread = 1, use_fit = TRUE, ...) {
+forecast_expand.normaliw <- function(object, n_ahead, y_test, newxreg, num_thread = 1, use_fit = TRUE, ...) {
   y <- object$y
   if (!is.null(colnames(y))) {
     name_var <- colnames(y)
@@ -769,8 +793,6 @@ forecast_expand.normaliw <- function(object, n_ahead, y_test, num_thread = 1, us
 
 #' @rdname forecast_expand
 #' @param level Specify alpha of confidence interval level 100(1 - alpha) percentage. By default, .05.
-#' @param newxreg New values for exogenous variables.
-#' Should have the same row numbers as `y_test`.
 #' @param stable `r lifecycle::badge("experimental")` Filter only stable coefficient draws in MCMC records.
 #' @param sparse `r lifecycle::badge("experimental")` Apply restriction. By default, `FALSE`.
 #' @param med `r lifecycle::badge("experimental")` If `TRUE`, use median of forecast draws instead of mean (default).
@@ -960,8 +982,6 @@ forecast_expand.ldltmod <- function(object, n_ahead, y_test,
 
 #' @rdname forecast_expand
 #' @param level Specify alpha of confidence interval level 100(1 - alpha) percentage. By default, .05.
-#' @param newxreg New values for exogenous variables.
-#' Should have the same row numbers as `y_test`.
 #' @param use_sv Use SV term
 #' @param stable `r lifecycle::badge("experimental")` Filter only stable coefficient draws in MCMC records.
 #' @param sparse `r lifecycle::badge("experimental")` Apply restriction. By default, `FALSE`.

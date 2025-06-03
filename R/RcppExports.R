@@ -420,6 +420,11 @@ roll_var <- function(y, lag, include_mean, step, y_test, method, nthreads) {
     .Call(`_bvhar_roll_var`, y, lag, include_mean, step, y_test, method, nthreads)
 }
 
+#' @noRd
+roll_varx <- function(y, lag, include_mean, step, y_test, method, nthreads, exogen, exogen_lag) {
+    .Call(`_bvhar_roll_varx`, y, lag, include_mean, step, y_test, method, nthreads, exogen, exogen_lag)
+}
+
 #' Out-of-Sample Forecasting of VHAR based on Rolling Window
 #' 
 #' This function conducts an rolling window forecasting of VHAR.
@@ -436,6 +441,11 @@ roll_var <- function(y, lag, include_mean, step, y_test, method, nthreads) {
 #' @noRd
 roll_vhar <- function(y, week, month, include_mean, step, y_test, method, nthreads) {
     .Call(`_bvhar_roll_vhar`, y, week, month, include_mean, step, y_test, method, nthreads)
+}
+
+#' @noRd
+roll_vharx <- function(y, week, month, include_mean, step, y_test, method, nthreads, exogen, exogen_lag) {
+    .Call(`_bvhar_roll_vharx`, y, week, month, include_mean, step, y_test, method, nthreads, exogen, exogen_lag)
 }
 
 #' Out-of-Sample Forecasting of VAR based on Expanding Window
@@ -455,6 +465,11 @@ expand_var <- function(y, lag, include_mean, step, y_test, method, nthreads) {
     .Call(`_bvhar_expand_var`, y, lag, include_mean, step, y_test, method, nthreads)
 }
 
+#' @noRd
+expand_varx <- function(y, lag, include_mean, step, y_test, method, nthreads, exogen, exogen_lag) {
+    .Call(`_bvhar_expand_varx`, y, lag, include_mean, step, y_test, method, nthreads, exogen, exogen_lag)
+}
+
 #' Out-of-Sample Forecasting of VHAR based on Expanding Window
 #' 
 #' This function conducts an expanding window forecasting of VHAR.
@@ -471,6 +486,11 @@ expand_var <- function(y, lag, include_mean, step, y_test, method, nthreads) {
 #' @noRd
 expand_vhar <- function(y, week, month, include_mean, step, y_test, method, nthreads) {
     .Call(`_bvhar_expand_vhar`, y, week, month, include_mean, step, y_test, method, nthreads)
+}
+
+#' @noRd
+expand_vharx <- function(y, week, month, include_mean, step, y_test, method, nthreads, exogen, exogen_lag) {
+    .Call(`_bvhar_expand_vharx`, y, week, month, include_mean, step, y_test, method, nthreads, exogen, exogen_lag)
 }
 
 #' Generalized Spillover of VAR

@@ -80,6 +80,12 @@ public:
 			NAMED("y0") = response
 		);
 	}
+	Eigen::MatrixXd returnCoef() {
+		estimateCoef();
+		fitObs();
+		estimateCov();
+		return coef;
+	}
 	OlsFit returnOlsFit(int ord) {
 		estimateCoef();
 		fitObs();
@@ -183,6 +189,9 @@ public:
 		ols_res["y"] = data;
 		return ols_res;
 	}
+	Eigen::MatrixXd returnCoef() {
+		return _ols->returnCoef();
+	}
 	OlsFit returnOlsFit() {
 		OlsFit res = _ols->returnOlsFit(lag);
 		return res;
@@ -239,6 +248,9 @@ public:
 		ols_res["design"] = var_design;
 		ols_res["y"] = data;
 		return ols_res;
+	}
+	Eigen::MatrixXd returnCoef() {
+		return _ols->returnCoef();
 	}
 	OlsFit returnOlsFit() {
 		OlsFit res = _ols->returnOlsFit(month);

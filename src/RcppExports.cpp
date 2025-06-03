@@ -470,6 +470,25 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// roll_varx
+Eigen::MatrixXd roll_varx(Eigen::MatrixXd y, int lag, bool include_mean, int step, Eigen::MatrixXd y_test, int method, int nthreads, Eigen::MatrixXd exogen, int exogen_lag);
+RcppExport SEXP _bvhar_roll_varx(SEXP ySEXP, SEXP lagSEXP, SEXP include_meanSEXP, SEXP stepSEXP, SEXP y_testSEXP, SEXP methodSEXP, SEXP nthreadsSEXP, SEXP exogenSEXP, SEXP exogen_lagSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type y(ySEXP);
+    Rcpp::traits::input_parameter< int >::type lag(lagSEXP);
+    Rcpp::traits::input_parameter< bool >::type include_mean(include_meanSEXP);
+    Rcpp::traits::input_parameter< int >::type step(stepSEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type y_test(y_testSEXP);
+    Rcpp::traits::input_parameter< int >::type method(methodSEXP);
+    Rcpp::traits::input_parameter< int >::type nthreads(nthreadsSEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type exogen(exogenSEXP);
+    Rcpp::traits::input_parameter< int >::type exogen_lag(exogen_lagSEXP);
+    rcpp_result_gen = Rcpp::wrap(roll_varx(y, lag, include_mean, step, y_test, method, nthreads, exogen, exogen_lag));
+    return rcpp_result_gen;
+END_RCPP
+}
 // roll_vhar
 Eigen::MatrixXd roll_vhar(Eigen::MatrixXd y, int week, int month, bool include_mean, int step, Eigen::MatrixXd y_test, int method, int nthreads);
 RcppExport SEXP _bvhar_roll_vhar(SEXP ySEXP, SEXP weekSEXP, SEXP monthSEXP, SEXP include_meanSEXP, SEXP stepSEXP, SEXP y_testSEXP, SEXP methodSEXP, SEXP nthreadsSEXP) {
@@ -485,6 +504,26 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type method(methodSEXP);
     Rcpp::traits::input_parameter< int >::type nthreads(nthreadsSEXP);
     rcpp_result_gen = Rcpp::wrap(roll_vhar(y, week, month, include_mean, step, y_test, method, nthreads));
+    return rcpp_result_gen;
+END_RCPP
+}
+// roll_vharx
+Eigen::MatrixXd roll_vharx(Eigen::MatrixXd y, int week, int month, bool include_mean, int step, Eigen::MatrixXd y_test, int method, int nthreads, Eigen::MatrixXd exogen, int exogen_lag);
+RcppExport SEXP _bvhar_roll_vharx(SEXP ySEXP, SEXP weekSEXP, SEXP monthSEXP, SEXP include_meanSEXP, SEXP stepSEXP, SEXP y_testSEXP, SEXP methodSEXP, SEXP nthreadsSEXP, SEXP exogenSEXP, SEXP exogen_lagSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type y(ySEXP);
+    Rcpp::traits::input_parameter< int >::type week(weekSEXP);
+    Rcpp::traits::input_parameter< int >::type month(monthSEXP);
+    Rcpp::traits::input_parameter< bool >::type include_mean(include_meanSEXP);
+    Rcpp::traits::input_parameter< int >::type step(stepSEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type y_test(y_testSEXP);
+    Rcpp::traits::input_parameter< int >::type method(methodSEXP);
+    Rcpp::traits::input_parameter< int >::type nthreads(nthreadsSEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type exogen(exogenSEXP);
+    Rcpp::traits::input_parameter< int >::type exogen_lag(exogen_lagSEXP);
+    rcpp_result_gen = Rcpp::wrap(roll_vharx(y, week, month, include_mean, step, y_test, method, nthreads, exogen, exogen_lag));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -505,6 +544,25 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// expand_varx
+Eigen::MatrixXd expand_varx(Eigen::MatrixXd y, int lag, bool include_mean, int step, Eigen::MatrixXd y_test, int method, int nthreads, Eigen::MatrixXd exogen, int exogen_lag);
+RcppExport SEXP _bvhar_expand_varx(SEXP ySEXP, SEXP lagSEXP, SEXP include_meanSEXP, SEXP stepSEXP, SEXP y_testSEXP, SEXP methodSEXP, SEXP nthreadsSEXP, SEXP exogenSEXP, SEXP exogen_lagSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type y(ySEXP);
+    Rcpp::traits::input_parameter< int >::type lag(lagSEXP);
+    Rcpp::traits::input_parameter< bool >::type include_mean(include_meanSEXP);
+    Rcpp::traits::input_parameter< int >::type step(stepSEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type y_test(y_testSEXP);
+    Rcpp::traits::input_parameter< int >::type method(methodSEXP);
+    Rcpp::traits::input_parameter< int >::type nthreads(nthreadsSEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type exogen(exogenSEXP);
+    Rcpp::traits::input_parameter< int >::type exogen_lag(exogen_lagSEXP);
+    rcpp_result_gen = Rcpp::wrap(expand_varx(y, lag, include_mean, step, y_test, method, nthreads, exogen, exogen_lag));
+    return rcpp_result_gen;
+END_RCPP
+}
 // expand_vhar
 Eigen::MatrixXd expand_vhar(Eigen::MatrixXd y, int week, int month, bool include_mean, int step, Eigen::MatrixXd y_test, int method, int nthreads);
 RcppExport SEXP _bvhar_expand_vhar(SEXP ySEXP, SEXP weekSEXP, SEXP monthSEXP, SEXP include_meanSEXP, SEXP stepSEXP, SEXP y_testSEXP, SEXP methodSEXP, SEXP nthreadsSEXP) {
@@ -520,6 +578,26 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type method(methodSEXP);
     Rcpp::traits::input_parameter< int >::type nthreads(nthreadsSEXP);
     rcpp_result_gen = Rcpp::wrap(expand_vhar(y, week, month, include_mean, step, y_test, method, nthreads));
+    return rcpp_result_gen;
+END_RCPP
+}
+// expand_vharx
+Eigen::MatrixXd expand_vharx(Eigen::MatrixXd y, int week, int month, bool include_mean, int step, Eigen::MatrixXd y_test, int method, int nthreads, Eigen::MatrixXd exogen, int exogen_lag);
+RcppExport SEXP _bvhar_expand_vharx(SEXP ySEXP, SEXP weekSEXP, SEXP monthSEXP, SEXP include_meanSEXP, SEXP stepSEXP, SEXP y_testSEXP, SEXP methodSEXP, SEXP nthreadsSEXP, SEXP exogenSEXP, SEXP exogen_lagSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type y(ySEXP);
+    Rcpp::traits::input_parameter< int >::type week(weekSEXP);
+    Rcpp::traits::input_parameter< int >::type month(monthSEXP);
+    Rcpp::traits::input_parameter< bool >::type include_mean(include_meanSEXP);
+    Rcpp::traits::input_parameter< int >::type step(stepSEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type y_test(y_testSEXP);
+    Rcpp::traits::input_parameter< int >::type method(methodSEXP);
+    Rcpp::traits::input_parameter< int >::type nthreads(nthreadsSEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type exogen(exogenSEXP);
+    Rcpp::traits::input_parameter< int >::type exogen_lag(exogen_lagSEXP);
+    rcpp_result_gen = Rcpp::wrap(expand_vharx(y, week, month, include_mean, step, y_test, method, nthreads, exogen, exogen_lag));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -2285,9 +2363,13 @@ static const R_CallMethodDef CallEntries[] = {
     {"_bvhar_forecast_vhar", (DL_FUNC) &_bvhar_forecast_vhar, 2},
     {"_bvhar_forecast_harx", (DL_FUNC) &_bvhar_forecast_harx, 9},
     {"_bvhar_roll_var", (DL_FUNC) &_bvhar_roll_var, 7},
+    {"_bvhar_roll_varx", (DL_FUNC) &_bvhar_roll_varx, 9},
     {"_bvhar_roll_vhar", (DL_FUNC) &_bvhar_roll_vhar, 8},
+    {"_bvhar_roll_vharx", (DL_FUNC) &_bvhar_roll_vharx, 10},
     {"_bvhar_expand_var", (DL_FUNC) &_bvhar_expand_var, 7},
+    {"_bvhar_expand_varx", (DL_FUNC) &_bvhar_expand_varx, 9},
     {"_bvhar_expand_vhar", (DL_FUNC) &_bvhar_expand_vhar, 8},
+    {"_bvhar_expand_vharx", (DL_FUNC) &_bvhar_expand_vharx, 10},
     {"_bvhar_compute_ols_spillover", (DL_FUNC) &_bvhar_compute_ols_spillover, 2},
     {"_bvhar_dynamic_var_spillover", (DL_FUNC) &_bvhar_dynamic_var_spillover, 7},
     {"_bvhar_dynamic_vhar_spillover", (DL_FUNC) &_bvhar_dynamic_vhar_spillover, 8},

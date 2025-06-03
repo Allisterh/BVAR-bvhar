@@ -27,11 +27,6 @@ public:
 		coef_mat(exogen_coef) {
 		last_pvec = vectorize_eigen(exogen.topRows(lag + 1).colwise().reverse().transpose().eval()); // x_(T + h), ..., x_(T + h - s)
 	}
-	OlsExogenForecaster(int lag, const Eigen::MatrixXd& exogen, const Eigen::MatrixXd& coef, int exogen_cols)
-	: ExogenForecaster<Eigen::MatrixXd, Eigen::VectorXd>(lag, exogen),
-		coef_mat(coef.bottomRows(exogen_cols)) {
-		last_pvec = vectorize_eigen(exogen.topRows(lag + 1).colwise().reverse().transpose().eval()); // x_(T + h), ..., x_(T + h - s)
-	}
 	virtual ~OlsExogenForecaster() = default;
 
 	void appendForecast(Eigen::VectorXd& point_forecast, const int h) override {
@@ -191,8 +186,8 @@ public:
 		int method, int nthreads,
 		Optional<Eigen::MatrixXd> exogen = NULLOPT, Optional<int> exogen_lag = NULLOPT
 	)
-	: dim(y.cols()), num_window(num_window), num_test(y_test.rows()), num_horizon(num_test - step + 1), step(step),
-		lag(lag), nthreads(nthreads),
+	: dim(y.cols()), num_window(y.rows()), num_test(y_test.rows()), num_horizon(num_test - step + 1), step(step),
+		lag(lag), nthreads(nthreads), include_mean(include_mean),
 		roll_mat(num_horizon), roll_y0(num_horizon), y_test(y_test),
 		model(num_horizon), forecaster(num_horizon), out_forecast(num_horizon),
 		roll_exogen_mat(num_horizon), roll_exogen(num_horizon), lag_exogen(exogen_lag) {}
@@ -215,7 +210,8 @@ public:
 				ols_fit = std::make_unique<OlsFit>(coef_mat, lag);
 				updateForecaster(*ols_fit, window);
 			}
-			out_forecast[window] = forecaster[window]->getLastForecast();
+			// out_forecast[window] = forecaster[window]->getLastForecast();
+			out_forecast[window] = forecaster[window]->doForecast().bottomRows(1);
 			model[window].reset();
 			forecaster[window].reset();
 		}
@@ -236,6 +232,7 @@ public:
 
 protected:
 	int dim, num_window, num_test, num_horizon, step, lag, nthreads;
+	bool include_mean;
 	std::vector<Eigen::MatrixXd> roll_mat;
 	std::vector<Eigen::MatrixXd> roll_y0;
 	Eigen::MatrixXd y_test;
@@ -274,9 +271,7 @@ public:
 		int method, int nthreads,
 		Optional<Eigen::MatrixXd> exogen = NULLOPT, Optional<int> exogen_lag = NULLOPT
 	)
-	: OlsOutforecastRun(y, lag, include_mean, step, y_test, method, nthreads, exogen, exogen_lag) {
-		initialize(y, method, exogen);
-	}
+	: OlsOutforecastRun(y, lag, include_mean, step, y_test, method, nthreads, exogen, exogen_lag) {}
 	virtual ~OlsRollforecastRun() = default;
 
 protected:
@@ -305,9 +300,7 @@ public:
 		int method, int nthreads,
 		Optional<Eigen::MatrixXd> exogen = NULLOPT, Optional<int> exogen_lag = NULLOPT
 	)
-	: OlsOutforecastRun(y, lag, include_mean, step, y_test, method, nthreads, exogen, exogen_lag) {
-		initialize(y, method, exogen);
-	}
+	: OlsOutforecastRun(y, lag, include_mean, step, y_test, method, nthreads, exogen, exogen_lag) {}
 	virtual ~OlsExpandforecastRun() = default;
 	
 protected:
@@ -337,12 +330,17 @@ public:
 		int method, int nthreads,
 		Optional<Eigen::MatrixXd> exogen = NULLOPT, Optional<int> exogen_lag = NULLOPT
 	)
-	: BaseOutForecast(y, lag, include_mean, step, y_test, method, nthreads, exogen, exogen_lag) {}
+	: BaseOutForecast(y, lag, include_mean, step, y_test, method, nthreads, exogen, exogen_lag) {
+		initialize(y, method, exogen);
+	}
 	virtual ~VarOutforecastRun() = default;
 
 protected:
 	using BaseOutForecast::step;
 	using BaseOutForecast::dim;
+	using BaseOutForecast::num_window;
+	using BaseOutForecast::num_horizon;
+	using BaseOutForecast::y_test;
 	using BaseOutForecast::lag;
 	using BaseOutForecast::include_mean;
 	using BaseOutForecast::roll_mat;
@@ -351,6 +349,9 @@ protected:
 	using BaseOutForecast::roll_exogen;
 	using BaseOutForecast::lag_exogen;
 	using BaseOutForecast::forecaster;
+	using BaseOutForecast::initialize;
+	using BaseOutForecast::initData;
+	using BaseOutForecast::initOls;
 
 	Eigen::MatrixXd buildDesign(int window) override {
 		if (lag_exogen) {
@@ -364,7 +365,7 @@ protected:
 	}
 
 	void updateForecaster(const OlsFit& fit, int window, const Eigen::MatrixXd& exogen_coef) override {
-		auto exogen_updater = std::make_unique<OlsExogenForecaster>(*lag_exogen, *(roll_exogen[window]), fit._coef, exogen_coef);
+		auto exogen_updater = std::make_unique<OlsExogenForecaster>(*lag_exogen, *(roll_exogen[window]), exogen_coef);
 		forecaster[window] = std::make_unique<VarForecaster>(fit, exogen_updater, step, roll_y0[window], include_mean);
 	}
 };
@@ -379,12 +380,17 @@ public:
 		Optional<Eigen::MatrixXd> exogen = NULLOPT, Optional<int> exogen_lag = NULLOPT
 	)
 	: BaseOutForecast(y, month, include_mean, step, y_test, method, nthreads, exogen, exogen_lag),
-		har_trans(build_vhar(dim, week, month, include_mean)) {}
+		har_trans(build_vhar(dim, week, month, include_mean)) {
+		initialize(y, method, exogen);
+	}
 	virtual ~VharOutforecastRun() = default;
 
 protected:
 	using BaseOutForecast::step;
 	using BaseOutForecast::dim;
+	using BaseOutForecast::num_window;
+	using BaseOutForecast::num_horizon;
+	using BaseOutForecast::y_test;
 	using BaseOutForecast::lag;
 	using BaseOutForecast::include_mean;
 	using BaseOutForecast::roll_mat;
@@ -393,6 +399,9 @@ protected:
 	using BaseOutForecast::roll_exogen;
 	using BaseOutForecast::lag_exogen;
 	using BaseOutForecast::forecaster;
+	using BaseOutForecast::initialize;
+	using BaseOutForecast::initData;
+	using BaseOutForecast::initOls;
 
 	Eigen::MatrixXd buildDesign(int window) override {
 		if (lag_exogen) {
@@ -413,8 +422,8 @@ protected:
 	}
 
 	void updateForecaster(const OlsFit& fit, int window, const Eigen::MatrixXd& exogen_coef) override {
-		auto exogen_updater = std::make_unique<OlsExogenForecaster>(*lag_exogen, *(roll_exogen[window]), fit._coef, exogen_coef);
-		forecaster[window] = std::make_unique<VarForecaster>(fit, exogen_updater, step, roll_y0[window], har_trans, include_mean);
+		auto exogen_updater = std::make_unique<OlsExogenForecaster>(*lag_exogen, *(roll_exogen[window]), exogen_coef);
+		forecaster[window] = std::make_unique<VharForecaster>(fit, exogen_updater, step, roll_y0[window], har_trans, include_mean);
 	}
 
 private:

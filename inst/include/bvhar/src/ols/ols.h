@@ -81,6 +81,9 @@ public:
 		);
 	}
 	Eigen::MatrixXd returnCoef() {
+		estimateCoef();
+		fitObs();
+		estimateCov();
 		return coef;
 	}
 	OlsFit returnOlsFit(int ord) {

@@ -432,7 +432,7 @@ def get_init(init_: list, bayes_spec_: _BayesConfig, n_alpha: int, n_grp: int):
             group_sparsity = np.exp(np.random.uniform(-1, 1, n_grp))
             init.update({
                 'local_sparsity': local_sparsity,
-                'global_sparsity': np.array([global_sparsity]),
+                'global_sparsity': global_sparsity,
                 'group_sparsity': group_sparsity
             })
     elif type(bayes_spec_) == NgConfig:

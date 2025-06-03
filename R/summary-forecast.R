@@ -25,6 +25,7 @@ divide_ts <- function(y, n_ahead) {
 #' @param object Model object
 #' @param n_ahead Step to forecast in rolling window scheme
 #' @param y_test Test data to be compared. Use [divide_ts()] if you don't have separate evaluation dataset.
+#' @param level Specify alpha of confidence interval level 100(1 - alpha) percentage. By default, .05.
 #' @param newxreg New values for exogenous variables.
 #' Should have the same row numbers as `y_test`.
 #' @param num_thread `r lifecycle::badge("experimental")` Number of threads
@@ -36,13 +37,13 @@ divide_ts <- function(y, n_ahead) {
 #' @references Hyndman, R. J., & Athanasopoulos, G. (2021). *Forecasting: Principles and practice* (3rd ed.). OTEXTS.
 #' @order 1
 #' @export
-forecast_roll <- function(object, n_ahead, y_test, newxreg, num_thread = 1, ...) {
+forecast_roll <- function(object, n_ahead, y_test, level = .05, newxreg = NULL, num_thread = 1, ...) {
   UseMethod("forecast_roll", object)
 }
 
 #' @rdname forecast_roll
 #' @export
-forecast_roll.olsmod <- function(object, n_ahead, y_test, newxreg, num_thread = 1, ...) {
+forecast_roll.olsmod <- function(object, n_ahead, y_test, level = .05, newxreg = NULL, num_thread = 1, ...) {
   y <- object$y
   if (!is.null(colnames(y))) {
     name_var <- colnames(y)
@@ -109,7 +110,7 @@ forecast_roll.olsmod <- function(object, n_ahead, y_test, newxreg, num_thread = 
 #' @rdname forecast_roll
 #' @param use_fit `r lifecycle::badge("experimental")` Use `object` result for the first window. By default, `TRUE`.
 #' @export
-forecast_roll.normaliw <- function(object, n_ahead, y_test, newxreg, num_thread = 1, use_fit = TRUE, ...) {
+forecast_roll.normaliw <- function(object, n_ahead, y_test, level = .05, newxreg = NULL, num_thread = 1, use_fit = TRUE, ...) {
   y <- object$y
   if (!is.null(colnames(y))) {
     name_var <- colnames(y)
@@ -234,7 +235,6 @@ forecast_roll.normaliw <- function(object, n_ahead, y_test, newxreg, num_thread 
 }
 
 #' @rdname forecast_roll
-#' @param level Specify alpha of confidence interval level 100(1 - alpha) percentage. By default, .05.
 #' @param stable `r lifecycle::badge("experimental")` Filter only stable coefficient draws in MCMC records.
 #' @param sparse `r lifecycle::badge("experimental")` Apply restriction. By default, `FALSE`.
 #' @param med `r lifecycle::badge("experimental")` If `TRUE`, use median of forecast draws instead of mean (default).
@@ -244,9 +244,9 @@ forecast_roll.normaliw <- function(object, n_ahead, y_test, newxreg, num_thread 
 #' @param verbose Print the progress bar in the console. By default, `FALSE`.
 #' @export
 forecast_roll.ldltmod <- function(object, n_ahead, y_test,
-                                  num_thread = 1,
                                   level = .05,
-                                  newxreg,
+                                  newxreg = NULL,
+                                  num_thread = 1,
                                   stable = FALSE,
                                   sparse = FALSE,
                                   med = FALSE,
@@ -423,7 +423,6 @@ forecast_roll.ldltmod <- function(object, n_ahead, y_test,
 }
 
 #' @rdname forecast_roll
-#' @param level Specify alpha of confidence interval level 100(1 - alpha) percentage. By default, .05.
 #' @param use_sv Use SV term
 #' @param stable `r lifecycle::badge("experimental")` Filter only stable coefficient draws in MCMC records.
 #' @param sparse `r lifecycle::badge("experimental")` Apply restriction. By default, `FALSE`.
@@ -434,9 +433,9 @@ forecast_roll.ldltmod <- function(object, n_ahead, y_test,
 #' @param verbose Print the progress bar in the console. By default, `FALSE`.
 #' @export
 forecast_roll.svmod <- function(object, n_ahead, y_test,
-                                num_thread = 1,
                                 level = .05,
-                                newxreg,
+                                newxreg = NULL,
+                                num_thread = 1,
                                 use_sv = TRUE,
                                 stable = FALSE,
                                 sparse = FALSE,
@@ -622,6 +621,7 @@ forecast_roll.svmod <- function(object, n_ahead, y_test,
 #' @param object Model object
 #' @param n_ahead Step to forecast in rolling window scheme
 #' @param y_test Test data to be compared. Use [divide_ts()] if you don't have separate evaluation dataset.
+#' @param level Specify alpha of confidence interval level 100(1 - alpha) percentage. By default, .05.
 #' @param newxreg New values for exogenous variables.
 #' Should have the same row numbers as `y_test`.
 #' @param num_thread `r lifecycle::badge("experimental")` Number of threads
@@ -633,13 +633,13 @@ forecast_roll.svmod <- function(object, n_ahead, y_test,
 #' @references Hyndman, R. J., & Athanasopoulos, G. (2021). *Forecasting: Principles and practice* (3rd ed.). OTEXTS. [https://otexts.com/fpp3/](https://otexts.com/fpp3/)
 #' @order 1
 #' @export
-forecast_expand <- function(object, n_ahead, y_test, newxreg, num_thread = 1, ...) {
+forecast_expand <- function(object, n_ahead, y_test, level = .05, newxreg = NULL, num_thread = 1, ...) {
   UseMethod("forecast_expand", object)
 }
 
 #' @rdname forecast_expand
 #' @export
-forecast_expand.olsmod <- function(object, n_ahead, y_test, newxreg, num_thread = 1, ...) {
+forecast_expand.olsmod <- function(object, n_ahead, y_test, level = .05, newxreg = NULL, num_thread = 1, ...) {
   y <- object$y
   if (!is.null(colnames(y))) {
     name_var <- colnames(y)
@@ -706,7 +706,7 @@ forecast_expand.olsmod <- function(object, n_ahead, y_test, newxreg, num_thread 
 #' @rdname forecast_expand
 #' @param use_fit `r lifecycle::badge("experimental")` Use `object` result for the first window. By default, `TRUE`.
 #' @export
-forecast_expand.normaliw <- function(object, n_ahead, y_test, newxreg, num_thread = 1, use_fit = TRUE, ...) {
+forecast_expand.normaliw <- function(object, n_ahead, y_test, level = .05, newxreg = NULL, num_thread = 1, use_fit = TRUE, ...) {
   y <- object$y
   if (!is.null(colnames(y))) {
     name_var <- colnames(y)
@@ -792,7 +792,6 @@ forecast_expand.normaliw <- function(object, n_ahead, y_test, newxreg, num_threa
 }
 
 #' @rdname forecast_expand
-#' @param level Specify alpha of confidence interval level 100(1 - alpha) percentage. By default, .05.
 #' @param stable `r lifecycle::badge("experimental")` Filter only stable coefficient draws in MCMC records.
 #' @param sparse `r lifecycle::badge("experimental")` Apply restriction. By default, `FALSE`.
 #' @param med `r lifecycle::badge("experimental")` If `TRUE`, use median of forecast draws instead of mean (default).
@@ -802,9 +801,9 @@ forecast_expand.normaliw <- function(object, n_ahead, y_test, newxreg, num_threa
 #' @param verbose Print the progress bar in the console. By default, `FALSE`.
 #' @export
 forecast_expand.ldltmod <- function(object, n_ahead, y_test,
-                                    num_thread = 1,
                                     level = .05,
-                                    newxreg,
+                                    newxreg = NULL,
+                                    num_thread = 1,
                                     stable = FALSE,
                                     sparse = FALSE,
                                     med = FALSE,
@@ -981,7 +980,6 @@ forecast_expand.ldltmod <- function(object, n_ahead, y_test,
 }
 
 #' @rdname forecast_expand
-#' @param level Specify alpha of confidence interval level 100(1 - alpha) percentage. By default, .05.
 #' @param use_sv Use SV term
 #' @param stable `r lifecycle::badge("experimental")` Filter only stable coefficient draws in MCMC records.
 #' @param sparse `r lifecycle::badge("experimental")` Apply restriction. By default, `FALSE`.
@@ -992,9 +990,9 @@ forecast_expand.ldltmod <- function(object, n_ahead, y_test,
 #' @param verbose Print the progress bar in the console. By default, `FALSE`.
 #' @export
 forecast_expand.svmod <- function(object, n_ahead, y_test,
-                                  num_thread = 1,
                                   level = .05,
-                                  newxreg,
+                                  newxreg = NULL,
+                                  num_thread = 1,
                                   use_sv = TRUE,
                                   stable = FALSE,
                                   sparse = FALSE,

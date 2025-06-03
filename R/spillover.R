@@ -35,7 +35,16 @@ spillover.olsmod <- function(object, n_ahead = 10L, ...) {
   #     seed = sample.int(.Machine$integer.max, size = 1)
   #   )
   # }
-  res <- compute_ols_spillover(object, n_ahead)
+  if (object$process == "VAR") {
+    coef_mat <- object$coefficients
+    var_lag <- object$p
+  } else {
+    coef_mat <- t(object$HARtrans) %*% object$coefficients
+    var_lag <- object$month
+  }
+  # res <- compute_ols_spillover(object, n_ahead)
+  # Eigen::MatrixXd coef_mat, int lag, Eigen::MatrixXd cov_mat, int step
+  res <- compute_var_spillover(coef_mat, var_lag, object$covmat, n_ahead)
   colnames(res$connect) <- colnames(object$coefficients)
   rownames(res$connect) <- colnames(object$coefficients)
   res$df_long <-

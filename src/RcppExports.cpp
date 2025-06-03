@@ -601,15 +601,17 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// compute_ols_spillover
-Rcpp::List compute_ols_spillover(Rcpp::List object, int step);
-RcppExport SEXP _bvhar_compute_ols_spillover(SEXP objectSEXP, SEXP stepSEXP) {
+// compute_var_spillover
+Rcpp::List compute_var_spillover(Eigen::MatrixXd coef_mat, int lag, Eigen::MatrixXd cov_mat, int step);
+RcppExport SEXP _bvhar_compute_var_spillover(SEXP coef_matSEXP, SEXP lagSEXP, SEXP cov_matSEXP, SEXP stepSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::List >::type object(objectSEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type coef_mat(coef_matSEXP);
+    Rcpp::traits::input_parameter< int >::type lag(lagSEXP);
+    Rcpp::traits::input_parameter< Eigen::MatrixXd >::type cov_mat(cov_matSEXP);
     Rcpp::traits::input_parameter< int >::type step(stepSEXP);
-    rcpp_result_gen = Rcpp::wrap(compute_ols_spillover(object, step));
+    rcpp_result_gen = Rcpp::wrap(compute_var_spillover(coef_mat, lag, cov_mat, step));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -2370,7 +2372,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_bvhar_expand_varx", (DL_FUNC) &_bvhar_expand_varx, 9},
     {"_bvhar_expand_vhar", (DL_FUNC) &_bvhar_expand_vhar, 8},
     {"_bvhar_expand_vharx", (DL_FUNC) &_bvhar_expand_vharx, 10},
-    {"_bvhar_compute_ols_spillover", (DL_FUNC) &_bvhar_compute_ols_spillover, 2},
+    {"_bvhar_compute_var_spillover", (DL_FUNC) &_bvhar_compute_var_spillover, 4},
     {"_bvhar_dynamic_var_spillover", (DL_FUNC) &_bvhar_dynamic_var_spillover, 7},
     {"_bvhar_dynamic_vhar_spillover", (DL_FUNC) &_bvhar_dynamic_vhar_spillover, 8},
     {"_bvhar_estimate_sur", (DL_FUNC) &_bvhar_estimate_sur, 27},

@@ -386,21 +386,9 @@ Eigen::MatrixXd expand_vharx(Eigen::MatrixXd y, int week, int month, bool includ
 //' 
 //' @noRd
 // [[Rcpp::export]]
-Rcpp::List compute_ols_spillover(Rcpp::List object, int step) {
-	if (!(object.inherits("varlse") || object.inherits("vharlse"))) {
-    Rcpp::stop("'object' must be varlse or vharlse object.");
-  }
-	std::unique_ptr<Eigen::MatrixXd> coef_mat;
-	int ord;
-	if (object.inherits("vharlse")) {
-		coef_mat.reset(new Eigen::MatrixXd(Rcpp::as<Eigen::MatrixXd>(object["HARtrans"]).transpose() * Rcpp::as<Eigen::MatrixXd>(object["coefficients"])));
-		ord = object["month"];
-	} else {
-		coef_mat.reset(new Eigen::MatrixXd(Rcpp::as<Eigen::MatrixXd>(object["coefficients"])));
-		ord = object["p"];
-	}
-	bvhar::StructuralFit fit(*coef_mat, ord, step - 1, Rcpp::as<Eigen::MatrixXd>(object["covmat"]));
-	std::unique_ptr<bvhar::OlsSpillover> spillover(new bvhar::OlsSpillover(fit));
+Rcpp::List compute_var_spillover(Eigen::MatrixXd coef_mat, int lag, Eigen::MatrixXd cov_mat, int step) {
+	bvhar::StructuralFit fit(coef_mat, lag, step - 1, cov_mat);
+	auto spillover = std::make_unique<bvhar::OlsSpillover>(fit);
 	spillover->computeSpillover();
 	Eigen::VectorXd to_sp = spillover->returnTo();
 	Eigen::VectorXd from_sp = spillover->returnFrom();

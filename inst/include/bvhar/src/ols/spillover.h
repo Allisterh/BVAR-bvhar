@@ -7,12 +7,21 @@
 namespace bvhar {
 
 class OlsSpillover;
+class OlsVarSpillover;
+class OlsVharSpillover;
+class OlsSpilloverRun;
+class OlsDynamicSpillover;
 
 class OlsSpillover {
 public:
 	OlsSpillover(const StructuralFit& fit)
 	: step(fit._lag_max), dim(fit.dim),
 		coef(fit._coef), cov(fit._cov), vma_mat(fit._vma),
+		fevd(Eigen::MatrixXd::Zero(dim * step, dim)),
+		spillover(Eigen::MatrixXd::Zero(dim, dim)) {}
+	OlsSpillover(const Eigen::MatrixXd& coef_mat, const Eigen::MatrixXd& cov_mat, int lag_max, int ord)
+	: step(lag_max), dim(vma_mat.cols()),
+		coef(coef_mat), cov(cov_mat), vma_mat(Eigen::MatrixXd::Zero(dim * step, dim)),
 		fevd(Eigen::MatrixXd::Zero(dim * step, dim)),
 		spillover(Eigen::MatrixXd::Zero(dim, dim)) {}
 	virtual ~OlsSpillover() = default;
@@ -49,6 +58,8 @@ protected:
 	Eigen::MatrixXd vma_mat;
 	Eigen::MatrixXd fevd;
 	Eigen::MatrixXd spillover;
+
+	virtual void computeVma() {}
 };
 
 }; // namespace bvhar

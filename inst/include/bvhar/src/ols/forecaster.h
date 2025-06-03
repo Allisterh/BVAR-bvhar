@@ -407,8 +407,8 @@ protected:
 		if (lag_exogen) {
 			int dim_design = include_mean ? lag * dim + 1 : lag * dim;
 			int dim_har = include_mean ? 3 * dim + 1 : 3 * dim;
-			int dim_exogen = roll_exogen_mat[window]->cols();
-			Eigen::MatrixXd vhar_design(roll_y0[window].rows(), dim_har + (*lag_exogen + 1) * dim_exogen);
+			int dim_exogen = (*lag_exogen + 1) * roll_exogen_mat[window]->cols();
+			Eigen::MatrixXd vhar_design(roll_y0[window].rows(), dim_har + dim_exogen);
 			Eigen::MatrixXd var_design = build_x0(roll_mat[window], *(roll_exogen_mat[window]), lag, *lag_exogen, include_mean);
 			vhar_design.leftCols(dim_har) = var_design.leftCols(dim_design) * har_trans.transpose();
 			vhar_design.rightCols(dim_exogen) = var_design.rightCols(dim_exogen);

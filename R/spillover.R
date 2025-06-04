@@ -17,25 +17,15 @@ spillover <- function(object, n_ahead = 10L, ...) {
 #' @rdname spillover
 #' @export
 spillover.olsmod <- function(object, n_ahead = 10L, ...) {
-  # if (object$process == "VAR") {
-  #   mod_type <- "freq_var"
-  # } else if (object$process == "VHAR") {
-  #   mod_type <- "freq_vhar"
-  # } else {
-  #   mod_type <- ifelse(grepl(pattern = "^BVAR_", object$process), "var", "vhar")
-  # }
-  # dim_data <- object$coefficients
-  # if (grepl(pattern = "^freq_", mod_type)) {
-  #   res <- compute_ols_spillover(object, n_ahead)
-  # } else {
-  #   res <- compute_mn_spillover(
-  #     object,
-  #     step = n_ahead,
-  #     num_iter = num_iter, num_burn = num_burn, thin = thinning,
-  #     seed = sample.int(.Machine$integer.max, size = 1)
-  #   )
-  # }
-  res <- compute_ols_spillover(object, n_ahead)
+  res <- switch(
+    object$process,
+    "VAR" = {
+      compute_var_spillover(object$coefficients, object$p, object$covmat, n_ahead)
+    },
+    "VHAR" = {
+      compute_vhar_spillover(object$coefficients, object$week, object$month, object$covmat, n_ahead)
+    }
+  )
   colnames(res$connect) <- colnames(object$coefficients)
   rownames(res$connect) <- colnames(object$coefficients)
   res$df_long <-

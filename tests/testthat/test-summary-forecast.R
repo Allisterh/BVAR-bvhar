@@ -33,16 +33,41 @@ test_that("Rolling windows - OLS", {
 
 test_that("Expanding windows - OLS", {
   skip_on_cran()
-  
+
   etf_split <- divide_ts(etf_vix[1:100, 1:2], 10)
   etf_train <- etf_split$train
   etf_test <- etf_split$test
-  
+
   fit_var <- var_lm(etf_train, 2)
   var_expand <- forecast_expand(fit_var, 10, etf_test)
   expect_s3_class(var_expand, "predbvhar_expand")
   expect_s3_class(var_expand, "bvharcv")
-  
+})
+
+test_that("Rolling windows - OLS VHAR", {
+  skip_on_cran()
+
+  etf_split <- divide_ts(etf_vix[1:100, 1:2], 10)
+  etf_train <- etf_split$train
+  etf_test <- etf_split$test
+
+  fit_test <- vhar_lm(etf_train)
+  var_roll <- forecast_roll(fit_test, 10, etf_test)
+  expect_s3_class(var_roll, "predbvhar_roll")
+  expect_s3_class(var_roll, "bvharcv")
+})
+
+test_that("Expanding windows - OLS VHAR", {
+  skip_on_cran()
+
+  etf_split <- divide_ts(etf_vix[1:100, 1:2], 10)
+  etf_train <- etf_split$train
+  etf_test <- etf_split$test
+
+  fit_test <- vhar_lm(etf_train)
+  var_expand <- forecast_expand(fit_test, 10, etf_test)
+  expect_s3_class(var_expand, "predbvhar_expand")
+  expect_s3_class(var_expand, "bvharcv")
 })
 
 help_var_bayes_roll <- function(bayes_spec, cov_spec, sparse, is_exogen = FALSE) {

@@ -285,6 +285,8 @@ class VarBayes(_AutoregBayes):
             - "lower" (ndarray): Lower quantile of forecasting
             - "upper" (ndarray): Upper quantile of forecasting
         """
+        if not self.is_fitted_:
+            raise RuntimeError("The model has not been fitted yet.")
         fit_record = concat_params(self.param_, self.param_names_)
         if type(self.cov_spec_) == LdltConfig:
             forecaster = LdltForecast(
@@ -337,6 +339,7 @@ class VarBayes(_AutoregBayes):
             - "upper" (ndarray): Upper quantile of forecasting
             - "lpl" (float): Average log-predictive likelihood
         """
+        # if not self.is_fitted_: add use_mcmc option
         fit_record = concat_params(self.param_, self.param_names_)
         test = check_np(test)
         n_horizon = test.shape[0] - n_ahead + 1
@@ -753,6 +756,8 @@ class VharBayes(_AutoregBayes):
             - "lower" (ndarray): Lower quantile of forecasting
             - "upper" (ndarray): Upper quantile of forecasting
         """
+        if not self.is_fitted_:
+            raise RuntimeError("The model has not been fitted yet.")
         fit_record = concat_params(self.param_, self.param_names_)
         if type(self.cov_spec_) == LdltConfig:
             forecaster = LdltForecast(

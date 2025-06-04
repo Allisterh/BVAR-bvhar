@@ -208,7 +208,7 @@ private:
 };
 
 template <typename RecordType = LdltRecords>
-inline std::unique_ptr<McmcSpillover> initialize_spillover(
+inline std::unique_ptr<McmcSpillover> initialize_ctaspillover(
 	int chain_id, int lag, int step, LIST& fit_record, bool sparse, int id = -1,
 	Optional<Eigen::MatrixXd> har_trans = NULLOPT, Optional<int> week = NULLOPT
 ) {
@@ -229,7 +229,7 @@ inline std::unique_ptr<McmcSpillover> initialize_spillover(
 }
 
 template <typename RecordType = LdltRecords>
-inline std::unique_ptr<McmcSpillover> initialize_spillover(
+inline std::unique_ptr<McmcSpillover> initialize_ctaspillover(
 	int lag, int step, RecordType& reg_record, int id = -1,
 	Optional<Eigen::MatrixXd> har_trans = NULLOPT, Optional<int> week = NULLOPT
 ) {
@@ -253,9 +253,9 @@ template <typename RecordType = LdltRecords>
 class McmcSpilloverRun {
 public:
 	McmcSpilloverRun(int lag, int step, LIST& fit_record, bool sparse)
-	: spillover_ptr(initialize_spillover<RecordType>(0, lag, step, fit_record, sparse, -1)) {}
+	: spillover_ptr(initialize_ctaspillover<RecordType>(0, lag, step, fit_record, sparse, -1)) {}
 	McmcSpilloverRun(int week, int month, int step, LIST& fit_record, bool sparse)
-	: spillover_ptr(initialize_spillover<RecordType>(0, month, step, fit_record, sparse, -1, NULLOPT, week)) {}
+	: spillover_ptr(initialize_ctaspillover<RecordType>(0, month, step, fit_record, sparse, -1, NULLOPT, week)) {}
 	virtual ~McmcSpilloverRun() = default;
 	LIST returnSpillover() {
 		return spillover_ptr->returnSpilloverDensity();
@@ -413,7 +413,7 @@ protected:
 			model[window][chain]->doPosteriorDraws();
 		}
 		LdltRecords reg_record = model[window][chain]->returnLdltRecords(0, thin, sparse);
-		spillover[window][chain] = initialize_spillover<LdltRecords>(lag, step, reg_record, -1, har_trans);
+		spillover[window][chain] = initialize_ctaspillover<LdltRecords>(lag, step, reg_record, -1, har_trans);
 		model[window][chain].reset();
 	}
 	void getSpillover(int window, int chain) {
@@ -499,7 +499,7 @@ protected:
 		#pragma omp parallel for num_threads(nthreads)
 	#endif
 		for (int window = 0; window < num_horizon; ++window) {
-			spillover[window] = initialize_spillover<SvRecords>(lag, step, *reg_record, window, har_trans);
+			spillover[window] = initialize_ctaspillover<SvRecords>(lag, step, *reg_record, window, har_trans);
 			spillover[window]->computeSpillover();
 			to_sp[window] = spillover[window]->returnTo();
 			from_sp[window] = spillover[window]->returnFrom();

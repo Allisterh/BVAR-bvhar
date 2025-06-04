@@ -499,8 +499,13 @@ expand_vharx <- function(y, week, month, include_mean, step, y_test, method, nth
 #' @param step Step to forecast.
 #' 
 #' @noRd
-compute_ols_spillover <- function(object, step) {
-    .Call(`_bvhar_compute_ols_spillover`, object, step)
+compute_var_spillover <- function(coef_mat, lag, cov_mat, step) {
+    .Call(`_bvhar_compute_var_spillover`, coef_mat, lag, cov_mat, step)
+}
+
+#' @noRd
+compute_vhar_spillover <- function(coef_mat, week, month, cov_mat, step) {
+    .Call(`_bvhar_compute_vhar_spillover`, coef_mat, week, month, cov_mat, step)
 }
 
 #' Rolling-sample Total Spillover Index of VAR

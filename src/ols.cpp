@@ -409,38 +409,8 @@ Rcpp::List compute_vhar_spillover(Eigen::MatrixXd coef_mat, int week, int month,
 //' @noRd
 // [[Rcpp::export]]
 Rcpp::List dynamic_var_spillover(Eigen::MatrixXd y, int window, int step, int lag, bool include_mean, int method, int nthreads) {
-  int num_horizon = y.rows() - window + 1; // number of windows = T - win + 1
-	if (num_horizon <= 0) {
-		Rcpp::stop("Window size is too large.");
-	}
-	std::vector<std::unique_ptr<bvhar::OlsVar>> ols_objs(num_horizon);
-	for (int i = 0; i < num_horizon; ++i) {
-		Eigen::MatrixXd roll_mat = y.middleRows(i, window);
-		ols_objs[i] = std::unique_ptr<bvhar::OlsVar>(new bvhar::OlsVar(roll_mat, lag, include_mean, method));
-	}
-	std::vector<std::unique_ptr<bvhar::OlsVarSpillover>> spillover(num_horizon);
-	Eigen::VectorXd tot(num_horizon);
-	Eigen::MatrixXd to_sp(num_horizon, y.cols());
-	Eigen::MatrixXd from_sp(num_horizon, y.cols());
-#ifdef _OPENMP
-	#pragma omp parallel for num_threads(nthreads)
-#endif
-	for (int i = 0; i < num_horizon; ++i) {
-		bvhar::StructuralFit ols_fit = ols_objs[i]->returnStructuralFit(step - 1);
-		spillover[i].reset(new bvhar::OlsVarSpillover(ols_fit));
-		spillover[i]->computeSpillover();
-		to_sp.row(i) = spillover[i]->returnTo();
-		from_sp.row(i) = spillover[i]->returnFrom();
-		tot[i] = spillover[i]->returnTot();
-		ols_objs[i].reset(); // free the memory by making nullptr
-		spillover[i].reset(); // free the memory by making nullptr
-	}
-	return Rcpp::List::create(
-		Rcpp::Named("to") = to_sp,
-		Rcpp::Named("from") = from_sp,
-		Rcpp::Named("tot") = tot,
-		Rcpp::Named("net") = to_sp - from_sp
-	);
+	auto spillover = std::make_unique<bvhar::OlsDynamicSpillover>(y, window, step, lag, include_mean, method, nthreads);
+	return spillover->returnSpillover();
 }
 
 //' Rolling-sample Total Spillover Index of VHAR
@@ -454,36 +424,6 @@ Rcpp::List dynamic_var_spillover(Eigen::MatrixXd y, int window, int step, int la
 //' @noRd
 // [[Rcpp::export]]
 Rcpp::List dynamic_vhar_spillover(Eigen::MatrixXd y, int window, int step, int week, int month, bool include_mean, int method, int nthreads) {
-  int num_horizon = y.rows() - window + 1; // number of windows = T - win + 1
-	if (num_horizon <= 0) {
-		Rcpp::stop("Window size is too large.");
-	}
-	std::vector<std::unique_ptr<bvhar::OlsVhar>> ols_objs(num_horizon);
-	for (int i = 0; i < num_horizon; ++i) {
-		Eigen::MatrixXd roll_mat = y.middleRows(i, window);
-		ols_objs[i] = std::unique_ptr<bvhar::OlsVhar>(new bvhar::OlsVhar(roll_mat, week, month, include_mean, method));
-	}
-	std::vector<std::unique_ptr<bvhar::OlsVarSpillover>> spillover(num_horizon);
-	Eigen::VectorXd tot(num_horizon);
-	Eigen::MatrixXd to_sp(num_horizon, y.cols());
-	Eigen::MatrixXd from_sp(num_horizon, y.cols());
-#ifdef _OPENMP
-	#pragma omp parallel for num_threads(nthreads)
-#endif
-	for (int i = 0; i < num_horizon; ++i) {
-		bvhar::StructuralFit ols_fit = ols_objs[i]->returnStructuralFit(step - 1);
-		spillover[i].reset(new bvhar::OlsVarSpillover(ols_fit));
-		spillover[i]->computeSpillover();
-		to_sp.row(i) = spillover[i]->returnTo();
-		from_sp.row(i) = spillover[i]->returnFrom();
-		tot[i] = spillover[i]->returnTot();
-		ols_objs[i].reset(); // free the memory by making nullptr
-		spillover[i].reset(); // free the memory by making nullptr
-	}
-	return Rcpp::List::create(
-		Rcpp::Named("to") = to_sp,
-		Rcpp::Named("from") = from_sp,
-		Rcpp::Named("tot") = tot,
-		Rcpp::Named("net") = to_sp - from_sp
-	);
+	auto spillover = std::make_unique<bvhar::OlsDynamicSpillover>(y, window, step, month, include_mean, method, nthreads, week);
+	return spillover->returnSpillover();
 }

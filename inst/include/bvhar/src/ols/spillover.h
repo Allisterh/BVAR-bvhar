@@ -117,6 +117,16 @@ inline std::unique_ptr<OlsVarSpillover> initialize_olsspillover(
 	return spillvoer_ptr;
 }
 
+inline std::unique_ptr<OlsVarSpillover> initialize_olsspillover(const StructuralFit& fit, int step, Optional<int> week = NULLOPT) {
+	std::unique_ptr<OlsVarSpillover> spillvoer_ptr;
+	if (week) {
+		spillvoer_ptr = std::make_unique<OlsVharSpillover>(fit, *week, step);
+	} else {
+		spillvoer_ptr = std::make_unique<OlsVarSpillover>(fit, step);
+	}
+	return spillvoer_ptr;
+}
+
 class OlsSpilloverRun {
 public:
 	OlsSpilloverRun(int lag, int step, const Eigen::MatrixXd& coef_mat, const Eigen::MatrixXd& cov_mat)
@@ -130,6 +140,72 @@ public:
 	
 private:
 	std::unique_ptr<OlsVarSpillover> spillover_ptr;
+};
+
+class OlsDynamicSpillover {
+public:
+	OlsDynamicSpillover(
+		const Eigen::MatrixXd& y, int window, int step, int lag, bool include_mean, int method, int nthreads,
+		Optional<int> week = NULLOPT
+	)
+	: num_horizon(y.rows() - window + 1), win_size(window), lag(lag), step(step), nthreads(nthreads),
+		ols_ptr(num_horizon), spillover(num_horizon),
+		tot(Eigen::VectorXd::Zero(num_horizon)),
+		to_sp(Eigen::MatrixXd::Zero(num_horizon, y.cols())),
+		from_sp(Eigen::MatrixXd::Zero(num_horizon, y.cols())),
+		har_week(week) {
+		if (har_week) {
+			for (int i = 0; i < num_horizon; ++i) {
+				Eigen::MatrixXd roll_mat = y.middleRows(i, win_size);
+				ols_ptr[i] = std::make_unique<OlsVhar>(roll_mat, *har_week, lag, include_mean, method);
+			}
+		} else {
+			for (int i = 0; i < num_horizon; ++i) {
+				Eigen::MatrixXd roll_mat = y.middleRows(i, win_size);
+				ols_ptr[i] = std::make_unique<OlsVar>(roll_mat, lag, include_mean, method);
+			}
+		}
+	}
+	virtual ~OlsDynamicSpillover() = default;
+	LIST returnSpillover() {
+		fit();
+		LIST res = CREATE_LIST(
+			NAMED("to") = to_sp,
+			NAMED("from") = from_sp,
+			NAMED("tot") = tot,
+			NAMED("net") = to_sp - from_sp
+		);
+		return res;
+	}
+
+private:
+	int num_horizon, win_size, lag, step, nthreads;
+	// bool include_mean;
+	std::vector<std::unique_ptr<OlsInterface>> ols_ptr;
+	std::vector<std::unique_ptr<OlsVarSpillover>> spillover;
+	Eigen::VectorXd tot;
+	Eigen::MatrixXd to_sp, from_sp;
+	Optional<int> har_week;
+
+	void getSpillover(int window) {
+		StructuralFit ols_fit = ols_ptr[window]->returnStructuralFit();
+		spillover[window] = initialize_olsspillover(ols_fit, step, har_week);
+		spillover[window]->computeSpillover();
+		to_sp.row(window) = spillover[window]->returnTo();
+		from_sp.row(window) = spillover[window]->returnFrom();
+		tot[window] = spillover[window]->returnTot();
+		ols_ptr[window].reset();
+		spillover[window].reset();
+	}
+
+	void fit() {
+	#ifdef _OPENMP
+		#pragma omp parallel for num_threads(nthreads)
+	#endif
+		for (int window = 0; window < num_horizon; ++window) {
+			getSpillover(window);
+		}
+	}
 };
 
 }; // namespace bvhar

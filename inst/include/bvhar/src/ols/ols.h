@@ -24,27 +24,27 @@ struct OlsFit {
 struct StructuralFit : public OlsFit {
 	int _lag_max;
 	int dim;
-	int ma_rows;
+	// int ma_rows;
 	Eigen::MatrixXd _vma; // VMA [W1^T, W2^T, ..., W(lag_max)^T]^T, ma_rows = m * lag_max
 	Eigen::MatrixXd _cov;
 
 	StructuralFit(const Eigen::MatrixXd& coef_mat, int ord, const Eigen::MatrixXd& cov_mat)
 	: OlsFit(coef_mat, ord), dim(coef_mat.cols()), _cov(cov_mat) {}
 	
-	StructuralFit(const Eigen::MatrixXd& coef_mat, int ord, int lag_max, const Eigen::MatrixXd& cov_mat)
-	: OlsFit(coef_mat, ord), _lag_max(lag_max),
-		dim(coef_mat.cols()), ma_rows(dim * (_lag_max + 1)),
-		_vma(Eigen::MatrixXd::Zero(ma_rows, dim)), _cov(cov_mat) {
-		int num_full_rows = _lag_max < _ord ? dim * _ord : ma_rows;
-		Eigen::MatrixXd full_coef = Eigen::MatrixXd::Zero(num_full_rows, dim); // same size with VMA coefficient matrix
-		full_coef.topRows(dim * _ord) = _coef.topRows(dim * _ord); // fill first mp row with VAR coefficient matrix
-		_vma.topRows(dim) = Eigen::MatrixXd::Identity(dim, dim); // W0 = I_k
-		for (int i = 1; i < (_lag_max + 1); ++i) {
-			for (int j = 0; j < i; ++j) {
-				_vma.middleRows(i * dim, dim) += full_coef.middleRows(j * dim, dim) * _vma.middleRows((i - j - 1) * dim, dim); // Wi = sum(W(i - k)^T * Bk^T)
-			}
-		}
-	}
+	// StructuralFit(const Eigen::MatrixXd& coef_mat, int ord, int lag_max, const Eigen::MatrixXd& cov_mat)
+	// : OlsFit(coef_mat, ord), _lag_max(lag_max),
+	// 	dim(coef_mat.cols()), ma_rows(dim * (_lag_max + 1)),
+	// 	_vma(Eigen::MatrixXd::Zero(ma_rows, dim)), _cov(cov_mat) {
+	// 	int num_full_rows = _lag_max < _ord ? dim * _ord : ma_rows;
+	// 	Eigen::MatrixXd full_coef = Eigen::MatrixXd::Zero(num_full_rows, dim); // same size with VMA coefficient matrix
+	// 	full_coef.topRows(dim * _ord) = _coef.topRows(dim * _ord); // fill first mp row with VAR coefficient matrix
+	// 	_vma.topRows(dim) = Eigen::MatrixXd::Identity(dim, dim); // W0 = I_k
+	// 	for (int i = 1; i < (_lag_max + 1); ++i) {
+	// 		for (int j = 0; j < i; ++j) {
+	// 			_vma.middleRows(i * dim, dim) += full_coef.middleRows(j * dim, dim) * _vma.middleRows((i - j - 1) * dim, dim); // Wi = sum(W(i - k)^T * Bk^T)
+	// 		}
+	// 	}
+	// }
 };
 
 class MultiOls {
@@ -96,18 +96,20 @@ public:
 		OlsFit res(coef, ord);
 		return res;
 	}
-	StructuralFit returnStructuralFit(int ord, int lag_max) {
+	StructuralFit returnStructuralFit(int ord) {
 		estimateCoef();
 		fitObs();
 		estimateCov();
-		StructuralFit res(coef, ord, lag_max, cov);
+		// StructuralFit res(coef, ord, lag_max, cov);
+		StructuralFit res(coef, ord, cov);
 		return res;
 	}
-	StructuralFit returnStructuralFit(const Eigen::MatrixXd& trans_mat, int ord, int lag_max) {
+	StructuralFit returnStructuralFit(const Eigen::MatrixXd& trans_mat, int ord) {
 		estimateCoef();
 		fitObs();
 		estimateCov();
-		StructuralFit res(trans_mat.transpose() * coef, ord, lag_max, cov);
+		// StructuralFit res(trans_mat.transpose() * coef, ord, lag_max, cov);
+		StructuralFit res(trans_mat.transpose() * coef, ord, cov);
 		return res;
 	}
 protected:
@@ -167,7 +169,17 @@ inline std::unique_ptr<MultiOls> initialize_ols(const Eigen::MatrixXd& design, c
 	return ols_ptr;
 }
 
-class OlsVar {
+class OlsInterface {
+public:
+	OlsInterface() {}
+	virtual ~OlsInterface() = default;
+	virtual LIST returnOlsRes() = 0;
+	virtual Eigen::MatrixXd returnCoef() = 0;
+	virtual OlsFit returnOlsFit() = 0;
+	virtual StructuralFit returnStructuralFit() = 0;
+};
+
+class OlsVar : public OlsInterface {
 public:
 	OlsVar(const Eigen::MatrixXd& y, int lag, const bool include_mean, int method)
 	: lag(lag), const_term(include_mean), data(y) {
@@ -182,7 +194,7 @@ public:
 		_ols = initialize_ols(design, response, method);
 	}
 	virtual ~OlsVar() = default;
-	LIST returnOlsRes() {
+	LIST returnOlsRes() override {
 		LIST ols_res = _ols->returnOlsRes();
 		ols_res["p"] = lag;
 		ols_res["totobs"] = data.rows();
@@ -192,15 +204,15 @@ public:
 		ols_res["y"] = data;
 		return ols_res;
 	}
-	Eigen::MatrixXd returnCoef() {
+	Eigen::MatrixXd returnCoef() override {
 		return _ols->returnCoef();
 	}
-	OlsFit returnOlsFit() {
+	OlsFit returnOlsFit() override{
 		OlsFit res = _ols->returnOlsFit(lag);
 		return res;
 	}
-	StructuralFit returnStructuralFit(int lag_max) {
-		StructuralFit res = _ols->returnStructuralFit(lag, lag_max);
+	StructuralFit returnStructuralFit() override {
+		StructuralFit res = _ols->returnStructuralFit(lag);
 		return res;
 	}
 protected:
@@ -212,7 +224,7 @@ protected:
 	Eigen::MatrixXd design;
 };
 
-class OlsVhar {
+class OlsVhar : public OlsInterface {
 public:
 	OlsVhar(const Eigen::MatrixXd& y, int week, int month, const bool include_mean, int method)
 	: week(week), month(month), const_term(include_mean), data(y) {
@@ -239,7 +251,7 @@ public:
 		_ols = initialize_ols(design, response, method);
 	}
 	virtual ~OlsVhar() = default;
-	LIST returnOlsRes() {
+	LIST returnOlsRes() override {
 		LIST ols_res = _ols->returnOlsRes();
 		ols_res["p"] = 3;
 		ols_res["week"] = week;
@@ -252,16 +264,17 @@ public:
 		ols_res["y"] = data;
 		return ols_res;
 	}
-	Eigen::MatrixXd returnCoef() {
+	Eigen::MatrixXd returnCoef() override {
 		return _ols->returnCoef();
 	}
-	OlsFit returnOlsFit() {
+	OlsFit returnOlsFit() override {
 		OlsFit res = _ols->returnOlsFit(month);
 		res._ord = month;
 		return res;
 	}
-	StructuralFit returnStructuralFit(int lag_max) {
-		StructuralFit res = _ols->returnStructuralFit(har_trans, month, lag_max);
+	StructuralFit returnStructuralFit() override {
+		// StructuralFit res = _ols->returnStructuralFit(har_trans, month);
+		StructuralFit res = _ols->returnStructuralFit(month);
 		return res;
 	}
 protected:

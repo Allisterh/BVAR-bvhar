@@ -22,6 +22,10 @@
 
 * Also added base forecaster classes.
 
+* Changed the way OLS spillover classes work.
+
+* Added `OlsSpilloverRun` and `OlsDynamicSpillover` for volatility spillover in OLS.
+
 # bvhar 2.2.2
 
 * Fix `unlist()` error in print methods for `r-devel` (4.5.0).

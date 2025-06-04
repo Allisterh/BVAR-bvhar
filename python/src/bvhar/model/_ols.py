@@ -1,6 +1,7 @@
 from ..utils._misc import check_np, get_var_intercept
 from .._src._ols import OlsVar, OlsVhar
 from .._src._ols import OlsForecast, OlsVarRoll, OlsVarExpand, OlsVharRoll, OlsVharExpand
+from .._src._ols import OlsSpillover, OlsDynamicSpillover
 
 class _Vectorautoreg:
     """Base class for OLS"""
@@ -108,7 +109,7 @@ class VarOls(_Vectorautoreg):
             "forecast": y_distn
         }
 
-    def roll_forecast(self, n_ahead: int, test, n_thread: int):
+    def roll_forecast(self, n_ahead: int, test, n_thread = 1):
         test = check_np(test)
         forecaster = OlsVarRoll(self.y_, self.p_, self.fit_intercept, n_ahead, test, self.method, n_thread)
         y_distn = forecaster.returnForecast()
@@ -116,7 +117,7 @@ class VarOls(_Vectorautoreg):
             "forecast": y_distn
         }
 
-    def expand_forecast(self, n_ahead: int, test, n_thread: int):
+    def expand_forecast(self, n_ahead: int, test, n_thread = 1):
         test = check_np(test)
         forecaster = OlsVarExpand(self.y_, self.p_, self.fit_intercept, n_ahead, test, self.method, n_thread)
         y_distn = forecaster.returnForecast()
@@ -124,11 +125,27 @@ class VarOls(_Vectorautoreg):
             "forecast": y_distn
         }
 
-    def spillover(self):
-        pass
+    def spillover(self, n_ahead = 10):
+        spo = OlsSpillover(self.p_, n_ahead, self.coef_, self.cov_)
+        out_spillover = spo.returnSpillover()
+        return {
+            "connect": out_spillover['connect'],
+            "net_pairwise": out_spillover['net_pairwise'],
+            "tot": out_spillover['tot'],
+            "to": out_spillover['to'],
+            "from": out_spillover['from'],
+            "net": out_spillover['net']
+        }
 
-    def dynamic_spillover(self):
-        pass
+    def dynamic_spillover(self, window: int, n_ahead = 10, n_thread = 1):
+        spo = OlsDynamicSpillover(self.y_, window, n_ahead, self.p_, self.fit_intercept, self.method, n_thread)
+        out_spillover = spo.returnSpillover()
+        return {
+            "tot": out_spillover['tot'],
+            "to": out_spillover['to'],
+            "from": out_spillover['from'],
+            "net": out_spillover['net']
+        }
 
 class VharOls(_Vectorautoreg):
     """OLS for Vector heterogeneous autoregressive model
@@ -180,7 +197,7 @@ class VharOls(_Vectorautoreg):
             "forecast": y_distn
         }
 
-    def roll_forecast(self, n_ahead: int, test, n_thread: int):
+    def roll_forecast(self, n_ahead: int, test, n_thread = 1):
         test = check_np(test)
         forecaster = OlsVharRoll(self.y_, self.week_, self.month_, self.fit_intercept, n_ahead, test, self.method, n_thread)
         y_distn = forecaster.returnForecast()
@@ -188,7 +205,7 @@ class VharOls(_Vectorautoreg):
             "forecast": y_distn
         }
 
-    def expand_forecast(self, n_ahead: int, test, n_thread: int):
+    def expand_forecast(self, n_ahead: int, test, n_thread = 1):
         test = check_np(test)
         forecaster = OlsVharExpand(self.y_, self.week_, self.month_, self.fit_intercept, n_ahead, test, self.method, n_thread)
         y_distn = forecaster.returnForecast()
@@ -196,8 +213,24 @@ class VharOls(_Vectorautoreg):
             "forecast": y_distn
         }
 
-    def spillover(self):
-        pass
+    def spillover(self, n_ahead = 10):
+        spo = OlsSpillover(self.week_, self.month_, n_ahead, self.coef_, self.cov_)
+        out_spillover = spo.returnSpillover()
+        return {
+            "connect": out_spillover['connect'],
+            "net_pairwise": out_spillover['net_pairwise'],
+            "tot": out_spillover['tot'],
+            "to": out_spillover['to'],
+            "from": out_spillover['from'],
+            "net": out_spillover['net']
+        }
 
-    def dynamic_spillover(self):
-        pass
+    def dynamic_spillover(self, window: int, n_ahead = 10, n_thread = 1):
+        spo = OlsDynamicSpillover(self.y_, window, n_ahead, self.month_, self.fit_intercept, self.method, n_thread, self.week_)
+        out_spillover = spo.returnSpillover()
+        return {
+            "tot": out_spillover['tot'],
+            "to": out_spillover['to'],
+            "from": out_spillover['from'],
+            "net": out_spillover['net']
+        }

@@ -53,4 +53,14 @@ PYBIND11_MODULE(_ols, m) {
 	py::class_<bvhar::VharOutforecastRun<bvhar::OlsExpandforecastRun>>(m, "OlsVharExpand")
 		.def(py::init<const Eigen::MatrixXd&, int, int, bool, int, const Eigen::MatrixXd&, int, int>())
 		.def("returnForecast", &bvhar::VharOutforecastRun<bvhar::OlsExpandforecastRun>::returnForecast);
+
+	py::class_<bvhar::OlsSpilloverRun>(m, "OlsSpillover")
+		.def(py::init<int, int, const Eigen::MatrixXd&, const Eigen::MatrixXd&>())
+		.def(py::init<int, int, int, const Eigen::MatrixXd&, const Eigen::MatrixXd&>())
+		.def("returnSpillover", &bvhar::OlsSpilloverRun::returnSpillover);
+	
+	py::class_<bvhar::OlsDynamicSpillover>(m, "OlsDynamicSpillover")
+		.def(py::init<const Eigen::MatrixXd&, int, int, int, bool, int, int>())
+		.def(py::init<const Eigen::MatrixXd&, int, int, int, bool, int, int, int>())
+		.def("returnSpillover", &bvhar::OlsDynamicSpillover::returnSpillover);
 }

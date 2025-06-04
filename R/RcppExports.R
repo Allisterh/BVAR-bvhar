@@ -503,6 +503,11 @@ compute_var_spillover <- function(coef_mat, lag, cov_mat, step) {
     .Call(`_bvhar_compute_var_spillover`, coef_mat, lag, cov_mat, step)
 }
 
+#' @noRd
+compute_vhar_spillover <- function(coef_mat, week, month, cov_mat, step) {
+    .Call(`_bvhar_compute_vhar_spillover`, coef_mat, week, month, cov_mat, step)
+}
+
 #' Rolling-sample Total Spillover Index of VAR
 #' 
 #' @param y Time series data of which columns indicate the variables

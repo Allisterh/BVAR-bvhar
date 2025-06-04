@@ -27,6 +27,9 @@ struct StructuralFit : public OlsFit {
 	int ma_rows;
 	Eigen::MatrixXd _vma; // VMA [W1^T, W2^T, ..., W(lag_max)^T]^T, ma_rows = m * lag_max
 	Eigen::MatrixXd _cov;
+
+	StructuralFit(const Eigen::MatrixXd& coef_mat, int ord, const Eigen::MatrixXd& cov_mat)
+	: OlsFit(coef_mat, ord), dim(coef_mat.cols()), _cov(cov_mat) {}
 	
 	StructuralFit(const Eigen::MatrixXd& coef_mat, int ord, int lag_max, const Eigen::MatrixXd& cov_mat)
 	: OlsFit(coef_mat, ord), _lag_max(lag_max),

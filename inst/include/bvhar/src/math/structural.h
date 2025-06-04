@@ -1,7 +1,8 @@
 #ifndef BVHAR_MATH_STRUCTURAL_H
 #define BVHAR_MATH_STRUCTURAL_H
 
-#include "../core/eigen.h"
+// #include "../core/eigen.h"
+#include "../core/common.h"
 
 namespace bvhar {
 

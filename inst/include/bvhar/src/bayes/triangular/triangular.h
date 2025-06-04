@@ -523,7 +523,7 @@ inline std::vector<std::unique_ptr<BaseMcmc>> initialize_mcmc(
 		if (exogen_prior) {
 			LIST exogen_init_spec = (*exogen_init)[i];
 			// auto exogen_updater = initialize_shrinkageupdater<false>(num_iter, *exogen_prior, exogen_init_spec, *exogen_prior_type);
-			LIST exogen_prior_spec = std::move(*exogen_prior);
+			LIST exogen_prior_spec = *exogen_prior;
 			auto exogen_updater = initialize_shrinkageupdater<false>(num_iter, exogen_prior_spec, exogen_init_spec, *exogen_prior_type);
 			exogen_updater->initCoefMean(base_params._alpha_mean.tail(base_params._num_exogen));
 			exogen_updater->initImpactPrec(base_params._alpha_prec.tail(base_params._num_exogen));

@@ -1,5 +1,6 @@
 from ..utils._misc import check_np, get_var_intercept
 from .._src._ols import OlsVar, OlsVhar
+from .._src._ols import OlsForecast
 
 class _Vectorautoreg:
     """Base class for OLS"""
@@ -26,6 +27,7 @@ class _Vectorautoreg:
             raise ValueError(f"'data' rows must be larger than '{lag_name}' = {self.lag_}")
         self.fit_intercept = fit_intercept
         self._model = None
+        self.is_fitted_ = False
         self.coef_ = None
         self.intercept_ = None
         self.cov_ = None
@@ -41,6 +43,9 @@ class _Vectorautoreg:
         self.coef_ = fit.get("coefficients")
         self.intercept_ = get_var_intercept(self.coef_, self.p_, self.fit_intercept)
         self.cov_ = fit.get("covmat")
+        self.design_ = fit.get("design")
+        self.response_ = fit.get("y0")
+        self.is_fitted_ = True
 
     def predict(self):
         pass
@@ -94,8 +99,14 @@ class VarOls(_Vectorautoreg):
         super().__init__(data, lag, lag, fit_intercept, method)
         self._model = OlsVar(self.y, self.p_, self.fit_intercept, self.method)
     
-    def predict(self):
-        pass
+    def predict(self, n_ahead: int):
+        if not self.is_fitted_:
+            raise RuntimeError("The model has not been fitted yet.")
+        forecaster = OlsForecast(self.lag_, n_ahead, self.response_, self.coef_, self.fit_intercept)
+        y_distn = forecaster.returnForecast()
+        return {
+            "forecast": y_distn
+        }
 
     def roll_forecast(self):
         pass
@@ -150,8 +161,14 @@ class VharOls(_Vectorautoreg):
         self.month_ = self.lag_ # or self.lag_ = [week, month]
         self._model = OlsVhar(self.y, week, self.lag_, self.fit_intercept, self.method)
     
-    def predict(self):
-        pass
+    def predict(self, n_ahead: int):
+        if not self.is_fitted_:
+            raise RuntimeError("The model has not been fitted yet.")
+        forecaster = OlsForecast(self.week_, self.month_, n_ahead, self.response_, self.coef_, self.fit_intercept)
+        y_distn = forecaster.returnForecast()
+        return {
+            "forecast": y_distn
+        }
 
     def roll_forecast(self):
         pass

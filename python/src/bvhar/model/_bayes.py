@@ -285,6 +285,8 @@ class VarBayes(_AutoregBayes):
             - "lower" (ndarray): Lower quantile of forecasting
             - "upper" (ndarray): Upper quantile of forecasting
         """
+        if not self.is_fitted_:
+            raise RuntimeError("The model has not been fitted yet.")
         fit_record = concat_params(self.param_, self.param_names_)
         if type(self.cov_spec_) == LdltConfig:
             forecaster = LdltForecast(
@@ -753,6 +755,8 @@ class VharBayes(_AutoregBayes):
             - "lower" (ndarray): Lower quantile of forecasting
             - "upper" (ndarray): Upper quantile of forecasting
         """
+        if not self.is_fitted_:
+            raise RuntimeError("The model has not been fitted yet.")
         fit_record = concat_params(self.param_, self.param_names_)
         if type(self.cov_spec_) == LdltConfig:
             forecaster = LdltForecast(

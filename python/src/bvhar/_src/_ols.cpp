@@ -3,15 +3,15 @@
 PYBIND11_MODULE(_ols, m) {
 	m.doc() = "OLS for VAR and VHAR";
 
-  py::class_<bvhar::MultiOls>(m, "MultiOls")
-    .def(py::init<const Eigen::MatrixXd&, const Eigen::MatrixXd&>())
-    .def("returnOlsRes", &bvhar::MultiOls::returnOlsRes);
+  // py::class_<bvhar::MultiOls>(m, "MultiOls")
+  //   .def(py::init<const Eigen::MatrixXd&, const Eigen::MatrixXd&>())
+  //   .def("returnOlsRes", &bvhar::MultiOls::returnOlsRes);
 	
-	py::class_<bvhar::LltOls, bvhar::MultiOls>(m, "LltOls")
-    .def(py::init<const Eigen::MatrixXd&, const Eigen::MatrixXd&>());
+	// py::class_<bvhar::LltOls, bvhar::MultiOls>(m, "LltOls")
+  //   .def(py::init<const Eigen::MatrixXd&, const Eigen::MatrixXd&>());
 	
-	py::class_<bvhar::QrOls, bvhar::MultiOls>(m, "QrOls")
-    .def(py::init<const Eigen::MatrixXd&, const Eigen::MatrixXd&>());
+	// py::class_<bvhar::QrOls, bvhar::MultiOls>(m, "QrOls")
+  //   .def(py::init<const Eigen::MatrixXd&, const Eigen::MatrixXd&>());
 	
 	py::class_<bvhar::OlsVar>(m, "OlsVar")
 		.def(
@@ -26,4 +26,15 @@ PYBIND11_MODULE(_ols, m) {
 			py::arg("y"), py::arg("week") = 5, py::arg("month") = 22, py::arg("include_mean") = true, py::arg("method") = 1
 		)
 		.def("returnOlsRes", &bvhar::OlsVhar::returnOlsRes);
+
+	py::class_<bvhar::OlsForecastRun>(m, "OlsForecast")
+		.def(
+			py::init<int, int, const Eigen::MatrixXd&, const Eigen::MatrixXd&, bool>(),
+			py::arg("lag"), py::arg("step"), py::arg("response_mat"), py::arg("coef_mat"), py::arg("include_mean")
+		)
+		.def(
+			py::init<int, int, int, const Eigen::MatrixXd&, const Eigen::MatrixXd&, bool>(),
+			py::arg("week") = 5, py::arg("month") = 22, py::arg("step"), py::arg("response_mat"), py::arg("coef_mat"), py::arg("include_mean")
+		)
+		.def("returnOlsRes", &bvhar::OlsForecastRun::returnForecast);
 }

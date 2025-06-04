@@ -183,7 +183,7 @@ Eigen::MatrixXd forecast_var(Rcpp::List object, int step) {
   if (! object.inherits("varlse")) {
 		Rcpp::stop("'object' must be varlse object.");
 	}
-  Eigen::MatrixXd response_mat = object["y0"]; // Y0
+  Eigen::MatrixXd response_mat = object["y"]; // Y0
   Eigen::MatrixXd coef_mat = object["coefficients"]; // bhat
   int var_lag = object["p"]; // VAR(p)
 	bool include_mean = Rcpp::as<std::string>(object["type"]) == "const";
@@ -216,7 +216,7 @@ Eigen::MatrixXd forecast_vhar(Rcpp::List object, int step) {
   if (!object.inherits("vharlse")) {
     Rcpp::stop("'object' must be vharlse object.");
   }
-  Eigen::MatrixXd response_mat = object["y0"]; // Y0
+  Eigen::MatrixXd response_mat = object["y"]; // Y0
   Eigen::MatrixXd coef_mat = object["coefficients"]; // bhat
   // Eigen::MatrixXd HARtrans = object["HARtrans"]; // HAR transformation
 	int week = object["week"];

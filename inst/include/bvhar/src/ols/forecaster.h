@@ -361,12 +361,12 @@ protected:
 	}
 
 	void updateForecaster(const OlsFit& fit, int window) override {
-		forecaster[window] = std::make_unique<VarForecaster>(fit, step, roll_y0[window], include_mean);
+		forecaster[window] = std::make_unique<VarForecaster>(fit, step, roll_mat[window], include_mean);
 	}
 
 	void updateForecaster(const OlsFit& fit, int window, const Eigen::MatrixXd& exogen_coef) override {
 		auto exogen_updater = std::make_unique<OlsExogenForecaster>(*lag_exogen, *(roll_exogen[window]), exogen_coef);
-		forecaster[window] = std::make_unique<VarForecaster>(fit, exogen_updater, step, roll_y0[window], include_mean);
+		forecaster[window] = std::make_unique<VarForecaster>(fit, exogen_updater, step, roll_mat[window], include_mean);
 	}
 };
 
@@ -418,12 +418,12 @@ protected:
 	}
 
 	void updateForecaster(const OlsFit& fit, int window) override {
-		forecaster[window] = std::make_unique<VharForecaster>(fit, step, roll_y0[window], har_trans, include_mean);
+		forecaster[window] = std::make_unique<VharForecaster>(fit, step, roll_mat[window], har_trans, include_mean);
 	}
 
 	void updateForecaster(const OlsFit& fit, int window, const Eigen::MatrixXd& exogen_coef) override {
 		auto exogen_updater = std::make_unique<OlsExogenForecaster>(*lag_exogen, *(roll_exogen[window]), exogen_coef);
-		forecaster[window] = std::make_unique<VharForecaster>(fit, exogen_updater, step, roll_y0[window], har_trans, include_mean);
+		forecaster[window] = std::make_unique<VharForecaster>(fit, exogen_updater, step, roll_mat[window], har_trans, include_mean);
 	}
 
 private:

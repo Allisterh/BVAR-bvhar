@@ -1,6 +1,6 @@
 from ..utils._misc import check_np, get_var_intercept
 from .._src._ols import OlsVar, OlsVhar
-from .._src._ols import OlsForecast
+from .._src._ols import OlsForecast, OlsVarRoll, OlsVarExpand, OlsVharRoll, OlsVharExpand
 
 class _Vectorautoreg:
     """Base class for OLS"""
@@ -16,14 +16,14 @@ class _Vectorautoreg:
             "chol": 2,
             "qr": 3
         }.get(method, None)
-        self.y = check_np(data)
-        self.n_features_in_ = self.y.shape[1]
-        # if self.y.shape[0] <= lag:
+        self.y_ = check_np(data)
+        self.n_features_in_ = self.y_.shape[1]
+        # if self.y_.shape[0] <= lag:
         #     raise ValueError(f"'data' rows must be larger than '{lag_name}' = {lag}")
         # self.p = lag
         self.p_ = p # 3 in VHAR
         self.lag_ = lag # month in VHAR
-        if self.y.shape[0] <= self.lag_:
+        if self.y_.shape[0] <= self.lag_:
             raise ValueError(f"'data' rows must be larger than '{lag_name}' = {self.lag_}")
         self.fit_intercept = fit_intercept
         self._model = None
@@ -97,22 +97,32 @@ class VarOls(_Vectorautoreg):
     """
     def __init__(self, data, lag = 1, fit_intercept = True, method = "nor"):
         super().__init__(data, lag, lag, fit_intercept, method)
-        self._model = OlsVar(self.y, self.p_, self.fit_intercept, self.method)
+        self._model = OlsVar(self.y_, self.p_, self.fit_intercept, self.method)
     
     def predict(self, n_ahead: int):
         if not self.is_fitted_:
             raise RuntimeError("The model has not been fitted yet.")
-        forecaster = OlsForecast(self.lag_, n_ahead, self.response_, self.coef_, self.fit_intercept)
+        forecaster = OlsForecast(self.lag_, n_ahead, self.y_, self.coef_, self.fit_intercept)
         y_distn = forecaster.returnForecast()
         return {
             "forecast": y_distn
         }
 
-    def roll_forecast(self):
-        pass
+    def roll_forecast(self, n_ahead: int, test, n_thread: int):
+        test = check_np(test)
+        forecaster = OlsVarRoll(self.y_, self.p_, self.fit_intercept, n_ahead, test, self.method, n_thread)
+        y_distn = forecaster.returnForecast()
+        return {
+            "forecast": y_distn
+        }
 
-    def expand_forecast(self):
-        pass
+    def expand_forecast(self, n_ahead: int, test, n_thread: int):
+        test = check_np(test)
+        forecaster = OlsVarExpand(self.y_, self.p_, self.fit_intercept, n_ahead, test, self.method, n_thread)
+        y_distn = forecaster.returnForecast()
+        return {
+            "forecast": y_distn
+        }
 
     def spillover(self):
         pass
@@ -159,22 +169,32 @@ class VharOls(_Vectorautoreg):
         super().__init__(data, month, 3, fit_intercept, method)
         self.week_ = week
         self.month_ = self.lag_ # or self.lag_ = [week, month]
-        self._model = OlsVhar(self.y, week, self.lag_, self.fit_intercept, self.method)
+        self._model = OlsVhar(self.y_, week, self.lag_, self.fit_intercept, self.method)
     
     def predict(self, n_ahead: int):
         if not self.is_fitted_:
             raise RuntimeError("The model has not been fitted yet.")
-        forecaster = OlsForecast(self.week_, self.month_, n_ahead, self.response_, self.coef_, self.fit_intercept)
+        forecaster = OlsForecast(self.week_, self.month_, n_ahead, self.y_, self.coef_, self.fit_intercept)
         y_distn = forecaster.returnForecast()
         return {
             "forecast": y_distn
         }
 
-    def roll_forecast(self):
-        pass
+    def roll_forecast(self, n_ahead: int, test, n_thread: int):
+        test = check_np(test)
+        forecaster = OlsVharRoll(self.y_, self.week_, self.month_, self.fit_intercept, n_ahead, test, self.method, n_thread)
+        y_distn = forecaster.returnForecast()
+        return {
+            "forecast": y_distn
+        }
 
-    def expand_forecast(self):
-        pass
+    def expand_forecast(self, n_ahead: int, test, n_thread: int):
+        test = check_np(test)
+        forecaster = OlsVharExpand(self.y_, self.week_, self.month_, self.fit_intercept, n_ahead, test, self.method, n_thread)
+        y_distn = forecaster.returnForecast()
+        return {
+            "forecast": y_distn
+        }
 
     def spillover(self):
         pass

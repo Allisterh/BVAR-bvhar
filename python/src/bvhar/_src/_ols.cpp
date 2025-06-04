@@ -36,5 +36,21 @@ PYBIND11_MODULE(_ols, m) {
 			py::init<int, int, int, const Eigen::MatrixXd&, const Eigen::MatrixXd&, bool>(),
 			py::arg("week") = 5, py::arg("month") = 22, py::arg("step"), py::arg("response_mat"), py::arg("coef_mat"), py::arg("include_mean")
 		)
-		.def("returnOlsRes", &bvhar::OlsForecastRun::returnForecast);
+		.def("returnForecast", &bvhar::OlsForecastRun::returnForecast);
+	
+	py::class_<bvhar::VarOutforecastRun<bvhar::OlsRollforecastRun>>(m, "OlsVarRoll")
+		.def(py::init<const Eigen::MatrixXd&, int, bool, int, const Eigen::MatrixXd&, int, int>())
+		.def("returnForecast", &bvhar::VarOutforecastRun<bvhar::OlsRollforecastRun>::returnForecast);
+	
+	py::class_<bvhar::VarOutforecastRun<bvhar::OlsExpandforecastRun>>(m, "OlsVarExpand")
+		.def(py::init<const Eigen::MatrixXd&, int, bool, int, const Eigen::MatrixXd&, int, int>())
+		.def("returnForecast", &bvhar::VarOutforecastRun<bvhar::OlsExpandforecastRun>::returnForecast);
+	
+	py::class_<bvhar::VharOutforecastRun<bvhar::OlsRollforecastRun>>(m, "OlsVharRoll")
+		.def(py::init<const Eigen::MatrixXd&, int, int, bool, int, const Eigen::MatrixXd&, int, int>())
+		.def("returnForecast", &bvhar::VharOutforecastRun<bvhar::OlsRollforecastRun>::returnForecast);
+	
+	py::class_<bvhar::VharOutforecastRun<bvhar::OlsExpandforecastRun>>(m, "OlsVharExpand")
+		.def(py::init<const Eigen::MatrixXd&, int, int, bool, int, const Eigen::MatrixXd&, int, int>())
+		.def("returnForecast", &bvhar::VharOutforecastRun<bvhar::OlsExpandforecastRun>::returnForecast);
 }

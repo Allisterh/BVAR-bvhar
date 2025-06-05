@@ -575,7 +575,7 @@ private:
  * @return std::unique_ptr<ShrinkageUpdater> 
  */
 template <bool isGroup = true>
-inline std::unique_ptr<ShrinkageUpdater> initialize_shrinkageupdater(int num_iter, LIST& param_prior, LIST& param_init, int prior_type) {
+inline std::unique_ptr<ShrinkageUpdater> initialize_shrinkageupdater(int num_iter, LIST param_prior, LIST& param_init, int prior_type) {
 	std::unique_ptr<ShrinkageUpdater> shrinkage_ptr;
 	switch (prior_type) {
 		case 1: {

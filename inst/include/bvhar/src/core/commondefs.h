@@ -118,7 +118,12 @@ namespace std {
 
 template <typename T, typename... Args>
 unique_ptr<T> make_unique(Args&&... args) {
+	// return unique_ptr<T>(new T(forward<Args>(args)...));
+#if defined(_WIN32)
+	return unique_ptr<T>(new T(forward<typename remove_reference<Args>::type>(args)...));
+#else
 	return unique_ptr<T>(new T(forward<Args>(args)...));
+#endif
 }
 
 } // namespace std

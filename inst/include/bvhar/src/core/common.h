@@ -409,6 +409,17 @@ using Optional = boost::optional<T>;
 
 #define NULLOPT boost::none
 
+#if !defined(__cpp_lib_make_unique)
+namespace std {
+
+template <typename T, typename Args>
+unique_ptr<T> make_unique(boost::optional<Args>& arg) {
+	return unique_ptr<T>(new T(arg.get()));
+}
+
+} // namespace std
+#endif
+
 #endif
 
 namespace bvhar {

@@ -119,7 +119,7 @@ namespace std {
 template <typename T, typename... Args>
 unique_ptr<T> make_unique(Args&&... args) {
 #if defined(__GNUC__) && (__GNUC__ <= 8)
-	return unique_ptr<T>(new T(args...));
+	return unique_ptr<T>(new T(forward<Args>(static_cast<typename remove_reference<Args>::type>(args))...));
 #else
 	return unique_ptr<T>(new T(forward<Args>(args)...));
 #endif

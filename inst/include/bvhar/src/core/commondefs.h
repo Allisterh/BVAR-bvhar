@@ -112,7 +112,6 @@
 #endif
 
 #include <memory>
-#include <utility>
 
 #if !defined(__cpp_lib_make_unique)
 namespace std {
@@ -120,8 +119,9 @@ namespace std {
 #if defined(__GNUC__) && (__GNUC__ <= 8)
 
 template <typename T, typename... Args>
-unique_ptr<T> make_unique(const Args&... args) {
-	return unique_ptr<T>(new T(args...));
+unique_ptr<T> make_unique(Args&&... args) {
+	return unique_ptr<T>(new T(static_cast<Args&&>(args)...));
+	// return unique_ptr<T>(new T(args...));
 }
 
 #else

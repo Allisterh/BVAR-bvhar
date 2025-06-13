@@ -203,7 +203,7 @@ public:
 			Eigen::MatrixXd coef_mat = model[window]->returnCoef();
 			if (lag_exogen) {
 				int nrow_exogen = (*lag_exogen + 1) * roll_exogen_mat[window]->cols();
-				ols_fit = std::make_unique<OlsFit>(coef_mat.topRows(coef_mat.rows() - nrow_exogen).eval(), lag);
+				ols_fit = std::make_unique<OlsFit>(coef_mat.topRows(coef_mat.rows() - nrow_exogen), lag);
 				Eigen::MatrixXd exogen_coef = coef_mat.bottomRows(nrow_exogen);
 				updateForecaster(*ols_fit, window, exogen_coef);
 			} else {

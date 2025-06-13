@@ -472,9 +472,7 @@ inline std::vector<std::unique_ptr<BaseForecaster>> initialize_ctaforecaster(
 		}
 		Optional<std::unique_ptr<CtaExogenForecaster>> exogen_updater = NULLOPT;
 		if (exogen) {
-			// exogen_updater = std::make_unique<CtaExogenForecaster>(*exogen_lag, *exogen, response_mat.cols());
-			auto temp_exogen = std::make_unique<CtaExogenForecaster>(*exogen_lag, *exogen, response_mat.cols());
-			exogen_updater = std::move(temp_exogen);
+			exogen_updater = std::make_unique<CtaExogenForecaster>(*exogen_lag, *exogen, response_mat.cols());
 		}
 		// std::unique_ptr<CtaExogenForecaster> exogen_updater;
 		// if (exogen) {
@@ -1064,9 +1062,7 @@ protected:
 		RecordType reg_record = mcmc_triangular->template returnStructRecords<RecordType>(0, thin, sparse);
 		Optional<std::unique_ptr<CtaExogenForecaster>> exogen_updater = NULLOPT;
 		if (lag_exogen) {
-			// exogen_updater = std::make_unique<CtaExogenForecaster>(*lag_exogen, *(roll_exogen[window]), dim);
-			auto temp_exogen = std::make_unique<CtaExogenForecaster>(*lag_exogen, *(roll_exogen[window]), dim);
-			exogen_updater = std::move(temp_exogen);
+			exogen_updater = std::make_unique<CtaExogenForecaster>(*lag_exogen, *(roll_exogen[window]), dim);
 		}
 		if (level > 0) {
 			forecaster[window][chain] = std::make_unique<CtaVarSelectForecaster<BaseForecaster>>(
@@ -1204,9 +1200,7 @@ protected:
 		RecordType reg_record = mcmc_triangular->template returnStructRecords<RecordType>(0, thin, sparse);
 		Optional<std::unique_ptr<CtaExogenForecaster>> exogen_updater = NULLOPT;
 		if (lag_exogen) {
-			// exogen_updater = std::make_unique<CtaExogenForecaster>(*lag_exogen, *(roll_exogen[window]), dim);
-			auto temp_exogen = std::make_unique<CtaExogenForecaster>(*lag_exogen, *(roll_exogen[window]), dim);
-			exogen_updater = std::move(temp_exogen);
+			exogen_updater = std::make_unique<CtaExogenForecaster>(*lag_exogen, *(roll_exogen[window]), dim);
 		}
 		if (level > 0) {
 			forecaster[window][chain] = std::make_unique<CtaVharSelectForecaster<BaseForecaster>>(

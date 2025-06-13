@@ -116,22 +116,10 @@
 #if !defined(__cpp_lib_make_unique)
 namespace std {
 
-#if defined(__GNUC__) && (__GNUC__ <= 8)
-
-template <typename T, typename... Args>
-unique_ptr<T> make_unique(Args&... args) {
-	// return unique_ptr<T>(new T(static_cast<Args>(args)...));
-	return unique_ptr<T>(new T(args...));
-}
-
-#else
-
 template <typename T, typename... Args>
 unique_ptr<T> make_unique(Args&&... args) {
 	return unique_ptr<T>(new T(forward<Args>(args)...));
 }
-
-#endif
 
 } // namespace std
 #endif

@@ -1,5 +1,7 @@
 # bvhar (development version)
 
+* Requires `R >= 4.2` due to Rtools 4.0 error with optional parameters in C++.
+
 * Changed `bayes_spec` argument into `coef_spec` and `contem_spec` to enable different priors
 
 * Added `mcmc` option in `forecast_roll()` and `forecast_expand()` for `ldltmod` and `svmod` classes.

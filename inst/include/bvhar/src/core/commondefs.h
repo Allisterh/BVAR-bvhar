@@ -112,6 +112,7 @@
 #endif
 
 #include <memory>
+#include <type_traits>
 
 #if !defined(__cpp_lib_make_unique)
 namespace std {

@@ -2,7 +2,7 @@
 # Need help debugging build failures? Start at https://github.com/r-lib/actions#where-to-find-help
 on:
   push:
-    branches: [main, master, 'hotfix/*', 'release/*', develop, 'feature/*-withci']
+    branches: [main, master, 'hotfix/*', 'release/*', develop, 'feature/*-withci', 'feature/*-withrci']
   pull_request:
     branches: [main, master, 'hotfix/*', 'release/*', develop]
 
@@ -21,16 +21,13 @@ jobs:
           - {os: macOS-latest,   r: 'release'}
 
           - {os: windows-latest, r: 'release'}
-          # rtools40's older compiler: R-4.0.0 to to R-4.1.3
-          - {os: windows-latest, r: '4.1'}
+          - {os: windows-latest, r: 'oldrel-3'}
 
           - {os: ubuntu-latest,   r: 'devel', http-user-agent: 'release'}
           - {os: ubuntu-latest,   r: 'release'}
           - {os: ubuntu-latest,   r: 'oldrel-1'}
           - {os: ubuntu-latest,  r: 'oldrel-2'}
           - {os: ubuntu-latest,  r: 'oldrel-3'}
-          # add oldrel-4 in Spring 2025
-          # - {os: ubuntu-latest,  r: 'oldrel-4'}
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}

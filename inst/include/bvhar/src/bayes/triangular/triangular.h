@@ -29,8 +29,8 @@ class McmcTriangular : public McmcAlgo {
 public:
 	McmcTriangular(
 		const RegParams& params, const RegInits& inits,
-		std::unique_ptr<ShrinkageUpdater>& coef_prior,
-		std::unique_ptr<ShrinkageUpdater>& contem_prior,
+		std::unique_ptr<ShrinkageUpdater> coef_prior,
+		std::unique_ptr<ShrinkageUpdater> contem_prior,
 		unsigned int seed,
 		Optional<std::unique_ptr<ShrinkageUpdater>> exogen_prior = NULLOPT
 	)
@@ -384,12 +384,12 @@ class McmcReg : public McmcTriangular {
 public:
 	McmcReg(
 		const RegParams& params, const LdltInits& inits,
-		std::unique_ptr<ShrinkageUpdater>& coef_prior,
-		std::unique_ptr<ShrinkageUpdater>& contem_prior,
+		std::unique_ptr<ShrinkageUpdater> coef_prior,
+		std::unique_ptr<ShrinkageUpdater> contem_prior,
 		unsigned int seed,
 		Optional<std::unique_ptr<ShrinkageUpdater>> exogen_prior = NULLOPT
 	)
-	: McmcTriangular(params, inits, coef_prior, contem_prior, seed, std::move(exogen_prior)), diag_vec(inits._diag) {
+	: McmcTriangular(params, inits, std::move(coef_prior), std::move(contem_prior), seed, std::move(exogen_prior)), diag_vec(inits._diag) {
 		reg_record = std::make_unique<LdltRecords>(num_iter, dim, num_design, num_coef, num_lowerchol);
 		reg_record->assignRecords(0, coef_vec, contem_coef, diag_vec);
 	}
@@ -415,12 +415,12 @@ class McmcSv : public McmcTriangular {
 public:
 	McmcSv(
 		const SvParams& params, const SvInits& inits,
-		std::unique_ptr<ShrinkageUpdater>& coef_prior,
-		std::unique_ptr<ShrinkageUpdater>& contem_prior,
+		std::unique_ptr<ShrinkageUpdater> coef_prior,
+		std::unique_ptr<ShrinkageUpdater> contem_prior,
 		unsigned int seed,
 		Optional<std::unique_ptr<ShrinkageUpdater>> exogen_prior = NULLOPT
 	)
-	: McmcTriangular(params, inits, coef_prior, contem_prior, seed, std::move(exogen_prior)),
+	: McmcTriangular(params, inits, std::move(coef_prior), std::move(contem_prior), seed, std::move(exogen_prior)),
 		ortho_latent(Eigen::MatrixXd::Zero(num_design, dim)),
 		lvol_draw(inits._lvol), lvol_init(inits._lvol_init), lvol_sig(inits._lvol_sig),
 		prior_init_mean(params._init_mean), prior_init_prec(params._init_prec) {
@@ -527,14 +527,14 @@ inline std::vector<std::unique_ptr<BaseMcmc>> initialize_mcmc(
 			exogen_updater->initImpactPrec(base_params._alpha_prec.tail(base_params._num_exogen));
 			mcmc_ptr[i] = std::make_unique<BaseMcmc>(
 				base_params, ldlt_inits,
-				coef_updater, contem_updater,
+				std::move(coef_updater), std::move(contem_updater),
 				static_cast<unsigned int>(seed_chain[i]),
 				std::move(exogen_updater)
 			);
 		} else {
 			mcmc_ptr[i] = std::make_unique<BaseMcmc>(
 				base_params, ldlt_inits,
-				coef_updater, contem_updater,
+				std::move(coef_updater), std::move(contem_updater),
 				static_cast<unsigned int>(seed_chain[i])
 			);
 		}

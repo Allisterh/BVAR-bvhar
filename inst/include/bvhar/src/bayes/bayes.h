@@ -39,13 +39,13 @@ struct McmcParams {
 class McmcAlgo {
 public:
 	McmcAlgo(const McmcParams& params, unsigned int seed)
-	: num_iter(params._iter), mcmc_step(0), rng(seed) {
-		auto debug_logger = BVHAR_DEBUG_LOGGER("McmcAlgo");
+	: num_iter(params._iter), mcmc_step(0), rng(seed), debug_logger(BVHAR_DEBUG_LOGGER("McmcAlgo")) {
     BVHAR_INIT_DEBUG(debug_logger);
     BVHAR_DEBUG_LOG(debug_logger,"Constructor: num_iter={}", num_iter);
+	}
+	virtual ~McmcAlgo() {
 		BVHAR_DEBUG_DROP("McmcAlgo");
 	}
-	virtual ~McmcAlgo() = default;
 	
 	/**
 	 * @brief MCMC warmup step
@@ -73,6 +73,7 @@ protected:
 	int num_iter;
 	std::atomic<int> mcmc_step; // MCMC step
 	BHRNG rng; // RNG instance for multi-chain
+	std::shared_ptr<spdlog::logger> debug_logger;
 
 	/**
 	 * @brief Increment the MCMC step

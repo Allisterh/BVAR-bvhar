@@ -23,10 +23,7 @@ public:
 	BayesForecaster(int step, const ReturnType& response, int lag, int num_sim, unsigned int seed)
 	: MultistepForecaster<ReturnType, DataType>(step, response, lag),
 		lpl(Eigen::VectorXd::Zero(step)), num_sim(num_sim), rng(seed) {
-		auto debug_logger = BVHAR_DEBUG_LOGGER("BayesForecaster");
-    BVHAR_INIT_DEBUG(debug_logger);
-    BVHAR_DEBUG_LOG(debug_logger,"Constructor: step={}, lag={}, num_sim={}", step, lag, num_sim);
-		BVHAR_DEBUG_DROP("BayesForecaster");
+    BVHAR_DEBUG_LOG(debug_logger, "BayesForecaster Constructor: step={}, lag={}, num_sim={}", step, lag, num_sim);
 	}
 	virtual ~BayesForecaster() = default;
 	// using MultistepForecaster<ReturnType, DataType>::returnForecast();
@@ -57,6 +54,7 @@ protected:
 	using MultistepForecaster<ReturnType, DataType>::point_forecast;
 	using MultistepForecaster<ReturnType, DataType>::last_pvec;
 	using MultistepForecaster<ReturnType, DataType>::tmp_vec;
+	using MultistepForecaster<ReturnType, DataType>::debug_logger;
 	Eigen::VectorXd lpl;
 	std::mutex mtx;
 	int num_sim;

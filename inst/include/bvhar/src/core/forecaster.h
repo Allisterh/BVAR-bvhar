@@ -35,11 +35,13 @@ public:
 	 * @return ReturnType 
 	 */
 	ReturnType doForecast() {
+		BVHAR_DEBUG_LOG(debug_logger, "doForecast() called");
 		forecast();
 		return pred_save;
 	}
 
 	ReturnType doForecast(const DataType& valid_vec) {
+		BVHAR_DEBUG_LOG(debug_logger, "doForecast(valid_vec) called");
 		forecast(valid_vec);
 		return pred_save;
 	}
@@ -67,7 +69,9 @@ protected:
 	 * 
 	 */
 	virtual void forecast() {
+		BVHAR_DEBUG_LOG(debug_logger, "forecast() called");
 		for (int h = 0; h < step; ++h) {
+			BVHAR_DEBUG_LOG(debug_logger, "h={} / step={}", h, step);
 			setRecursion();
 			updatePred(h, 0);
 			updateRecursion();
@@ -105,7 +109,10 @@ protected:
 template <typename ReturnType = Eigen::MatrixXd, typename DataType = Eigen::VectorXd>
 class MultistepForecastRun {
 public:
-	MultistepForecastRun() {}
+	MultistepForecastRun() : debug_logger(BVHAR_DEBUG_LOGGER("MultistepForecastRun")) {
+		BVHAR_INIT_DEBUG(debug_logger);
+    BVHAR_DEBUG_LOG(debug_logger, "Constructor");
+	}
 	virtual ~MultistepForecastRun() = default;
 
 	/**
@@ -113,6 +120,9 @@ public:
 	 * 
 	 */
 	virtual void forecast() {}
+
+protected:
+	std::shared_ptr<spdlog::logger> debug_logger;
 };
 
 /**
@@ -124,9 +134,15 @@ public:
 template <typename ReturnType = Eigen::MatrixXd, typename DataType = Eigen::VectorXd>
 class ExogenForecaster {
 public:
-	ExogenForecaster() {}
+	ExogenForecaster() : debug_logger(BVHAR_DEBUG_LOGGER("ExogenForecaster")) {
+		BVHAR_INIT_DEBUG(debug_logger);
+    BVHAR_DEBUG_LOG(debug_logger, "Default Constructor");
+	}
 	ExogenForecaster(int lag, const ReturnType& exogen)
-	: lag(lag), exogen(exogen) {}
+	: lag(lag), exogen(exogen), debug_logger(BVHAR_DEBUG_LOGGER("ExogenForecaster")) {
+		BVHAR_INIT_DEBUG(debug_logger);
+    BVHAR_DEBUG_LOG(debug_logger, "Constructor: lag={}", lag);
+	}
 	virtual ~ExogenForecaster() = default;
 
 	/**
@@ -141,6 +157,7 @@ protected:
 	int lag;
 	ReturnType exogen;
 	DataType last_pvec;
+	std::shared_ptr<spdlog::logger> debug_logger;
 };
 
 } // namespace bvhar

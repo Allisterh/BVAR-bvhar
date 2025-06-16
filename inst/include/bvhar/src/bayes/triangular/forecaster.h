@@ -30,16 +30,19 @@ public:
 	: ExogenForecaster<Eigen::MatrixXd, Eigen::VectorXd>(lag, exogen),
 		dim(dim), dim_exogen(exogen.cols()), nrow_exogen(dim_exogen * (lag + 1)), num_exogen(dim * nrow_exogen),
 		coef_mat(nrow_exogen, dim) {
+    BVHAR_DEBUG_LOG(debug_logger, "Constructor: dim={}", dim);
 		last_pvec = vectorize_eigen(exogen.topRows(lag + 1).colwise().reverse().transpose().eval()); // x_(T + h), ..., x_(T + h - s)
 	}
 	virtual ~CtaExogenForecaster() = default;
 
 	void appendForecast(Eigen::VectorXd& point_forecast, const int h) override {
+		BVHAR_DEBUG_LOG(debug_logger, "appendForecast(point_forecast, h) called");
 		last_pvec = vectorize_eigen(exogen.middleRows(h, lag + 1).colwise().reverse().transpose().eval()); // x_(T + h), ..., x_(T + h - s)
 		point_forecast += coef_mat.transpose() * last_pvec;
 	}
 
 	Eigen::VectorXd getObs() {
+		BVHAR_DEBUG_LOG(debug_logger, "getObs() called");
 		return last_pvec;
 	}
 
@@ -48,6 +51,7 @@ public:
 	}
 
 	void updateCoefmat(const Eigen::VectorXd& coef_record) {
+		BVHAR_DEBUG_LOG(debug_logger, "updateCoefmat() called: num_exogen={}, dim={}", num_exogen, dim);
 		coef_mat = unvectorize(coef_record.tail(num_exogen), dim);
 	}
 
@@ -79,6 +83,7 @@ public:
 		// coef_mat(Eigen::MatrixXd::Zero(num_coef / dim, dim)),
 		contem_mat(Eigen::MatrixXd::Identity(dim, dim)),
 		standard_normal(Eigen::VectorXd::Zero(dim)) {
+		BVHAR_DEBUG_LOG(debug_logger, "CtaForecaster Constructor: step={}, ord={}, include_mean={}", step, ord, include_mean);
 		initLagged();
 		if (exogen_forecaster) {
 			exogen_updater = std::move(*exogen_forecaster);
@@ -132,6 +137,7 @@ protected:
 	Eigen::VectorXd standard_normal; // Z ~ N(0, I)
 
 	void initLagged() override {
+		BVHAR_DEBUG_LOG(debug_logger, "initLagged() called");
 		last_pvec = Eigen::VectorXd::Zero(dim_design);
 		point_forecast = Eigen::VectorXd::Zero(dim);
 		pred_save = Eigen::MatrixXd::Zero(step, num_sim * dim);
@@ -141,17 +147,20 @@ protected:
 	}
 
 	void initRecursion(const Eigen::VectorXd& obs_vec) override {
+		BVHAR_DEBUG_LOG(debug_logger, "initRecursion(obs_vec) called");
 		last_pvec = obs_vec;
 		point_forecast = obs_vec.head(dim);
 		tmp_vec = obs_vec.segment(dim, (lag - 1) * dim);
 	}
 
 	void setRecursion() override {
+		BVHAR_DEBUG_LOG(debug_logger, "setRecursion() called");
 		last_pvec.segment(dim, (lag - 1) * dim) = tmp_vec;
 		last_pvec.head(dim) = point_forecast;
 	}
 
 	void updatePred(const int h, const int i) override {
+		BVHAR_DEBUG_LOG(debug_logger, "updatePred(h={}, i={}) called", h, i);
 		computeMean();
 		updateVariance();
 		if (exogen_updater) {
@@ -162,6 +171,7 @@ protected:
 	}
 
 	void updateRecursion() override {
+		BVHAR_DEBUG_LOG(debug_logger, "updateRecursion() called");
 		tmp_vec = last_pvec.head((lag - 1) * dim);
 	}
 
@@ -190,12 +200,14 @@ public:
 		Optional<std::unique_ptr<CtaExogenForecaster>> exogen_forecaster = NULLOPT
 	)
 	: CtaForecaster(records, step, response_mat, ord, include_mean, filter_stable, seed, sv, std::move(exogen_forecaster)) {
+		BVHAR_DEBUG_LOG(debug_logger, "RegForecaster Constructor: step={}, ord={}, include_mean={}", step, ord, include_mean);
 		reg_record = std::make_unique<LdltRecords>(records);
 	}
 	virtual ~RegForecaster() = default;
 
 protected:
 	void updateParams(const int i) override {
+		BVHAR_DEBUG_LOG(debug_logger, "updateParams(i={}) called", i);
 		coef_mat.topRows(nrow_coef) = unvectorize(reg_record->coef_record.row(i).head(num_alpha).transpose(), dim);
 		if (include_mean) {
 			coef_mat.bottomRows<1>() = reg_record->coef_record.row(i).segment(num_alpha, dim);
@@ -208,12 +220,14 @@ protected:
 		contem_mat = build_inv_lower(dim, reg_record->contem_coef_record.row(i)); // L
 	}
 	void updateVariance() override {
+		BVHAR_DEBUG_LOG(debug_logger, "updateVariance() called");
 		for (int j = 0; j < dim; ++j) {
 			standard_normal[j] = normal_rand(rng);
 		}
 		standard_normal.array() *= sv_update.array(); // D^(1/2) Z ~ N(0, D)
 	}
 	void updateLpl(int h, const Eigen::VectorXd& valid_vec) override {
+		BVHAR_DEBUG_LOG(debug_logger, "updateLpl(h={}, valid_vec) called", h);
 		lpl[h] += sv_update.array().log().sum() - dim * log(2 * M_PI) / 2 - sv_update.cwiseInverse().cwiseProduct(contem_mat * (point_forecast - valid_vec)).squaredNorm() / 2;
 	}
 };
@@ -231,12 +245,14 @@ public:
 	)
 	: CtaForecaster(records, step, response_mat, ord, include_mean, filter_stable, seed, sv, std::move(exogen_forecaster)),
 		sv(sv), sv_sig(Eigen::VectorXd::Zero(dim)) {
+		BVHAR_DEBUG_LOG(debug_logger, "SvForecaster Constructor: step={}, ord={}, include_mean={}", step, ord, include_mean);
 		reg_record = std::make_unique<SvRecords>(records);
 	}
 	virtual ~SvForecaster() = default;
 
 protected:
 	void updateParams(const int i) override {
+		BVHAR_DEBUG_LOG(debug_logger, "updateParams(i={}) called", i);
 		coef_mat.topRows(nrow_coef) = unvectorize(reg_record->coef_record.row(i).head(num_alpha).transpose(), dim);
 		if (include_mean) {
 			coef_mat.bottomRows<1>() = reg_record->coef_record.row(i).segment(num_alpha, dim);
@@ -248,6 +264,7 @@ protected:
 		contem_mat = build_inv_lower(dim, reg_record->contem_coef_record.row(i)); // L
 	}
 	void updateVariance() override {
+		BVHAR_DEBUG_LOG(debug_logger, "updateVariance() called");
 		if (sv) {
 			for (int j = 0; j < dim; j++) {
 				standard_normal[j] = normal_rand(rng);
@@ -261,6 +278,7 @@ protected:
 		standard_normal.array() *= (sv_update / 2).array().exp(); // D^(1/2) Z ~ N(0, D)
 	}
 	void updateLpl(int h, const Eigen::VectorXd& valid_vec) override {
+		BVHAR_DEBUG_LOG(debug_logger, "updateLpl(h={}, valid_vec) called", h);
 		lpl[h] += sv_update.sum() / 2 - dim * log(2 * M_PI) / 2 - ((-sv_update / 2).array().exp() * (contem_mat * (point_forecast - valid_vec)).array()).matrix().squaredNorm() / 2;
 	}
 
@@ -283,6 +301,7 @@ public:
 		Optional<std::unique_ptr<CtaExogenForecaster>> exogen_forecaster = NULLOPT
 	)
 	: BaseForecaster(records, step, response_mat, lag, include_mean, filter_stable, seed, sv, std::move(exogen_forecaster)) {
+		BVHAR_DEBUG_LOG(debug_logger, "CtaVarForecaster Constructor: step={}, lag={}, include_mean={}", step, lag, include_mean);
 		if (stable_filter) {
 			reg_record->subsetStable(num_alpha, 1);
 			num_sim = reg_record->coef_record.rows();
@@ -302,7 +321,10 @@ protected:
 	using BaseForecaster::point_forecast;
 	using BaseForecaster::coef_mat;
 	using BaseForecaster::last_pvec;
+	using BaseForecaster::debug_logger;
+
 	void computeMean() override {
+		BVHAR_DEBUG_LOG(debug_logger, "computeMean() called");
 		point_forecast = coef_mat.transpose() * last_pvec;
 	}
 };
@@ -321,6 +343,7 @@ public:
 		Optional<std::unique_ptr<CtaExogenForecaster>> exogen_forecaster = NULLOPT
 	)
 	: BaseForecaster(records, step, response_mat, month, include_mean, filter_stable, seed, sv, std::move(exogen_forecaster)), har_trans(har_trans) {
+		BVHAR_DEBUG_LOG(debug_logger, "CtaVharForecaster Constructor: step={}, month={}, include_mean={}", step, month, include_mean);
 		if (stable_filter) {
 			reg_record->subsetStable(num_alpha, 1, har_trans.topLeftCorner(3 * dim, month * dim));
 			num_sim = reg_record->coef_record.rows();
@@ -341,8 +364,11 @@ protected:
 	using BaseForecaster::point_forecast;
 	using BaseForecaster::coef_mat;
 	using BaseForecaster::last_pvec;
+	using BaseForecaster::debug_logger;
 	Eigen::MatrixXd har_trans;
+
 	void computeMean() override {
+		BVHAR_DEBUG_LOG(debug_logger, "computeMean() called");
 		point_forecast = coef_mat.transpose() * har_trans * last_pvec;
 	}
 };
@@ -361,14 +387,18 @@ public:
 		Optional<std::unique_ptr<CtaExogenForecaster>> exogen_forecaster = NULLOPT
 	)
 	: CtaVarForecaster<BaseForecaster>(records, step, response_mat, lag, include_mean, filter_stable, seed, sv, std::move(exogen_forecaster)),
-		activity_graph(unvectorize(reg_record->computeActivity(level), dim)) {}
+		activity_graph(unvectorize(reg_record->computeActivity(level), dim)) {
+		BVHAR_DEBUG_LOG(debug_logger, "CtaVarSelectForecaster Constructor: level={}, step={}, lag={}, include_mean={}", level, step, lag, include_mean);
+	}
 	CtaVarSelectForecaster(
 		const typename std::conditional<std::is_same<BaseForecaster, RegForecaster>::value, LdltRecords, SvRecords>::type& records,
 		const Eigen::MatrixXd& selection, int step, const Eigen::MatrixXd& response_mat, int lag, bool include_mean, bool filter_stable, unsigned int seed, bool sv = true,
 		Optional<std::unique_ptr<CtaExogenForecaster>> exogen_forecaster = NULLOPT
 	)
 	: CtaVarForecaster<BaseForecaster>(records, step, response_mat, lag, include_mean, filter_stable, seed, sv, std::move(exogen_forecaster)),
-		activity_graph(selection) {}
+		activity_graph(selection) {
+		BVHAR_DEBUG_LOG(debug_logger, "CtaVarSelectForecaster Constructor: step={}, lag={}, include_mean={}", step, lag, include_mean);
+	}
 	
 	virtual ~CtaVarSelectForecaster() = default;
 
@@ -378,7 +408,10 @@ protected:
 	using CtaVarForecaster<BaseForecaster>::point_forecast;
 	using CtaVarForecaster<BaseForecaster>::coef_mat;
 	using CtaVarForecaster<BaseForecaster>::last_pvec;
+	using CtaVarForecaster<BaseForecaster>::debug_logger;
+
 	void computeMean() override {
+		BVHAR_DEBUG_LOG(debug_logger, "computeMean() called");
 		point_forecast = last_pvec.transpose() * (activity_graph.array() * coef_mat.array()).matrix();
 	}
 
@@ -400,14 +433,18 @@ public:
 		Optional<std::unique_ptr<CtaExogenForecaster>> exogen_forecaster = NULLOPT
 	)
 	: CtaVharForecaster<BaseForecaster>(records, step, response_mat, har_trans, month, include_mean, filter_stable, seed, sv, std::move(exogen_forecaster)),
-		activity_graph(unvectorize(reg_record->computeActivity(level), dim)) {}
+		activity_graph(unvectorize(reg_record->computeActivity(level), dim)) {
+		BVHAR_DEBUG_LOG(debug_logger, "CtaVharSelectForecaster Constructor: level={}, step={}, month={}, include_mean={}", level, step, month, include_mean);
+	}
 	CtaVharSelectForecaster(
 		const typename std::conditional<std::is_same<BaseForecaster, RegForecaster>::value, LdltRecords, SvRecords>::type& records,
 		const Eigen::MatrixXd& selection, int step, const Eigen::MatrixXd& response_mat, const Eigen::MatrixXd& har_trans, int month, bool include_mean, bool filter_stable, unsigned int seed, bool sv = true,
 		Optional<std::unique_ptr<CtaExogenForecaster>> exogen_forecaster = NULLOPT
 	)
 	: CtaVharForecaster<BaseForecaster>(records, step, response_mat, har_trans, month, include_mean, filter_stable, seed, sv, std::move(exogen_forecaster)),
-		activity_graph(selection) {}
+		activity_graph(selection) {
+		BVHAR_DEBUG_LOG(debug_logger, "CtaVharSelectForecaster Constructor: step={}, month={}, include_mean={}", step, month, include_mean);
+	}
 	
 	virtual ~CtaVharSelectForecaster() = default;
 
@@ -418,7 +455,10 @@ protected:
 	using CtaVharForecaster<BaseForecaster>::coef_mat;
 	using CtaVharForecaster<BaseForecaster>::last_pvec;
 	using CtaVharForecaster<BaseForecaster>::har_trans;
+	using CtaVharForecaster<BaseForecaster>::debug_logger;
+
 	void computeMean() override {
+		BVHAR_DEBUG_LOG(debug_logger, "computeMean() called");
 		point_forecast = last_pvec.transpose() * har_trans.transpose() * (activity_graph.array() * coef_mat.array()).matrix();
 	}
 
@@ -529,6 +569,11 @@ public:
 		Optional<Eigen::MatrixXd> exogen = NULLOPT, Optional<int> exogen_lag = NULLOPT
 	)
 	: McmcForecastRun<Eigen::MatrixXd, Eigen::VectorXd>(num_chains, lag, step, nthreads) {
+		BVHAR_DEBUG_LOG(
+			debug_logger,
+			"CtaForecastRun Constructor: num_chains={}, lag={}, step={}, sparse={}, include_mean={}, nthreads={}",
+			num_chains, lag, step, sparse, include_mean, nthreads
+		);
 		auto temp_forecaster = initialize_ctaforecaster<BaseForecaster>(
 			num_chains, lag, step, response_mat, sparse, level,
 			fit_record, seed_chain, include_mean,
@@ -546,6 +591,11 @@ public:
 		Optional<Eigen::MatrixXd> exogen = NULLOPT, Optional<int> exogen_lag = NULLOPT
 	)
 	: McmcForecastRun<Eigen::MatrixXd, Eigen::VectorXd>(num_chains, month, step, nthreads) {
+		BVHAR_DEBUG_LOG(
+			debug_logger,
+			"CtaForecastRun Constructor: num_chains={}, week={}, month={}, step={}, sparse={}, include_mean={}, nthreads={}",
+			num_chains, week, month, step, sparse, include_mean, nthreads
+		);
 		Eigen::MatrixXd har_trans = build_vhar(response_mat.cols(), week, month, include_mean);
 		auto temp_forecaster = initialize_ctaforecaster<BaseForecaster>(
 			num_chains, month, step, response_mat, sparse, level,
@@ -564,6 +614,11 @@ public:
 		Optional<Eigen::MatrixXd> exogen = NULLOPT, Optional<int> exogen_lag = NULLOPT
 	)
 	: McmcForecastRun<Eigen::MatrixXd, Eigen::VectorXd>(num_chains, month, step, nthreads) {
+		BVHAR_DEBUG_LOG(
+			debug_logger,
+			"CtaForecastRun Constructor: num_chains={}, month={}, step={}, sparse={}, include_mean={}, nthreads={}",
+			num_chains, month, step, sparse, include_mean, nthreads
+		);
 		auto temp_forecaster = initialize_ctaforecaster<BaseForecaster>(
 			num_chains, month, step, response_mat, sparse, level,
 			fit_record, seed_chain, include_mean,
@@ -620,6 +675,10 @@ public:
 			exogen_lag
 		),
 		dim(y.cols()), include_mean(include_mean), stable_filter(stable), sparse(sparse), sv(sv), level(level) {
+		BVHAR_DEBUG_LOG(
+			debug_logger, "CtaOutforecastRun Constructor: prior_type={}, contem_prior_type={}",
+			prior_type, contem_prior_type
+		);
 		if (level > 0) {
 			sparse = false;
 		}
@@ -655,6 +714,7 @@ protected:
 	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::VectorXd, isUpdate>::roll_exogen_mat;
 	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::VectorXd, isUpdate>::roll_exogen;
 	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::VectorXd, isUpdate>::lag_exogen;
+	using McmcOutForecastRun<Eigen::MatrixXd, Eigen::VectorXd, isUpdate>::debug_logger;
 
 	/**
 	 * @brief Define input in each window
@@ -725,6 +785,7 @@ protected:
 		Optional<LIST> exogen_prior = NULLOPT, Optional<LIST_OF_LIST> exogen_init = NULLOPT, Optional<int> exogen_prior_type = NULLOPT,
 		Optional<Eigen::MatrixXd> exogen = NULLOPT, Optional<int> exogen_lag = NULLOPT
 	) {
+		BVHAR_DEBUG_LOG(debug_logger, "initialize(...) called");
 		initData(y, exogen);
 		initForecaster(fit_record);
 		using is_mcmc = std::integral_constant<bool, isUpdate>;
@@ -739,6 +800,7 @@ protected:
 	}
 
 	Eigen::VectorXd getValid() override {
+		BVHAR_DEBUG_LOG(debug_logger, "getValid() called");
 		return y_test.row(step);
 	}
 };
@@ -771,7 +833,9 @@ public:
 			grp_id, own_id, cross_id, grp_mat, include_mean, stable, step, y_test, get_lpl,
 			seed_chain, seed_forecast, display_progress, nthreads, sv,
 			exogen_prior, exogen_init, exogen_prior_type, exogen, exogen_lag
-		) {}
+		) {
+		BVHAR_DEBUG_LOG(debug_logger, "CtaRollforecastRun Constructor");
+	}
 	virtual ~CtaRollforecastRun() = default;
 
 protected:
@@ -796,7 +860,10 @@ protected:
 	using CtaOutforecastRun<BaseForecaster, isUpdate>::roll_exogen_mat;
 	using CtaOutforecastRun<BaseForecaster, isUpdate>::roll_exogen;
 	using CtaOutforecastRun<BaseForecaster, isUpdate>::lag_exogen;
+	using CtaOutforecastRun<BaseForecaster, isUpdate>::debug_logger;
+
 	void initData(const Eigen::MatrixXd& y, Optional<Eigen::MatrixXd> exogen = NULLOPT) override {
+		BVHAR_DEBUG_LOG(debug_logger, "initData(y, ...) called");
 		Eigen::MatrixXd tot_mat(num_window + num_test, dim);
 		tot_mat << y,
 							 y_test;
@@ -818,6 +885,7 @@ protected:
 		const Eigen::MatrixXi& seed_chain,
 		Optional<LIST> exogen_prior = NULLOPT, Optional<LIST_OF_LIST> exogen_init = NULLOPT, Optional<int> exogen_prior_type = NULLOPT
 	) override {
+		BVHAR_DEBUG_LOG(debug_logger, "initMcmc(...) called");
 		Optional<int> exogen_cols = NULLOPT;
 		for (int window = 0; window < num_horizon; ++window) {
 			Eigen::MatrixXd design = buildDesign(window);
@@ -868,7 +936,9 @@ public:
 			grp_id, own_id, cross_id, grp_mat, include_mean, stable, step, y_test, get_lpl,
 			seed_chain, seed_forecast, display_progress, nthreads, sv,
 			exogen_prior, exogen_init, exogen_prior_type, exogen, exogen_lag
-		) {}
+		) {
+		BVHAR_DEBUG_LOG(debug_logger, "CtaExpandforecastRun Constructor");
+	}
 	virtual ~CtaExpandforecastRun() = default;
 
 protected:
@@ -893,7 +963,10 @@ protected:
 	using CtaOutforecastRun<BaseForecaster, isUpdate>::roll_exogen_mat;
 	using CtaOutforecastRun<BaseForecaster, isUpdate>::roll_exogen;
 	using CtaOutforecastRun<BaseForecaster, isUpdate>::lag_exogen;
+	using CtaOutforecastRun<BaseForecaster, isUpdate>::debug_logger;
+
 	void initData(const Eigen::MatrixXd& y, Optional<Eigen::MatrixXd> exogen = NULLOPT) override {
+		BVHAR_DEBUG_LOG(debug_logger, "initData(y, ...) called");
 		Eigen::MatrixXd tot_mat(num_window + num_test, dim);
 		tot_mat << y,
 							 y_test;
@@ -915,6 +988,7 @@ protected:
 		const Eigen::MatrixXi& seed_chain,
 		Optional<LIST> exogen_prior = NULLOPT, Optional<LIST_OF_LIST> exogen_init = NULLOPT, Optional<int> exogen_prior_type = NULLOPT
 	) override {
+		BVHAR_DEBUG_LOG(debug_logger, "initMcmc(...) called");
 		Optional<int> exogen_cols = NULLOPT;
 		for (int window = 0; window < num_horizon; ++window) {
 			Eigen::MatrixXd design = buildDesign(window);
@@ -984,6 +1058,7 @@ public:
 			seed_chain, seed_forecast, display_progress, nthreads, sv,
 			exogen_prior, exogen_init, exogen_prior_type, exogen, exogen_lag
 		) {
+		BVHAR_DEBUG_LOG(debug_logger, "CtaVarforecastRun Constructor");
 		initialize(
 			y, fit_record, param_reg, param_prior, param_intercept, param_init, prior_type,
 			contem_prior, contem_init, contem_prior_type,
@@ -1021,7 +1096,10 @@ protected:
 	using BaseOutForecast<BaseForecaster, isGroup, isUpdate>::roll_exogen_mat;
 	using BaseOutForecast<BaseForecaster, isGroup, isUpdate>::roll_exogen;
 	using BaseOutForecast<BaseForecaster, isGroup, isUpdate>::lag_exogen;
+	using BaseOutForecast<BaseForecaster, isGroup, isUpdate>::debug_logger;
+
 	void initForecaster(LIST& fit_record) override {
+		BVHAR_DEBUG_LOG(debug_logger, "initForecaster(fit_record) called");
 		using is_mcmc = std::integral_constant<bool, isUpdate>;
 		if (is_mcmc::value) {
 			auto temp_forecaster = initialize_ctaforecaster<BaseForecaster>(
@@ -1047,13 +1125,17 @@ protected:
 			}
 		}
 	}
+
 	Eigen::MatrixXd buildDesign(int window) override {
+		BVHAR_DEBUG_LOG(debug_logger, "buildDesign(window={}) called", window);
 		if (lag_exogen) {
 			return build_x0(roll_mat[window], *(roll_exogen_mat[window]), lag, *lag_exogen, include_mean);
 		}
 		return build_x0(roll_mat[window], lag, include_mean);
 	}
+
 	void updateForecaster(int window, int chain) override {
+		BVHAR_DEBUG_LOG(debug_logger, "updateForecaster(window={}, chain={}) called", window, chain);
 		// RecordType reg_record = model[window][chain]->template returnStructRecords<RecordType>(0, thin, sparse);
 		auto* mcmc_triangular = dynamic_cast<McmcTriangular*>(model[window][chain].get());
 		if (!mcmc_triangular) {
@@ -1112,6 +1194,7 @@ public:
 			exogen_prior, exogen_init, exogen_prior_type, exogen, exogen_lag
 		),
 		har_trans(build_vhar(dim, week, month, include_mean)) {
+		BVHAR_DEBUG_LOG(debug_logger, "CtaVharforecastRun Constructor");
 		initialize(
 			y, fit_record, param_reg, param_prior, param_intercept, param_init, prior_type,
 			contem_prior, contem_init, contem_prior_type,
@@ -1149,8 +1232,11 @@ protected:
 	using BaseOutForecast<BaseForecaster, isGroup, isUpdate>::roll_exogen_mat;
 	using BaseOutForecast<BaseForecaster, isGroup, isUpdate>::roll_exogen;
 	using BaseOutForecast<BaseForecaster, isGroup, isUpdate>::lag_exogen;
+	using BaseOutForecast<BaseForecaster, isGroup, isUpdate>::debug_logger;
 	Eigen::MatrixXd har_trans;
+
 	void initForecaster(LIST& fit_record) override {
+		BVHAR_DEBUG_LOG(debug_logger, "initForecaster(fit_record) called");
 		using is_mcmc = std::integral_constant<bool, isUpdate>;
 		if (is_mcmc::value) {
 			auto temp_forecaster = initialize_ctaforecaster<BaseForecaster>(
@@ -1178,7 +1264,9 @@ protected:
 			}
 		}
 	}
+
 	Eigen::MatrixXd buildDesign(int window) override {
+		BVHAR_DEBUG_LOG(debug_logger, "buildDesign(window={}) called", window);
 		if (lag_exogen) {
 			int dim_design = include_mean ? lag * dim + 1 : lag * dim;
 			int dim_har = include_mean ? 3 * dim + 1 : 3 * dim;
@@ -1191,7 +1279,9 @@ protected:
 		}
 		return build_x0(roll_mat[window], lag, include_mean) * har_trans.transpose();
 	}
+
 	void updateForecaster(int window, int chain) override {
+		BVHAR_DEBUG_LOG(debug_logger, "updateForecaster(window={}, chain={}) called", window, chain);
 		// RecordType reg_record = model[window][chain]->template returnStructRecords<RecordType>(0, thin, sparse);
 		auto* mcmc_triangular = dynamic_cast<McmcTriangular*>(model[window][chain].get());
 		if (!mcmc_triangular) {

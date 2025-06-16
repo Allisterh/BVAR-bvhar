@@ -62,8 +62,10 @@ protected:
 
 	void forecast() override {
 		std::lock_guard<std::mutex> lock(mtx);
+		BVHAR_DEBUG_LOG(debug_logger, "forecast() called");
 		DataType obs_vec = last_pvec; // y_T, y_(T - 1), ... y_(T - lag + 1)
 		for (int i = 0; i < num_sim; ++i) {
+			BVHAR_DEBUG_LOG(debug_logger, "i={} / num_sim={}", i, num_sim);
 			initRecursion(obs_vec);
 			updateParams(i);
 			forecastOut(i);
@@ -72,8 +74,10 @@ protected:
 
 	void forecast(const DataType& valid_vec) override {
 		std::lock_guard<std::mutex> lock(mtx);
+		BVHAR_DEBUG_LOG(debug_logger, "forecast(valid_vec) called");
 		DataType obs_vec = last_pvec; // y_T, y_(T - 1), ... y_(T - lag + 1)
 		for (int i = 0; i < num_sim; ++i) {
+			BVHAR_DEBUG_LOG(debug_logger, "i={} / num_sim={}", i, num_sim);
 			initRecursion(obs_vec);
 			updateParams(i);
 			forecastOut(i, valid_vec);
@@ -137,7 +141,13 @@ class McmcForecastRun : public MultistepForecastRun<ReturnType, DataType> {
 public:
 	McmcForecastRun(int num_chains, int lag, int step, int nthreads)
 	: num_chains(num_chains), nthreads(nthreads),
-		density_forecast(num_chains), forecaster(num_chains) {}
+		density_forecast(num_chains), forecaster(num_chains) {
+		BVHAR_DEBUG_LOG(
+			debug_logger,
+			"McmcForecastRun Constructor: num_chains={}, lag={}, step={}, nthreads={}",
+			num_chains, lag, step, nthreads
+		);
+	}
 	virtual ~McmcForecastRun() = default;
 
 	/**
@@ -145,10 +155,12 @@ public:
 	 * 
 	 */
 	void forecast() override {
+		BVHAR_DEBUG_LOG(debug_logger, "forecast() called");
 	#ifdef _OPENMP
 		#pragma omp parallel for num_threads(nthreads)
 	#endif
 		for (int chain = 0; chain < num_chains; ++chain) {
+			BVHAR_DEBUG_LOG(debug_logger, "[Thread {}] chain={} / num_chains={}", std::to_string(omp_get_thread_num()), chain, num_chains);
 			density_forecast[chain] = forecaster[chain]->doForecast();
 			forecaster[chain].reset();
 		}
@@ -170,6 +182,7 @@ private:
 
 protected:
 	std::vector<std::unique_ptr<BayesForecaster<ReturnType, DataType>>> forecaster;
+	using MultistepForecastRun<ReturnType, DataType>::debug_logger;
 };
 
 class McmcOutforecastInterface {
@@ -215,7 +228,13 @@ public:
 		// out_forecast(num_horizon, std::vector<ReturnType>(num_chains)),
 		out_forecast(num_horizon, std::vector<DataType>(num_chains)),
 		lpl_record(Eigen::MatrixXd::Zero(num_horizon, num_chains)),
-		roll_exogen_mat(num_horizon), roll_exogen(num_horizon), lag_exogen(exogen_lag) {
+		roll_exogen_mat(num_horizon), roll_exogen(num_horizon), lag_exogen(exogen_lag),
+		debug_logger(BVHAR_DEBUG_LOGGER("McmcOutForecastRun")) {
+		BVHAR_INIT_DEBUG(debug_logger);
+    BVHAR_DEBUG_LOG(
+			debug_logger, "Constructor: num_window={}, lag={}, step={}, num_test={}, num_iter={}, num_burn={}, thin={}, nthreads={}",
+			num_window, lag, step, num_test, num_iter, num_burn, thin, nthreads
+		);
 		for (auto &reg_chain : model) {
 			reg_chain.resize(num_chains);
 			for (auto &ptr : reg_chain) {
@@ -240,6 +259,7 @@ public:
 	 * 
 	 */
 	void forecast() override {
+		BVHAR_DEBUG_LOG(debug_logger, "forecast() called");
 		if (num_chains == 1) {
 		#ifdef _OPENMP
 			#pragma omp parallel for num_threads(nthreads)
@@ -289,6 +309,7 @@ protected:
 	std::vector<Optional<ReturnType>> roll_exogen_mat;
 	std::vector<Optional<ReturnType>> roll_exogen;
 	Optional<int> lag_exogen;
+	std::shared_ptr<spdlog::logger> debug_logger;
 
 	/**
 	 * @brief Replace the forecast smart pointer given MCMC result
@@ -313,6 +334,7 @@ protected:
 	 * @param chain Chain index
 	 */
 	void runGibbs(int window, int chain) {
+		BVHAR_DEBUG_LOG(debug_logger, "runGibbs(window={}, chain={}) called", window, chain);
 		std::string log_name = fmt::format("Chain {} / Window {}", chain + 1, window + 1);
 		auto logger = spdlog::get(log_name);
 		if (logger == nullptr) {
@@ -359,6 +381,7 @@ protected:
 	 * @param chain Chain index
 	 */
 	void forecastWindow(int window, int chain) {
+		BVHAR_DEBUG_LOG(debug_logger, "forecastWindow(window={}, chain={}) called", window, chain);
 		using is_mcmc = std::integral_constant<bool, isUpdate>;
 		if (window != 0 && is_mcmc::value) {
 			runGibbs(window, chain);

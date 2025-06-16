@@ -28,6 +28,8 @@
 
 * Added `OlsSpilloverRun` and `OlsDynamicSpillover` for volatility spillover in OLS.
 
+* If defining `USE_BVHAR_DEBUG` macro variable when compiling, users can see debug messages.
+
 # bvhar 2.2.2
 
 * Fix `unlist()` error in print methods for `r-devel` (4.5.0).

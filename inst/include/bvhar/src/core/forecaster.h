@@ -20,8 +20,13 @@ template <typename ReturnType = Eigen::MatrixXd, typename DataType = Eigen::Vect
 class MultistepForecaster {
 public:
 	MultistepForecaster(int step, const ReturnType& response, int lag)
-	: step(step), lag(lag), response(response) {}
-	virtual ~MultistepForecaster() = default;
+	: step(step), lag(lag), response(response), debug_logger(BVHAR_DEBUG_LOGGER("MultistepForecaster")) {
+		BVHAR_INIT_DEBUG(debug_logger);
+    BVHAR_DEBUG_LOG(debug_logger, "Constructor: step={}, lag={}", step, lag);
+	}
+	virtual ~MultistepForecaster() {
+		BVHAR_DEBUG_DROP("MultistepForecaster");
+	}
 
 	/**
 	 * @brief Return the forecast result.
@@ -30,11 +35,13 @@ public:
 	 * @return ReturnType 
 	 */
 	ReturnType doForecast() {
+		BVHAR_DEBUG_LOG(debug_logger, "doForecast() called");
 		forecast();
 		return pred_save;
 	}
 
 	ReturnType doForecast(const DataType& valid_vec) {
+		BVHAR_DEBUG_LOG(debug_logger, "doForecast(valid_vec) called");
 		forecast(valid_vec);
 		return pred_save;
 	}
@@ -49,6 +56,7 @@ protected:
 	DataType point_forecast; // y_(T + h - 1)
 	DataType last_pvec; // [ y_(T + h - 1)^T, y_(T + h - 2)^T, ..., y_(T + h - p)^T, 1 ] (1 when constant term)
 	DataType tmp_vec; // y_(T + h - 2), ... y_(T + h - lag)
+	std::shared_ptr<spdlog::logger> debug_logger;
 
 	/**
 	 * @brief Initialize lagged predictors 'point_forecast', 'last_pvec' and 'tmp_vec'.
@@ -61,7 +69,9 @@ protected:
 	 * 
 	 */
 	virtual void forecast() {
+		BVHAR_DEBUG_LOG(debug_logger, "forecast() called");
 		for (int h = 0; h < step; ++h) {
+			BVHAR_DEBUG_LOG(debug_logger, "h={} / step={}", h, step);
 			setRecursion();
 			updatePred(h, 0);
 			updateRecursion();
@@ -99,7 +109,10 @@ protected:
 template <typename ReturnType = Eigen::MatrixXd, typename DataType = Eigen::VectorXd>
 class MultistepForecastRun {
 public:
-	MultistepForecastRun() {}
+	MultistepForecastRun() : debug_logger(BVHAR_DEBUG_LOGGER("MultistepForecastRun")) {
+		BVHAR_INIT_DEBUG(debug_logger);
+    BVHAR_DEBUG_LOG(debug_logger, "Constructor");
+	}
 	virtual ~MultistepForecastRun() = default;
 
 	/**
@@ -107,6 +120,9 @@ public:
 	 * 
 	 */
 	virtual void forecast() {}
+
+protected:
+	std::shared_ptr<spdlog::logger> debug_logger;
 };
 
 /**
@@ -118,9 +134,15 @@ public:
 template <typename ReturnType = Eigen::MatrixXd, typename DataType = Eigen::VectorXd>
 class ExogenForecaster {
 public:
-	ExogenForecaster() {}
+	ExogenForecaster() : debug_logger(BVHAR_DEBUG_LOGGER("ExogenForecaster")) {
+		BVHAR_INIT_DEBUG(debug_logger);
+    BVHAR_DEBUG_LOG(debug_logger, "Default Constructor");
+	}
 	ExogenForecaster(int lag, const ReturnType& exogen)
-	: lag(lag), exogen(exogen) {}
+	: lag(lag), exogen(exogen), debug_logger(BVHAR_DEBUG_LOGGER("ExogenForecaster")) {
+		BVHAR_INIT_DEBUG(debug_logger);
+    BVHAR_DEBUG_LOG(debug_logger, "Constructor: lag={}", lag);
+	}
 	virtual ~ExogenForecaster() = default;
 
 	/**
@@ -135,6 +157,7 @@ protected:
 	int lag;
 	ReturnType exogen;
 	DataType last_pvec;
+	std::shared_ptr<spdlog::logger> debug_logger;
 };
 
 } // namespace bvhar

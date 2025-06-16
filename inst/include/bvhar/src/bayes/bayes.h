@@ -39,8 +39,13 @@ struct McmcParams {
 class McmcAlgo {
 public:
 	McmcAlgo(const McmcParams& params, unsigned int seed)
-	: num_iter(params._iter), mcmc_step(0), rng(seed) {}
-	virtual ~McmcAlgo() = default;
+	: num_iter(params._iter), mcmc_step(0), rng(seed), debug_logger(BVHAR_DEBUG_LOGGER("McmcAlgo")) {
+    BVHAR_INIT_DEBUG(debug_logger);
+    BVHAR_DEBUG_LOG(debug_logger,"Constructor: num_iter={}", num_iter);
+	}
+	virtual ~McmcAlgo() {
+		BVHAR_DEBUG_DROP("McmcAlgo");
+	}
 	
 	/**
 	 * @brief MCMC warmup step
@@ -68,6 +73,7 @@ protected:
 	int num_iter;
 	std::atomic<int> mcmc_step; // MCMC step
 	BHRNG rng; // RNG instance for multi-chain
+	std::shared_ptr<spdlog::logger> debug_logger;
 
 	/**
 	 * @brief Increment the MCMC step
@@ -140,9 +146,11 @@ protected:
 		if (logging_freq == 0) {
 			logging_freq = 1;
 		}
+		BVHAR_INIT_DEBUG(logger);
 		bvharinterrupt();
 		for (int i = 0; i < num_burn; ++i) {
 			mcmc_ptr[chain]->doWarmUp();
+			BVHAR_DEBUG_LOG(logger, "{} / {} (Warmup)", i + 1, num_iter);
 			if (display_progress && (i + 1) % logging_freq == 0) {
 				logger->info("{} / {} (Warmup)", i + 1, num_iter);
 			}
@@ -160,6 +168,7 @@ protected:
 				break;
 			}
 			mcmc_ptr[chain]->doPosteriorDraws();
+			BVHAR_DEBUG_LOG(logger, "{} / {} (Sampling)", i + 1, num_iter);
 			if (display_progress && (i + 1) % logging_freq == 0) {
 				logger->info("{} / {} (Sampling)", i + 1, num_iter);
 			}

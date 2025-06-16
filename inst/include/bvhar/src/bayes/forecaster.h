@@ -22,7 +22,12 @@ class BayesForecaster : public MultistepForecaster<ReturnType, DataType> {
 public:
 	BayesForecaster(int step, const ReturnType& response, int lag, int num_sim, unsigned int seed)
 	: MultistepForecaster<ReturnType, DataType>(step, response, lag),
-		lpl(Eigen::VectorXd::Zero(step)), num_sim(num_sim), rng(seed) {}
+		lpl(Eigen::VectorXd::Zero(step)), num_sim(num_sim), rng(seed) {
+		auto debug_logger = BVHAR_DEBUG_LOGGER("BayesForecaster");
+    BVHAR_INIT_DEBUG(debug_logger);
+    BVHAR_DEBUG_LOG(debug_logger,"Constructor: step={}, lag={}, num_sim={}", step, lag, num_sim);
+		BVHAR_DEBUG_DROP("BayesForecaster");
+	}
 	virtual ~BayesForecaster() = default;
 	// using MultistepForecaster<ReturnType, DataType>::returnForecast();
 	
@@ -320,9 +325,11 @@ protected:
 		if (logging_freq == 0) {
 			logging_freq = 1;
 		}
+		BVHAR_INIT_DEBUG(logger);
 		bvharinterrupt();
 		for (int i = 0; i < num_burn; ++i) {
 			model[window][chain]->doWarmUp();
+			BVHAR_DEBUG_LOG(logger, "{} / {} (Warmup)", i + 1, num_iter);
 			if (display_progress && (i + 1) % logging_freq == 0) {
 				logger->info("{} / {} (Warmup)", i + 1, num_iter);
 			}
@@ -334,6 +341,7 @@ protected:
 				break;
 			}
 			model[window][chain]->doPosteriorDraws();
+			BVHAR_DEBUG_LOG(logger, "{} / {} (Sampling)", i + 1, num_iter);
 			if (display_progress && (i + 1) % logging_freq == 0) {
 				logger->info("{} / {} (Sampling)", i + 1, num_iter);
 			}

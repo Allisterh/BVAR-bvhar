@@ -39,7 +39,12 @@ struct McmcParams {
 class McmcAlgo {
 public:
 	McmcAlgo(const McmcParams& params, unsigned int seed)
-	: num_iter(params._iter), mcmc_step(0), rng(seed) {}
+	: num_iter(params._iter), mcmc_step(0), rng(seed) {
+		auto debug_logger = BVHAR_DEBUG_LOGGER("McmcAlgo");
+    BVHAR_INIT_DEBUG(debug_logger);
+    BVHAR_DEBUG_LOG(debug_logger,"Constructor: num_iter={}", num_iter);
+		BVHAR_DEBUG_DROP("McmcAlgo");
+	}
 	virtual ~McmcAlgo() = default;
 	
 	/**
@@ -140,9 +145,11 @@ protected:
 		if (logging_freq == 0) {
 			logging_freq = 1;
 		}
+		BVHAR_INIT_DEBUG(logger);
 		bvharinterrupt();
 		for (int i = 0; i < num_burn; ++i) {
 			mcmc_ptr[chain]->doWarmUp();
+			BVHAR_DEBUG_LOG(logger, "{} / {} (Warmup)", i + 1, num_iter);
 			if (display_progress && (i + 1) % logging_freq == 0) {
 				logger->info("{} / {} (Warmup)", i + 1, num_iter);
 			}
@@ -160,6 +167,7 @@ protected:
 				break;
 			}
 			mcmc_ptr[chain]->doPosteriorDraws();
+			BVHAR_DEBUG_LOG(logger, "{} / {} (Sampling)", i + 1, num_iter);
 			if (display_progress && (i + 1) % logging_freq == 0) {
 				logger->info("{} / {} (Sampling)", i + 1, num_iter);
 			}

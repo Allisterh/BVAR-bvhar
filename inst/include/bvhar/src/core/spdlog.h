@@ -62,4 +62,23 @@ inline std::shared_ptr<spdlog::logger> bvhar_sink_mt(const std::string &logger_n
 
 #endif // USE_RCPP
 
+// Debug base classes by defining `USE_BVHAR_LOG`
+#ifdef USE_BVHAR_LOG
+
+#define BVHAR_DEBUG_LOG(...) spdlog::debug(__VA_ARGS__)
+#define BVHAR_DEBUG_LOG_NAMED(logger, ...) logger->debug(__VA_ARGS__)
+
+#define BVHAR_INIT_DEBUG() spdlog::set_level(spdlog::level::debug)
+#define BVHAR_INIT_DEBUG_NAMED(logger) logger->set_level(spdlog::level::debug)
+
+#else
+
+#define BVHAR_DEBUG_LOG(...) (void)0
+#define BVHAR_DEBUG_LOG_NAMED(logger, ...) (void)0
+
+#define BVHAR_INIT_DEBUG() (void)0
+#define BVHAR_INIT_DEBUG_NAMED(logger) (void)0
+
+#endif // USE_BVHAR_LOG
+
 #endif // BVHAR_CORE_SPDLOG_H

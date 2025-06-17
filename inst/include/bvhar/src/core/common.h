@@ -28,20 +28,22 @@ inline void assertion_failed_msg(char const * expr, char const * msg, char const
 #include <boost/accumulators/accumulators.hpp>
 #include <boost/accumulators/statistics/stats.hpp>
 #include <boost/accumulators/statistics/tail_quantile.hpp>
-#include <boost/version.hpp>
 
 #define BHRNG boost::random::mt19937
 
 // Remove after boost upgrade including inverse_gaussian and generalized_inverse_gaussian
 // https://github.com/boostorg/random/pull/124
 // https://github.com/boostorg/random/pull/126
-// Expected to be in the next release: 1.88.0
-#if BOOST_VERSION < 108800
+#ifdef BOOST_RANDOM_INVERSE_GAUSSIAN_DISTRIBUTION_HPP
+
+#include <boost/random/inverse_gaussian_distribution.hpp>
+
+#else
+
 namespace boost {
 namespace random {
 
 template<class RealType> class inverse_gaussian_distribution;
-template<class RealType> class generalized_inverse_gaussian_distribution;
 
 /**
  * @brief boost.Random's inverse_gaussian generator
@@ -158,6 +160,26 @@ private:
 		_c = _alpha / (result_type(2) * _beta);
   }
 };
+
+} // namespace random
+
+using random::inverse_gaussian_distribution;
+
+} // namespace boost
+
+#endif // BOOST_RANDOM_INVERSE_GAUSSIAN_DISTRIBUTION_HPP
+
+// The original header has typo for macro
+#if defined(BOOST_GENERALIZED_RANDOM_INVERSE_GAUSSIAN_DISTRIBUTION_HPP) || defined(BOOST_RANDOM_GENERALIZED_INVERSE_GAUSSIAN_DISTRIBUTION_HPP)
+
+#include <boost/random/generalized_inverse_gaussian_distribution.hpp>
+
+#else
+
+namespace boost {
+namespace random {
+
+template<class RealType> class generalized_inverse_gaussian_distribution;
 
 /**
  * @brief boost.Random's generalized_inverse_gaussian generator
@@ -380,16 +402,11 @@ private:
 
 } // namespace random
 
-using random::inverse_gaussian_distribution;
 using random::generalized_inverse_gaussian_distribution;
 
 } // namespace boost
-#else
 
-#include <boost/random/inverse_gaussian_distribution.hpp>
-#include <boost/random/generalized_inverse_gaussian_distribution.hpp>
-
-#endif
+#endif // BOOST_RANDOM_GENERALIZED_INVERSE_GAUSSIAN_DISTRIBUTION_HPP
 
 #if defined(__cpp_lib_optional)
 

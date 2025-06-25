@@ -1,4 +1,5 @@
 
+
 <!-- README.md is generated from README.qmd. Please edit that file -->
 
 # bvhar <a href="https://github.com/ygeunkim/bvhar/tree/develop/python/"><img src="docs/logo.png" align="right" height="138" /></a>
@@ -17,16 +18,16 @@ Versions](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blu
 This is `bvhar` package for python. We aims to add every feature in R
 package.
 
-| Model |    Class    |               prior                |
-|:-----:|:-----------:|:----------------------------------:|
-|  VAR  |  `VarOls`   |                                    |
-| VHAR  |  `VharOls`  |                                    |
-| BVAR  | `VarBayes`  | SSVS, Horseshoe, Minnesota, NG, DL |
-| BVHAR | `VharBayes` | SSVS, Horseshoe, Minnesota, NG, DL |
+| Model |    Class    |                  prior                  |
+|:-----:|:-----------:|:---------------------------------------:|
+|  VAR  |  `VarOls`   |                                         |
+| VHAR  |  `VharOls`  |                                         |
+| BVAR  | `VarBayes`  | SSVS, Horseshoe, Minnesota, NG, DL, GDP |
+| BVHAR | `VharBayes` | SSVS, Horseshoe, Minnesota, NG, DL, GDP |
 
 ## Installation
 
-From GitHub (`develop` branch at this stage):
+From GitHub:
 
 ``` bash
 python -m pip install 'git+https://github.com/ygeunkim/bvhar.git#egg=bvhar&subdirectory=python'
@@ -51,9 +52,9 @@ python -m pip install 'git+https://github.com/ygeunkim/bvhar.git@develop#egg=bvh
 
 ### Eigen and boost usage
 
-`bvhar` uses Eigen and boost headers in C++ sources. If you use `eigen`
-and `boost-cpp` in conda with the conda environment, you don’t have to
-take care of them.
+`bvhar` uses Eigen, boost, and spdlog headers in C++ sources. If you use
+`eigen`, `libboost-headers`, and `spdlog` in conda with the conda
+environment, you don’t have to take care of them.
 
 ``` bash
 conda env create -f requirements/environment.yml
@@ -64,3 +65,5 @@ Otherwise, you should set their paths by yourself; at this stage.
 
 - `EIGEN_INCLUDE_DIR`: Eigen path that includes the eigen headers
 - `BOOST_INCLUDE_DIR`: boost path that includes the boost headers
+- `SPDLOG_INCLUDE_DIR`: spdlog path that includes the spdlog headers
+- `FMT_INCLUDE_DIR`: fmt path that includes the fmt headers

@@ -8,6 +8,20 @@ import tempfile
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
+def get_rpkgs_version():
+    desc_path = os.path.abspath(
+        os.path.join(
+            os.path.dirname(__file__),
+            "..",
+            "DESCRIPTION"
+        )
+    )
+    with open(desc_path, "r") as rpkgs_meta:
+        for line in rpkgs_meta:
+            if line.startswith("Version:"):
+                return line.split(":")[1].strip()
+    return '0.0.0.9000'
+
 # include_path = os.path.abspath('../inst/include')
 include_path = os.path.abspath(
     os.path.join(
@@ -25,8 +39,8 @@ class HeaderInclude(object):
         print(f"Current environment path: {conda_prefix}")
         if os.path.exists(os.path.join(conda_prefix, 'conda-meta')):
             if sys.platform.startswith('win'):
-                self.lib = '' if self.lib == 'boost' else self.lib # should use include/ in windows-conda
-                lib_path = os.path.join(conda_prefix, 'Library', 'include', self.lib)
+                lib_header = '' if self.lib == 'boost' else self.lib # should use include/ in windows-conda
+                lib_path = os.path.join(conda_prefix, 'Library', 'include', lib_header)
             else:
                 lib_path = os.path.join(conda_prefix, 'include', self.lib)
             if os.path.exists(lib_path):
@@ -69,6 +83,7 @@ class BuildExt(_build_ext):
         if sys.platform.startswith('win'):
             if self.has_flags(self.compiler, '/openmp'):
                 compile_args.append('/openmp')
+                compile_args.append('/utf-8')
         else:
             if self.has_flags(self.compiler, '-fopenmp'):
                 compile_args.append('-fopenmp')
@@ -80,7 +95,31 @@ class BuildExt(_build_ext):
 
 def find_module(base_dir):
     extensions = []
+    conda_prefix = sys.prefix
+    lib_path = []
+    if os.path.exists(os.path.join(conda_prefix, 'conda-meta')):
+        if sys.platform.startswith('win'):
+            lib_path.append(os.path.join(conda_prefix, 'Library', 'lib'))
+        else:
+            lib_path.append(os.path.join(conda_prefix, 'lib'))
+    else:
+        if sys.platform.startswith('win'):
+            lib_path.append(os.path.join(sys.prefix, 'Lib'))
+        else:
+            lib_path.append(os.path.join(sys.prefix, 'lib'))
+    print(f"Use library_dirs: {lib_path}")
+    # lib_name = []
+    # if sys.platform.startswith('linux'):
+    #     lib_name.append('fmt')
     is_src = os.path.basename(base_dir) == 'src'
+    inc_dir = [include_path]
+    if not sys.platform.startswith('linux'):
+        inc_dir.append(str(HeaderInclude('fmt')))
+    inc_dir.extend([
+        str(HeaderInclude('spdlog')),
+        str(HeaderInclude('eigen3')),
+        str(HeaderInclude('boost'))
+    ])
     for root, dirs, files in os.walk(base_dir):
         for cpp_file in files:
             if cpp_file.endswith('.cpp'):
@@ -98,20 +137,19 @@ def find_module(base_dir):
                         sources=[os.path.join(root, cpp_file)],
                         define_macros=[
                             ('EIGEN_PERMANENTLY_DISABLE_STUPID_WARNINGS', None),
-                            ('BOOST_DISABLE_ASSERTS', None)
+                            ('BOOST_ENABLE_ASSERT_HANDLER', None),
+                            # ('SPDLOG_FMT_EXTERNAL', None),
+                            ('FMT_HEADER_ONLY', None)
                         ],
-                        include_dirs=[
-                            include_path,
-                            str(HeaderInclude('eigen3')),
-                            str(HeaderInclude('boost'))
-                        ]
+                        include_dirs = inc_dir,
+                        library_dirs = lib_path
                     )
                 )
     return extensions
 
 setup(
     name='bvhar',
-    version='0.0.0.9000',
+    version=get_rpkgs_version(),
     packages=find_packages(where='src'),
     package_dir={'': 'src'},
     description='Bayesian multivariate time series modeling',

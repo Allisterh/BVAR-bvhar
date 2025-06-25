@@ -7,10 +7,6 @@
 \alias{predict.bvarmn}
 \alias{predict.bvharmn}
 \alias{predict.bvarflat}
-\alias{predict.bvarssvs}
-\alias{predict.bvharssvs}
-\alias{predict.bvarhs}
-\alias{predict.bvharhs}
 \alias{predict.bvarldlt}
 \alias{predict.bvharldlt}
 \alias{predict.bvarsv}
@@ -20,9 +16,9 @@
 \alias{knit_print.predbvhar}
 \title{Forecasting Multivariate Time Series}
 \usage{
-\method{predict}{varlse}(object, n_ahead, level = 0.05, ...)
+\method{predict}{varlse}(object, n_ahead, level = 0.05, newxreg, ...)
 
-\method{predict}{vharlse}(object, n_ahead, level = 0.05, ...)
+\method{predict}{vharlse}(object, n_ahead, level = 0.05, newxreg, ...)
 
 \method{predict}{bvarmn}(object, n_ahead, n_iter = 100L, level = 0.05, num_thread = 1, ...)
 
@@ -30,20 +26,15 @@
 
 \method{predict}{bvarflat}(object, n_ahead, n_iter = 100L, level = 0.05, num_thread = 1, ...)
 
-\method{predict}{bvarssvs}(object, n_ahead, level = 0.05, ...)
-
-\method{predict}{bvharssvs}(object, n_ahead, level = 0.05, ...)
-
-\method{predict}{bvarhs}(object, n_ahead, level = 0.05, ...)
-
-\method{predict}{bvharhs}(object, n_ahead, level = 0.05, ...)
-
 \method{predict}{bvarldlt}(
   object,
   n_ahead,
   level = 0.05,
+  newxreg,
+  stable = FALSE,
   num_thread = 1,
   sparse = FALSE,
+  med = FALSE,
   warn = FALSE,
   ...
 )
@@ -52,8 +43,11 @@
   object,
   n_ahead,
   level = 0.05,
+  newxreg,
+  stable = FALSE,
   num_thread = 1,
   sparse = FALSE,
+  med = FALSE,
   warn = FALSE,
   ...
 )
@@ -62,9 +56,12 @@
   object,
   n_ahead,
   level = 0.05,
+  newxreg,
+  stable = FALSE,
   num_thread = 1,
   use_sv = TRUE,
   sparse = FALSE,
+  med = FALSE,
   warn = FALSE,
   ...
 )
@@ -73,9 +70,12 @@
   object,
   n_ahead,
   level = 0.05,
+  newxreg,
+  stable = FALSE,
   num_thread = 1,
   use_sv = TRUE,
   sparse = FALSE,
+  med = FALSE,
   warn = FALSE,
   ...
 )
@@ -93,20 +93,27 @@ is.predbvhar(x)
 
 \item{level}{Specify alpha of confidence interval level 100(1 - alpha) percentage. By default, .05.}
 
+\item{newxreg}{New values for exogenous variables.
+Should have the same row numbers with \code{n_ahead}.}
+
 \item{...}{not used}
 
 \item{n_iter}{Number to sample residual matrix from inverse-wishart distribution. By default, 100.}
 
 \item{num_thread}{Number of threads}
 
+\item{stable}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}} Filter only stable coefficient draws in MCMC records.}
+
 \item{sparse}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}} Apply restriction. By default, \code{FALSE}.
 Give CI level (e.g. \code{.05}) instead of \code{TRUE} to use credible interval across MCMC for restriction.}
+
+\item{med}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}} If \code{TRUE}, use median of forecast draws instead of mean (default).}
 
 \item{warn}{Give warning for stability of each coefficients record. By default, \code{FALSE}.}
 
 \item{use_sv}{Use SV term}
 
-\item{x}{\code{predbvhar} object}
+\item{x}{Any object}
 
 \item{digits}{digit option to print}
 }
@@ -204,24 +211,6 @@ and recursively,
 \deqn{y_{n + h} \mid \Sigma_e, y \sim N( vec(y_{(n + h - 1)}^T \tilde{T}^T \Phi), \Sigma_e \otimes (1 + y_{(n + h - 1)}^T \tilde{T} \hat\Psi^{-1} \tilde{T} y_{(n + h - 1)}) )}
 }
 
-\section{n-step ahead forecasting VAR(p) with SSVS and Horseshoe}{
-
-The process of the computing point estimate is the same.
-However, predictive interval is achieved from each Gibbs sampler sample.
-
-\deqn{y_{n + 1} \mid A, \Sigma_e, y \sim N( vec(y_{(n)}^T A), \Sigma_e )}
-\deqn{y_{n + h} \mid A, \Sigma_e, y \sim N( vec(\hat{y}_{(n + h - 1)}^T A), \Sigma_e )}
-}
-
-\section{n-step ahead forecasting VHAR with SSVS and Horseshoe}{
-
-The process of the computing point estimate is the same.
-However, predictive interval is achieved from each Gibbs sampler sample.
-
-\deqn{y_{n + 1} \mid \Sigma_e, y \sim N( vec(y_{(n)}^T \tilde{T}^T \Phi), \Sigma_e \otimes (1 + y_{(n)}^T \tilde{T} \hat\Psi^{-1} \tilde{T} y_{(n)}) )}
-\deqn{y_{n + h} \mid \Sigma_e, y \sim N( vec(y_{(n + h - 1)}^T \tilde{T}^T \Phi), \Sigma_e \otimes (1 + y_{(n + h - 1)}^T \tilde{T} \hat\Psi^{-1} \tilde{T} y_{(n + h - 1)}) )}
-}
-
 \references{
 Lütkepohl, H. (2007). \emph{New Introduction to Multiple Time Series Analysis}. Springer Publishing.
 
@@ -238,10 +227,6 @@ Karlsson, S. (2013). \emph{Chapter 15 Forecasting with Bayesian Vector Autoregre
 Litterman, R. B. (1986). \emph{Forecasting with Bayesian Vector Autoregressions: Five Years of Experience}. Journal of Business & Economic Statistics, 4(1), 25.
 
 Ghosh, S., Khare, K., & Michailidis, G. (2018). \emph{High-Dimensional Posterior Consistency in Bayesian Vector Autoregressive Models}. Journal of the American Statistical Association, 114(526).
-
-George, E. I., Sun, D., & Ni, S. (2008). \emph{Bayesian stochastic search for VAR model restrictions}. Journal of Econometrics, 142(1), 553-580.
-
-George, E. I., Sun, D., & Ni, S. (2008). \emph{Bayesian stochastic search for VAR model restrictions}. Journal of Econometrics, 142(1), 553-580.
 
 Korobilis, D. (2013). \emph{VAR FORECASTING USING BAYESIAN VARIABLE SELECTION}. Journal of Applied Econometrics, 28(2).
 

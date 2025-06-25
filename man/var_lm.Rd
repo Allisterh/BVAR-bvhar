@@ -12,7 +12,14 @@
 \alias{knit_print.varlse}
 \title{Fitting Vector Autoregressive Model of Order p Model}
 \usage{
-var_lm(y, p = 1, include_mean = TRUE, method = c("nor", "chol", "qr"))
+var_lm(
+  y,
+  p = 1,
+  exogen = NULL,
+  s = 0,
+  include_mean = TRUE,
+  method = c("nor", "chol", "qr")
+)
 
 \method{print}{varlse}(x, digits = max(3L, getOption("digits") - 3L), ...)
 
@@ -33,12 +40,16 @@ is.bvharmod(x)
 
 \item{p}{Lag of VAR (Default: 1)}
 
+\item{exogen}{Exogenous variables}
+
+\item{s}{Lag of exogeneous variables in VARX(p, s). By default, \code{s = 0}.}
+
 \item{include_mean}{Add constant term (Default: \code{TRUE}) or not (\code{FALSE})}
 
 \item{method}{Method to solve linear equation system.
 (\code{nor}: normal equation (default), \code{chol}: Cholesky, and \code{qr}: HouseholderQR)}
 
-\item{x}{A \code{varlse} object}
+\item{x}{Any object}
 
 \item{digits}{digit option to print}
 

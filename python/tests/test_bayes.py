@@ -1,15 +1,15 @@
 import pytest
 from bvhar.model import VarBayes, VharBayes
 from bvhar.model import LdltConfig, SvConfig, InterceptConfig
-from bvhar.model import SsvsConfig, HorseshoeConfig, MinnesotaConfig, LambdaConfig, NgConfig, DlConfig
+from bvhar.model import SsvsConfig, HorseshoeConfig, MinnesotaConfig, LambdaConfig, NgConfig, DlConfig, GdpConfig
 from bvhar.datasets import load_vix
 import numpy as np
 
 def help_var_bayes(
     dim_data, var_lag, data,
-    num_chains, num_threads, num_iter, num_burn, thin, intercept, minnesota,
-    bayes_config, cov_config,
-    test_y = None, n_ahead = None, pred = False, roll = False, expand = False, spillover = False
+    num_chains, num_threads, num_iter, num_burn, thin, intercept, minnesota, ggl,
+    coef_config, contem_config, cov_config,
+    test_y = None, n_ahead = None, pred = False, roll = False, expand = False, spillover = False, win_size = None
 ):
     np.random.seed(1)
     fit_bayes = VarBayes(
@@ -18,11 +18,13 @@ def help_var_bayes(
         num_iter,
         num_burn,
         thin,
-        bayes_config,
+        coef_config,
+        contem_config,
         cov_config,
         InterceptConfig(),
         intercept,
         minnesota,
+        ggl,
         False,
         num_threads
     )
@@ -33,26 +35,40 @@ def help_var_bayes(
     assert fit_bayes.intercept_.shape == (dim_data,)
 
     if pred:
-        pred_out = fit_bayes.predict(n_ahead, sparse = True)
+        pred_out = fit_bayes.predict(n_ahead, stable = False, sparse = True)
         assert pred_out['forecast'].shape == (n_ahead, dim_data)
         assert pred_out['se'].shape == (n_ahead, dim_data)
         assert pred_out['lower'].shape == (n_ahead, dim_data)
         assert pred_out['upper'].shape == (n_ahead, dim_data)
     if roll:
-        roll_out = fit_bayes.roll_forecast(1, test_y, sparse = True)
+        roll_out = fit_bayes.roll_forecast(1, test_y, stable = False, sparse = True)
         assert roll_out['forecast'].shape == (n_ahead, dim_data)
         assert roll_out['se'].shape == (n_ahead, dim_data)
         assert roll_out['lower'].shape == (n_ahead, dim_data)
         assert roll_out['upper'].shape == (n_ahead, dim_data)
     if expand:
-        roll_out = fit_bayes.expand_forecast(1, test_y, sparse = True)
+        roll_out = fit_bayes.expand_forecast(1, test_y, stable = False, sparse = True)
         assert roll_out['forecast'].shape == (n_ahead, dim_data)
         assert roll_out['se'].shape == (n_ahead, dim_data)
         assert roll_out['lower'].shape == (n_ahead, dim_data)
         assert roll_out['upper'].shape == (n_ahead, dim_data)
+    if spillover:
+        sp_out = fit_bayes.spillover(n_ahead, sparse = True)
+        assert sp_out['connect']['mean'].shape == (dim_data, dim_data)
+        assert sp_out['net_pairwise']['mean'].shape == (dim_data, dim_data)
+        assert sp_out['tot']['mean'].shape == (dim_data,)
+        assert sp_out['to']['mean'].shape == (dim_data,)
+        assert sp_out['from']['mean'].shape == (dim_data,)
+        assert sp_out['net']['mean'].shape == (dim_data,)
+        dynamic_out = fit_bayes.dynamic_spillover(win_size, n_ahead)
+        assert dynamic_out['tot']['mean'].shape == (data.shape[0] - win_size + 1,)
+        assert dynamic_out['to']['mean'].shape == (data.shape[0] - win_size + 1, dim_data)
+        assert dynamic_out['from']['mean'].shape == (data.shape[0] - win_size + 1, dim_data)
+        assert dynamic_out['net']['mean'].shape == (data.shape[0] - win_size + 1, dim_data)
 
 def test_var_bayes():
-    num_data = 30
+    num_data = 50
+    win_size = 30
     dim_data = 2
     var_lag = 3
     etf_vix = load_vix()
@@ -67,28 +83,33 @@ def test_var_bayes():
     thin = 1
     intercept = True
     minnesota = True
+    ggl = True
 
     help_var_bayes(
-        dim_data, var_lag, data, num_chains, num_threads, num_iter, num_burn, thin, intercept, minnesota,
-        SsvsConfig(), LdltConfig(),
-        data_out, n_ahead, True, True, True
+        dim_data, var_lag, data, num_chains, num_threads, num_iter, num_burn, thin, intercept, minnesota, ggl,
+        SsvsConfig(), SsvsConfig(), LdltConfig(),
+        data_out, n_ahead, True, True, True, True, win_size = win_size
     )
     help_var_bayes(
-        dim_data, var_lag, data, num_chains, num_threads, num_iter, num_burn, thin, intercept, minnesota,
-        HorseshoeConfig(), LdltConfig(),
+        dim_data, var_lag, data, num_chains, num_threads, num_iter, num_burn, thin, intercept, minnesota, ggl,
+        HorseshoeConfig(), HorseshoeConfig(), LdltConfig(),
         data_out, n_ahead
     )
     help_var_bayes(
-        dim_data, var_lag, data, num_chains, num_threads, num_iter, num_burn, thin, intercept, minnesota,
-        MinnesotaConfig(lam=LambdaConfig()), LdltConfig()
+        dim_data, var_lag, data, num_chains, num_threads, num_iter, num_burn, thin, intercept, minnesota, ggl,
+        MinnesotaConfig(lam=LambdaConfig()), MinnesotaConfig(lam=LambdaConfig()), LdltConfig()
     )
     help_var_bayes(
-        dim_data, var_lag, data, num_chains, num_threads, num_iter, num_burn, thin, intercept, minnesota,
-        NgConfig(), LdltConfig()
+        dim_data, var_lag, data, num_chains, num_threads, num_iter, num_burn, thin, intercept, minnesota, ggl,
+        NgConfig(), NgConfig(), LdltConfig()
     )
     help_var_bayes(
-        dim_data, var_lag, data, num_chains, num_threads, num_iter, num_burn, thin, intercept, minnesota,
-        DlConfig(), LdltConfig()
+        dim_data, var_lag, data, num_chains, num_threads, num_iter, num_burn, thin, intercept, minnesota, ggl,
+        DlConfig(), DlConfig(), LdltConfig()
+    )
+    help_var_bayes(
+        dim_data, var_lag, data, num_chains, num_threads, num_iter, num_burn, thin, intercept, minnesota, ggl,
+        GdpConfig(), GdpConfig(), LdltConfig()
     )
 
     # help_var_bayes(
@@ -99,8 +120,8 @@ def test_var_bayes():
     with pytest.warns(UserWarning, match=f"'n_thread = 3 > 'n_chain' = 2' will not use every thread. Specify as 'n_thread <= 'n_chain'."):
         VarBayes(
             data, var_lag, 2, num_iter, num_burn, thin,
-            SsvsConfig(), LdltConfig(), InterceptConfig(),
-            intercept, minnesota, False, 3
+            SsvsConfig(), SsvsConfig(), LdltConfig(), InterceptConfig(),
+            intercept, minnesota, False, True, 3
         )
     
     with pytest.raises(ValueError, match=f"'data' rows must be larger than 'lag' = {var_lag}"):
@@ -108,15 +129,15 @@ def test_var_bayes():
         data = etf_vix.iloc[:(var_lag - 1), :dim_data]
         VarBayes(
             data, var_lag, num_chains, num_iter, num_burn, thin,
-            SsvsConfig(), LdltConfig(), InterceptConfig(),
-            intercept, minnesota, False, num_threads
+            SsvsConfig(), SsvsConfig(), LdltConfig(), InterceptConfig(),
+            intercept, minnesota, False, True, num_threads
         )
 
 def help_vhar_bayes(
     dim_data, week, month, data,
-    num_chains, num_threads, num_iter, num_burn, thin, intercept, minnesota,
-    bayes_config, cov_config,
-    test_y = None, n_ahead = None, pred = False, roll = False, expand = False, spillover = False
+    num_chains, num_threads, num_iter, num_burn, thin, intercept, minnesota, ggl,
+    coef_config, contem_config, cov_config,
+    test_y = None, n_ahead = None, pred = False, roll = False, expand = False, spillover = False, win_size = None
 ):
     np.random.seed(1)
     fit_bayes = VharBayes(
@@ -125,11 +146,13 @@ def help_vhar_bayes(
         num_iter,
         num_burn,
         thin,
-        bayes_config,
+        coef_config,
+        contem_config,
         cov_config,
         InterceptConfig(),
         intercept,
         minnesota,
+        ggl,
         False,
         num_threads
     )
@@ -140,26 +163,40 @@ def help_vhar_bayes(
     assert fit_bayes.intercept_.shape == (dim_data,)
 
     if pred:
-        pred_out = fit_bayes.predict(n_ahead, sparse = True)
+        pred_out = fit_bayes.predict(n_ahead, stable = False, sparse = True)
         assert pred_out['forecast'].shape == (n_ahead, dim_data)
         assert pred_out['se'].shape == (n_ahead, dim_data)
         assert pred_out['lower'].shape == (n_ahead, dim_data)
         assert pred_out['upper'].shape == (n_ahead, dim_data)
     if roll:
-        roll_out = fit_bayes.roll_forecast(1, test_y, sparse = True)
+        roll_out = fit_bayes.roll_forecast(1, test_y, stable = False, sparse = True)
         assert roll_out['forecast'].shape == (n_ahead, dim_data)
         assert roll_out['se'].shape == (n_ahead, dim_data)
         assert roll_out['lower'].shape == (n_ahead, dim_data)
         assert roll_out['upper'].shape == (n_ahead, dim_data)
     if expand:
-        roll_out = fit_bayes.expand_forecast(1, test_y, sparse = True)
+        roll_out = fit_bayes.expand_forecast(1, test_y, stable = False, sparse = True)
         assert roll_out['forecast'].shape == (n_ahead, dim_data)
         assert roll_out['se'].shape == (n_ahead, dim_data)
         assert roll_out['lower'].shape == (n_ahead, dim_data)
         assert roll_out['upper'].shape == (n_ahead, dim_data)
+    if spillover:
+        sp_out = fit_bayes.spillover(n_ahead, sparse = True)
+        assert sp_out['connect']['mean'].shape == (dim_data, dim_data)
+        assert sp_out['net_pairwise']['mean'].shape == (dim_data, dim_data)
+        assert sp_out['tot']['mean'].shape == (dim_data,)
+        assert sp_out['to']['mean'].shape == (dim_data,)
+        assert sp_out['from']['mean'].shape == (dim_data,)
+        assert sp_out['net']['mean'].shape == (dim_data,)
+        dynamic_out = fit_bayes.dynamic_spillover(win_size, n_ahead)
+        assert dynamic_out['tot']['mean'].shape == (data.shape[0] - win_size + 1,)
+        assert dynamic_out['to']['mean'].shape == (data.shape[0] - win_size + 1, dim_data)
+        assert dynamic_out['from']['mean'].shape == (data.shape[0] - win_size + 1, dim_data)
+        assert dynamic_out['net']['mean'].shape == (data.shape[0] - win_size + 1, dim_data)
 
 def test_vhar_bayes():
-    num_data = 30
+    num_data = 50
+    win_size = 30
     dim_data = 3
     week = 5
     month = 22
@@ -175,27 +212,32 @@ def test_vhar_bayes():
     thin = 1
     intercept = True
     minnesota = "longrun"
+    ggl = True
 
     help_vhar_bayes(
-        dim_data, week, month, data, num_chains, num_threads, num_iter, num_burn, thin, intercept, minnesota,
-        SsvsConfig(), LdltConfig(),
-        data_out, n_ahead, True, True, True
+        dim_data, week, month, data, num_chains, num_threads, num_iter, num_burn, thin, intercept, minnesota, ggl,
+        SsvsConfig(), SsvsConfig(), LdltConfig(),
+        data_out, n_ahead, True, True, True, True, win_size
     )
     help_vhar_bayes(
-        dim_data, week, month, data, num_chains, num_threads, num_iter, num_burn, thin, intercept, minnesota,
-        HorseshoeConfig(), LdltConfig()
+        dim_data, week, month, data, num_chains, num_threads, num_iter, num_burn, thin, intercept, minnesota, ggl,
+        HorseshoeConfig(), HorseshoeConfig(), LdltConfig()
     )
     help_vhar_bayes(
-        dim_data, week, month, data, num_chains, num_threads, num_iter, num_burn, thin, intercept, minnesota,
-        MinnesotaConfig(lam=LambdaConfig()), LdltConfig()
+        dim_data, week, month, data, num_chains, num_threads, num_iter, num_burn, thin, intercept, minnesota, ggl,
+        MinnesotaConfig(lam=LambdaConfig()), MinnesotaConfig(lam=LambdaConfig()), LdltConfig()
     )
     help_vhar_bayes(
-        dim_data, week, month, data, num_chains, num_threads, num_iter, num_burn, thin, intercept, minnesota,
-        NgConfig(), LdltConfig()
+        dim_data, week, month, data, num_chains, num_threads, num_iter, num_burn, thin, intercept, minnesota, ggl,
+        NgConfig(), NgConfig(), LdltConfig()
     )
     help_vhar_bayes(
-        dim_data, week, month, data, num_chains, num_threads, num_iter, num_burn, thin, intercept, minnesota,
-        DlConfig(), LdltConfig()
+        dim_data, week, month, data, num_chains, num_threads, num_iter, num_burn, thin, intercept, minnesota, ggl,
+        DlConfig(), DlConfig(), LdltConfig()
+    )
+    help_vhar_bayes(
+        dim_data, week, month, data, num_chains, num_threads, num_iter, num_burn, thin, intercept, minnesota, ggl,
+        GdpConfig(), GdpConfig(), LdltConfig()
     )
 
     # help_vhar_bayes(
@@ -203,17 +245,17 @@ def test_vhar_bayes():
     #     SsvsConfig(), SvConfig()
     # )
 
-    with pytest.warns(UserWarning, match=f"'n_thread = 3 > 'n_chain' = {num_chains}' will not use every thread. Specify as 'n_thread <= 'n_chain'."):
+    with pytest.warns(UserWarning, match=f"'n_thread = 3 > 'n_chain' = 2' will not use every thread. Specify as 'n_thread <= 'n_chain'."):
         VharBayes(
-            data, week, month, num_chains, num_iter, num_burn, thin,
-            SsvsConfig(), LdltConfig(), InterceptConfig(),
-            intercept, minnesota, False, 3
+            data, week, month, 2, num_iter, num_burn, thin,
+            SsvsConfig(), SsvsConfig(), LdltConfig(), InterceptConfig(),
+            intercept, minnesota, False, True, 3
         )
     
     with pytest.raises(ValueError, match=f"'data' rows must be larger than 'lag' = {month}"):
         data = etf_vix.iloc[:(month - 1), :dim_data]
         VharBayes(
             data, week, month, num_chains, num_iter, num_burn, thin,
-            SsvsConfig(), LdltConfig(), InterceptConfig(),
-            intercept, minnesota, False, num_threads
+            SsvsConfig(), SsvsConfig(), LdltConfig(), InterceptConfig(),
+            intercept, minnesota, False, True, num_threads
         )

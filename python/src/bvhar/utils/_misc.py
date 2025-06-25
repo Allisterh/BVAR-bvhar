@@ -1,3 +1,4 @@
+import re
 import numpy as np
 import pandas as pd
 
@@ -91,6 +92,15 @@ def check_np(data):
         # Add polars?
         raise ValueError("Unsupported data type.")
 
+def get_coef_init(n_chain, n_features_in_, n_design, n_eta):
+    return [
+        {
+            'init_coef': np.random.uniform(-1, 1, (n_design, n_features_in_)),
+            'init_contem': np.exp(np.random.uniform(-1, 0, n_eta))
+        }
+        for _ in range(n_chain)
+    ]
+
 def get_var_intercept(coef : np.array, lag: int, fit_intercept : bool):
     dim_design, dim_data = coef.shape
     if not fit_intercept:
@@ -113,17 +123,22 @@ def build_grpmat(p, dim_data, minnesota = "longrun"):
         res.append(lag_grp)
     return np.vstack(res)
 
-def process_record(record_list: list):
+def process_record(record_list: list, har = False):
     rec_names = list(record_list[0].keys())
+    if har:
+        return [re.sub(r'alpha_', 'phi_', name).replace('_record', '') for name in rec_names]
     return [name.replace('_record', '') for name in rec_names]
 
-def concat_chain(record_list: list):
+def concat_chain(record_list: list, har = False):
     record_concat = pd.DataFrame()
     tot_draw_n = 0
     for chain_id, chain_dict in enumerate(record_list):
         param_record = pd.DataFrame()
         for rec_names, record in chain_dict.items():
-            param = rec_names.replace('_record', '')
+            if har:
+                param = re.sub(r'alpha_', 'phi_', rec_names).replace('_record', '')
+            else:
+                param = rec_names.replace('_record', '')
             n_col = record.shape[1]
             chain_record = pd.DataFrame(
                 record,
@@ -138,23 +153,67 @@ def concat_chain(record_list: list):
         record_concat = pd.concat([record_concat, param_record], axis=0)
     return record_concat
 
-def concat_params(record: pd.DataFrame, param_names: str):
+def concat_params(record: pd.DataFrame, param_names: str, chain = True):
     res = {}
     # n_chains = record['_chain'].nunique()
     for _name in param_names:
         param_columns = [col for col in record.columns if col.startswith(_name)]
-        param_record = record[param_columns + ['_chain']]
-        param_record_chain = [df for _, df in param_record.groupby('_chain')]
-        array_chain = [df.drop('_chain', axis=1).values for df in param_record_chain]
-        res[f"{_name}_record"] = array_chain
+        if chain:
+            param_record = record[param_columns + ['_chain']]
+            param_record_chain = [df for _, df in param_record.groupby('_chain')]
+            array_chain = [df.drop('_chain', axis=1).values for df in param_record_chain]
+            res[f"{_name}_record"] = array_chain
+        else:
+            param_record = record[param_columns]
+            res[f"{_name}_record"] = [param_record.values]
     return res
 
 def process_dens_forecast(pred_list: list, n_dim: int):
     # shape_pred = pred_list[0].shape # (step, dim * draw)
     # n_ahead = shape_pred[0]
     # n_draw = int(shape_pred[1] / n_dim)
-    n_draw = int(pred_list[0].shape[1] / n_dim)
+    if len(pred_list[0].shape) == 1:
+        pred_list = [item.reshape(1, -1) for item in pred_list]
+    n_draw = int(pred_list[0].shape[1] / n_dim) # pred_list: list(chains) of array(step, n_dim * draw)
     res = []
     for arr in pred_list:
         res.append([arr[:, range(id * n_dim, id * n_dim + n_dim)] for id in range(n_draw)])
     return np.concatenate(res, axis=0)
+
+def process_dens_spillover(conn_tab: np.array, n_dim: int, level = .05):
+    n_draw = int(conn_tab.shape[1] / n_dim)
+    conn_split = np.array_split(conn_tab, n_draw, axis = 1)
+    conn_stack = np.stack(conn_split, axis = 0)
+    return {
+        "mean": np.mean(conn_stack, axis = 0),
+        "se": np.std(conn_stack, axis = 0),
+        "lower": np.quantile(conn_stack, level / 2, axis = 0),
+        "upper": np.quantile(conn_stack, 1 - level / 2, axis = 0)
+    }
+
+def process_dens_vector_spillover(draw: np.array, n_dim: int, level = .05):
+    draw_reshaped = draw.reshape((-1, n_dim))
+    return {
+        "mean": np.mean(draw_reshaped, axis = 0),
+        "se": np.std(draw_reshaped, axis = 0),
+        "lower": np.quantile(draw_reshaped, level / 2, axis = 0),
+        "upper": np.quantile(draw_reshaped, 1 - level / 2, axis = 0)
+    }
+
+def flatten_tot(tot: np.array):
+    return tot.flatten() if tot.shape[1] == 1 else tot
+
+def process_dens_list_spillover(sp_list: list, n_dim: int, level = .05):
+    draw_reshaped = [
+        np.vstack([
+            y.reshape(-1, n_dim)
+            for y in x
+        ])
+        for x in sp_list
+    ]
+    return {
+        "mean": flatten_tot(np.vstack([np.mean(x, axis = 0) for x in draw_reshaped])),
+        "se": flatten_tot(np.vstack([np.std(x, axis = 0) for x in draw_reshaped])),
+        "lower": flatten_tot(np.vstack([np.quantile(x, level / 2, axis = 0) for x in draw_reshaped])),
+        "upper": flatten_tot(np.vstack([np.quantile(x, 1 - level / 2, axis = 0) for x in draw_reshaped]))
+    }

@@ -2,29 +2,40 @@
 % Please edit documentation in R/var-bayes.R, R/print-bvharsp.R
 \name{var_bayes}
 \alias{var_bayes}
+\alias{print.bvarsv}
 \alias{print.bvarldlt}
+\alias{knit_print.bvarsv}
 \alias{knit_print.bvarldlt}
 \title{Fitting Bayesian VAR with Coefficient and Covariance Prior}
 \usage{
 var_bayes(
   y,
   p,
+  exogen = NULL,
+  s = 0,
   num_chains = 1,
   num_iter = 1000,
   num_burn = floor(num_iter/2),
   thinning = 1,
-  bayes_spec = set_bvar(),
+  coef_spec = set_bvar(),
+  contem_spec = coef_spec,
   cov_spec = set_ldlt(),
   intercept = set_intercept(),
+  exogen_spec = coef_spec,
   include_mean = TRUE,
   minnesota = TRUE,
+  ggl = TRUE,
   save_init = FALSE,
   convergence = NULL,
   verbose = FALSE,
   num_thread = 1
 )
 
+\method{print}{bvarsv}(x, digits = max(3L, getOption("digits") - 3L), ...)
+
 \method{print}{bvarldlt}(x, digits = max(3L, getOption("digits") - 3L), ...)
+
+\method{knit_print}{bvarsv}(x, ...)
 
 \method{knit_print}{bvarldlt}(x, ...)
 }
@@ -32,6 +43,10 @@ var_bayes(
 \item{y}{Time series data of which columns indicate the variables}
 
 \item{p}{VAR lag}
+
+\item{exogen}{Unmodeled variables}
+
+\item{s}{Lag of exogeneous variables in VARX(p, s). By default, \code{s = 0}.}
 
 \item{num_chains}{Number of MCMC chains}
 
@@ -41,15 +56,23 @@ var_bayes(
 
 \item{thinning}{Thinning every thinning-th iteration}
 
-\item{bayes_spec}{A BVAR model specification by \code{\link[=set_bvar]{set_bvar()}}, \code{\link[=set_ssvs]{set_ssvs()}}, or \code{\link[=set_horseshoe]{set_horseshoe()}}.}
+\item{coef_spec}{Coefficient prior specification by \code{\link[=set_bvar]{set_bvar()}}, \code{\link[=set_ssvs]{set_ssvs()}}, or \code{\link[=set_horseshoe]{set_horseshoe()}}.}
+
+\item{contem_spec}{Contemporaneous coefficient prior specification by \code{\link[=set_bvar]{set_bvar()}}, \code{\link[=set_ssvs]{set_ssvs()}}, or \code{\link[=set_horseshoe]{set_horseshoe()}}.}
 
 \item{cov_spec}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}} SV specification by \code{\link[=set_sv]{set_sv()}}.}
 
 \item{intercept}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}} Prior for the constant term by \code{\link[=set_intercept]{set_intercept()}}.}
 
+\item{exogen_spec}{Exogenous coefficient prior specification.}
+
 \item{include_mean}{Add constant term (Default: \code{TRUE}) or not (\code{FALSE})}
 
 \item{minnesota}{Apply cross-variable shrinkage structure (Minnesota-way). By default, \code{TRUE}.}
+
+\item{ggl}{If \code{TRUE} (default), use additional group shrinkage parameter for group structure.
+Otherwise, use group shrinkage parameter instead of global shirnkage parameter.
+Applies to HS, NG, and DL priors.}
 
 \item{save_init}{Save every record starting from the initial values (\code{TRUE}).
 By default, exclude the initial values in the record (\code{FALSE}), even when \code{num_burn = 0} and \code{thinning = 1}.

@@ -5,6 +5,8 @@
 #' @param object Model object
 #' @param n_ahead step to forecast
 #' @param level Specify alpha of confidence interval level 100(1 - alpha) percentage. By default, .05.
+#' @param newxreg New values for exogenous variables.
+#' Should have the same row numbers with `n_ahead`.
 #' @param ... not used
 #' @section n-step ahead forecasting VAR(p):
 #' See pp35 of Lütkepohl (2007).
@@ -50,15 +52,30 @@
 #' @references Lütkepohl, H. (2007). *New Introduction to Multiple Time Series Analysis*. Springer Publishing.
 #' @name predict
 #' @importFrom stats qnorm
+#' @importFrom utils tail
 #' @order 1
 #' @export
-predict.varlse <- function(object, n_ahead, level = .05, ...) {
-  pred_res <- forecast_var(object, n_ahead)
+predict.varlse <- function(object, n_ahead, level = .05, newxreg, ...) {
+  if (!is.null(eval.parent(object$call$exogen))) {
+    newxreg <- validate_newxreg(newxreg = newxreg, n_ahead = n_ahead)
+    pred_res <- forecast_varx(
+      response = object$y0,
+      coef_mat = object$coefficients[-object$exogen_id, ],
+      lag = object$p,
+      step = n_ahead,
+      include_mean = object$type == "const",
+      exogen = rbind(tail(object$exogen_data, object$s), newxreg),
+      exogen_coef = object$coefficients[object$exogen_id, ],
+      exogen_lag = object$s
+    )
+  } else {
+    pred_res <- forecast_var(object, n_ahead)
+  }
   colnames(pred_res) <- colnames(object$y0)
   SE <- 
-    compute_covmse(object, n_ahead) %>% # concatenated matrix
-    split.data.frame(gl(n_ahead, object$m)) %>% # list of forecast MSE covariance matrix
-    sapply(diag) %>% 
+    compute_covmse(object, n_ahead) |> # concatenated matrix
+    split.data.frame(gl(n_ahead, object$m)) |> # list of forecast MSE covariance matrix
+    sapply(diag) |> 
     t() # extract only diagonal element to compute CIs
   SE <- sqrt(SE)
   colnames(SE) <- colnames(object$y0)
@@ -82,6 +99,8 @@ predict.varlse <- function(object, n_ahead, level = .05, ...) {
 #' @param object A `vharlse` object
 #' @param n_ahead step to forecast
 #' @param level Specify alpha of confidence interval level 100(1 - alpha) percentage. By default, .05.
+#' @param newxreg New values for exogenous variables.
+#' Should have the same row numbers with `n_ahead`.
 #' @param ... not used
 #' @section n-step ahead forecasting VHAR:
 #' Let \eqn{T_{HAR}} is VHAR linear transformation matrix.
@@ -105,13 +124,36 @@ predict.varlse <- function(object, n_ahead, level = .05, ...) {
 #' @importFrom stats qnorm
 #' @order 1
 #' @export
-predict.vharlse <- function(object, n_ahead, level = .05, ...) {
-  pred_res <- forecast_vhar(object, n_ahead)
+predict.vharlse <- function(object, n_ahead, level = .05, newxreg, ...) {
+  if (!is.null(eval.parent(object$call$exogen))) {
+    if (missing(newxreg) || is.null(newxreg)) {
+      stop("'newxreg' should be supplied when using VHARX model.")
+    }
+    if (!is.matrix(newxreg)) {
+      newxreg <- as.matrix(newxreg)
+    }
+    if (nrow(newxreg) != n_ahead) {
+      stop("Wrong row number of 'newxreg'")
+    }
+    pred_res <- forecast_harx(
+      response = object$y0,
+      coef_mat = object$coefficients[-object$exogen_id, ],
+      week = object$week,
+      month = object$month,
+      step = n_ahead,
+      include_mean = object$type == "const",
+      exogen = rbind(tail(object$exogen_data, object$s), newxreg),
+      exogen_coef = object$coefficients[object$exogen_id, ],
+      exogen_lag = object$s
+    )
+  } else {
+    pred_res <- forecast_vhar(object, n_ahead)
+  }
   colnames(pred_res) <- colnames(object$y0)
-  SE <- 
-    compute_covmse_har(object, n_ahead) %>% # concatenated matrix
-    split.data.frame(gl(n_ahead, object$m)) %>% # list of forecast MSE covariance matrix
-    sapply(diag) %>% 
+  SE <-
+    compute_covmse_har(object, n_ahead) |> # concatenated matrix
+    split.data.frame(gl(n_ahead, object$m)) |> # list of forecast MSE covariance matrix
+    sapply(diag) |>
     t() # extract only diagonal element to compute CIs
   SE <- sqrt(SE)
   colnames(SE) <- colnames(object$y0)
@@ -182,7 +224,7 @@ predict.bvarmn <- function(object, n_ahead, n_iter = 100L, level = .05, num_thre
   #   include_mean = object$type == "const",
   #   nthreads = num_thread
   # )
-  pred_res <- forecast_bvar(object, n_ahead, n_iter)
+  pred_res <- forecast_bvar(object, n_ahead, n_iter, sample.int(.Machine$integer.max, size = 1))
   # Point forecasting (Posterior mean)--------------
   pred_mean <- pred_res$posterior_mean
   var_names <- colnames(object$y0)
@@ -190,12 +232,12 @@ predict.bvarmn <- function(object, n_ahead, n_iter = 100L, level = .05, num_thre
   # Predictive distribution-------------------------
   dim_data <- ncol(pred_mean)
   y_distn <-
-    pred_res$predictive %>%
+    pred_res$predictive |>
     array(dim = c(n_ahead, dim_data, n_iter)) # 3d array: h x m x B
   # num_draw <- nrow(alpha_record) # concatenate multiple chains
   # y_distn <-
-  #   pred_res %>%
-  #   unlist() %>%
+  #   pred_res |>
+  #   unlist() |>
   #   array(dim = c(n_ahead, dim_data, num_draw))
   # pred_mean <- apply(y_distn, c(1, 2), mean)
   lower_quantile <- apply(y_distn, c(1, 2), quantile, probs = level / 2)
@@ -243,7 +285,7 @@ predict.bvarmn <- function(object, n_ahead, n_iter = 100L, level = .05, num_thre
 #' @order 1
 #' @export
 predict.bvharmn <- function(object, n_ahead, n_iter = 100L, level = .05, num_thread = 1, ...) {
-  pred_res <- forecast_bvharmn(object, n_ahead, n_iter)
+  pred_res <- forecast_bvharmn(object, n_ahead, n_iter, sample.int(.Machine$integer.max, size = 1))
   # dim_data <- object$m
   # num_chains <- object$chain
   # if (num_thread > get_maxomp()) {
@@ -271,12 +313,12 @@ predict.bvharmn <- function(object, n_ahead, n_iter = 100L, level = .05, num_thr
   # Predictive distribution-------------------------
   dim_data <- ncol(pred_mean)
   y_distn <- 
-    pred_res$predictive %>% 
+    pred_res$predictive |> 
     array(dim = c(n_ahead, dim_data, n_iter)) # 3d array: h x m x B
   # num_draw <- nrow(phi_record) # concatenate multiple chains
   # y_distn <-
-  #   pred_res %>%
-  #   unlist() %>%
+  #   pred_res |>
+  #   unlist() |>
   #   array(dim = c(n_ahead, dim_data, num_draw))
   # pred_mean <- apply(y_distn, c(1, 2), mean)
   lower_quantile <- apply(y_distn, c(1, 2), quantile, probs = level / 2)
@@ -304,7 +346,7 @@ predict.bvharmn <- function(object, n_ahead, n_iter = 100L, level = .05, num_thr
 }
 
 #' @rdname predict
-#' 
+#'
 #' @param object Model object
 #' @param n_ahead step to forecast
 #' @param n_iter Number to sample residual matrix from inverse-wishart distribution. By default, 100.
@@ -335,20 +377,20 @@ predict.bvarflat <- function(object, n_ahead, n_iter = 100L, level = .05, num_th
   #   include_mean = object$type == "const",
   #   nthreads = num_thread
   # )
-  pred_res <- forecast_bvar(object, n_ahead, n_iter)
+  pred_res <- forecast_bvar(object, n_ahead, n_iter, sample.int(.Machine$integer.max, size = 1))
   # Point forecasting (Posterior mean)--------------
   pred_mean <- pred_res$posterior_mean
   var_names <- colnames(object$y0)
   # colnames(pred_mean) <- var_names
   # Predictive distribution-------------------------
   dim_data <- ncol(pred_mean)
-  y_distn <- 
-    pred_res$predictive %>% 
+  y_distn <-
+    pred_res$predictive |>
     array(dim = c(n_ahead, dim_data, n_iter)) # 3d array: h x m x B
   # num_draw <- nrow(alpha_record) # concatenate multiple chains
   # y_distn <-
-  #   pred_res %>%
-  #   unlist() %>%
+  #   pred_res |>
+  #   unlist() |>
   #   array(dim = c(n_ahead, dim_data, num_draw))
   # pred_mean <- apply(y_distn, c(1, 2), mean)
   lower_quantile <- apply(y_distn, c(1, 2), quantile, probs = level / 2)
@@ -375,286 +417,24 @@ predict.bvarflat <- function(object, n_ahead, n_iter = 100L, level = .05, num_th
 }
 
 #' @rdname predict
-#' 
 #' @param object Model object
 #' @param n_ahead step to forecast
 #' @param level Specify alpha of confidence interval level 100(1 - alpha) percentage. By default, .05.
-#' @param ... not used
-#' @section n-step ahead forecasting VAR(p) with SSVS and Horseshoe:
-#' The process of the computing point estimate is the same.
-#' However, predictive interval is achieved from each Gibbs sampler sample.
-#' 
-#' \deqn{y_{n + 1} \mid A, \Sigma_e, y \sim N( vec(y_{(n)}^T A), \Sigma_e )}
-#' \deqn{y_{n + h} \mid A, \Sigma_e, y \sim N( vec(\hat{y}_{(n + h - 1)}^T A), \Sigma_e )}
-#' @references George, E. I., Sun, D., & Ni, S. (2008). *Bayesian stochastic search for VAR model restrictions*. Journal of Econometrics, 142(1), 553-580.
-#' @importFrom posterior subset_draws as_draws_matrix
-#' @importFrom stats quantile
-#' @order 1
-#' @export
-predict.bvarssvs <- function(object, n_ahead, level = .05, ...) {
-  deprecate_warn("2.0.1", "predict.bvarssvs()")
-  num_chains <- object$chain
-  alpha_record <- as_draws_matrix(subset_draws(object$param, variable = "alpha"))
-  pred_res <- forecast_bvarssvs_deprecate(
-    num_chains,
-    object$p,
-    n_ahead,
-    object$y0,
-    object$df,
-    alpha_record,
-    as_draws_matrix(subset_draws(object$param, variable = "eta")),
-    as_draws_matrix(subset_draws(object$param, variable = "psi"))
-  )
-  dim_data <- object$m
-  var_names <- colnames(object$y0)
-  # Predictive distribution------------------------------------
-  num_step <- nrow(alpha_record) / num_chains
-  y_distn <-
-    pred_res %>% 
-    array(dim = c(n_ahead * num_chains, dim_data, num_step))
-  pred_mean <- apply(y_distn, c(1, 2), mean)
-  lower_quantile <- apply(y_distn, c(1, 2), quantile, probs = level / 2)
-  upper_quantile <- apply(y_distn, c(1, 2), quantile, probs = (1 - level / 2))
-  est_se <- apply(y_distn, c(1, 2), sd)
-  if (num_chains > 1) {
-    pred_mean <- split.data.frame(pred_mean, gl(num_chains, n_ahead))
-    pred_mean <- Reduce("+", pred_mean) / num_chains
-    lower_quantile <- split.data.frame(lower_quantile, gl(num_chains, n_ahead))
-    lower_quantile <- Reduce("+", lower_quantile) / num_chains
-    upper_quantile <- split.data.frame(upper_quantile, gl(num_chains, n_ahead))
-    upper_quantile <- Reduce("+", upper_quantile) / num_chains
-    est_se <- split.data.frame(est_se, gl(num_chains, n_ahead))
-    est_se <- Reduce("+", est_se) / num_chains
-  }
-  colnames(pred_mean) <- var_names
-  colnames(lower_quantile) <- var_names
-  colnames(upper_quantile) <- var_names
-  colnames(est_se) <- var_names
-  res <- list(
-    process = object$process,
-    forecast = pred_mean,
-    se = est_se,
-    lower = lower_quantile,
-    upper = upper_quantile,
-    lower_joint = lower_quantile,
-    upper_joint = upper_quantile,
-    y = object$y
-  )
-  class(res) <- "predbvhar"
-  res
-}
-
-#' @rdname predict
-#' 
-#' @param object Model object
-#' @param n_ahead step to forecast
-#' @param level Specify alpha of confidence interval level 100(1 - alpha) percentage. By default, .05.
-#' @param ... not used
-#' @section n-step ahead forecasting VHAR with SSVS and Horseshoe:
-#' The process of the computing point estimate is the same.
-#' However, predictive interval is achieved from each Gibbs sampler sample.
-#' 
-#' \deqn{y_{n + 1} \mid \Sigma_e, y \sim N( vec(y_{(n)}^T \tilde{T}^T \Phi), \Sigma_e \otimes (1 + y_{(n)}^T \tilde{T} \hat\Psi^{-1} \tilde{T} y_{(n)}) )}
-#' \deqn{y_{n + h} \mid \Sigma_e, y \sim N( vec(y_{(n + h - 1)}^T \tilde{T}^T \Phi), \Sigma_e \otimes (1 + y_{(n + h - 1)}^T \tilde{T} \hat\Psi^{-1} \tilde{T} y_{(n + h - 1)}) )}
-#' 
-#' @references George, E. I., Sun, D., & Ni, S. (2008). *Bayesian stochastic search for VAR model restrictions*. Journal of Econometrics, 142(1), 553-580.
-#' @importFrom posterior subset_draws as_draws_matrix
-#' @importFrom stats quantile
-#' @order 1
-#' @export
-predict.bvharssvs <- function(object, n_ahead, level = .05, ...) {
-  deprecate_warn("2.0.1", "predict.bvharssvs()")
-  num_chains <- object$chain
-  phi_record <- as_draws_matrix(subset_draws(object$param, variable = "phi"))
-  pred_res <- forecast_bvharssvs_deprecate(
-    num_chains,
-    object$month,
-    n_ahead,
-    object$y0,
-    object$HARtrans,
-    phi_record,
-    as_draws_matrix(subset_draws(object$param, variable = "eta")),
-    as_draws_matrix(subset_draws(object$param, variable = "psi"))
-  )
-  dim_data <- object$m
-  var_names <- colnames(object$y0)
-  # Predictive distribution------------------------------------
-  num_step <- nrow(phi_record) / num_chains
-  y_distn <-
-    pred_res %>%
-    # pred_res$predictive %>%
-    array(dim = c(n_ahead * num_chains, dim_data, num_step))
-  pred_mean <- apply(y_distn, c(1, 2), mean)
-  lower_quantile <- apply(y_distn, c(1, 2), quantile, probs = level / 2)
-  upper_quantile <- apply(y_distn, c(1, 2), quantile, probs = (1 - level / 2))
-  est_se <- apply(y_distn, c(1, 2), sd)
-  if (num_chains > 1) {
-    pred_mean <- split.data.frame(pred_mean, gl(num_chains, n_ahead))
-    pred_mean <- Reduce("+", pred_mean) / num_chains
-    lower_quantile <- split.data.frame(lower_quantile, gl(num_chains, n_ahead))
-    lower_quantile <- Reduce("+", lower_quantile) / num_chains
-    upper_quantile <- split.data.frame(upper_quantile, gl(num_chains, n_ahead))
-    upper_quantile <- Reduce("+", upper_quantile) / num_chains
-    est_se <- split.data.frame(est_se, gl(num_chains, n_ahead))
-    est_se <- Reduce("+", est_se) / num_chains
-  }
-  colnames(pred_mean) <- var_names
-  colnames(lower_quantile) <- var_names
-  colnames(upper_quantile) <- var_names
-  colnames(est_se) <- var_names
-  res <- list(
-    process = object$process,
-    forecast = pred_mean,
-    se = est_se,
-    lower = lower_quantile,
-    upper = upper_quantile,
-    lower_joint = lower_quantile,
-    upper_joint = upper_quantile,
-    y = object$y
-  )
-  class(res) <- "predbvhar"
-  res
-}
-
-#' @rdname predict
-#' 
-#' @param object Model object
-#' @param n_ahead step to forecast
-#' @param level Specify alpha of confidence interval level 100(1 - alpha) percentage. By default, .05.
-#' @param ... not used
-#' @importFrom posterior subset_draws as_draws_matrix
-#' @importFrom stats quantile
-#' @order 1
-#' @export
-predict.bvarhs <- function(object, n_ahead, level = .05, ...) {
-  deprecate_warn("2.0.1", "predict.bvarhs()")
-  num_chains <- object$chain
-  alpha_record <- as_draws_matrix(subset_draws(object$param, variable = "alpha"))
-  pred_res <- forecast_bvarhs_deprecate(
-    num_chains,
-    object$p,
-    n_ahead,
-    object$y0,
-    object$df,
-    alpha_record,
-    as.numeric(as_draws_matrix(subset_draws(object$param, variable = "sigma")))
-  )
-  dim_data <- object$m
-  var_names <- colnames(object$y0)
-  # Predictive distribution------------------------------------
-  num_step <- nrow(alpha_record) / num_chains
-  y_distn <-
-    pred_res %>%
-    array(dim = c(n_ahead * num_chains, dim_data, num_step))
-  pred_mean <- apply(y_distn, c(1, 2), mean)
-  lower_quantile <- apply(y_distn, c(1, 2), quantile, probs = level / 2)
-  upper_quantile <- apply(y_distn, c(1, 2), quantile, probs = (1 - level / 2))
-  est_se <- apply(y_distn, c(1, 2), sd)
-  if (num_chains > 1) {
-    pred_mean <- split.data.frame(pred_mean, gl(num_chains, n_ahead))
-    pred_mean <- Reduce("+", pred_mean) / num_chains
-    lower_quantile <- split.data.frame(lower_quantile, gl(num_chains, n_ahead))
-    lower_quantile <- Reduce("+", lower_quantile) / num_chains
-    upper_quantile <- split.data.frame(upper_quantile, gl(num_chains, n_ahead))
-    upper_quantile <- Reduce("+", upper_quantile) / num_chains
-    est_se <- split.data.frame(est_se, gl(num_chains, n_ahead))
-    est_se <- Reduce("+", est_se) / num_chains
-  }
-  colnames(lower_quantile) <- var_names
-  colnames(upper_quantile) <- var_names
-  colnames(pred_mean) <- var_names
-  colnames(est_se) <- var_names
-  res <- list(
-    process = object$process,
-    forecast = pred_mean,
-    se = est_se,
-    lower = lower_quantile,
-    upper = upper_quantile,
-    lower_joint = lower_quantile,
-    upper_joint = upper_quantile,
-    y = object$y
-  )
-  class(res) <- c("predsp", "predbvhar")
-  res
-}
-
-#' @rdname predict
-#' 
-#' @param object Model object
-#' @param n_ahead step to forecast
-#' @param level Specify alpha of confidence interval level 100(1 - alpha) percentage. By default, .05.
-#' @param ... not used
-#' @importFrom posterior subset_draws as_draws_matrix
-#' @importFrom stats quantile
-#' @order 1
-#' @export
-predict.bvharhs <- function(object, n_ahead, level = .05, ...) {
-  deprecate_warn("2.0.1", "predict.bvharhs()")
-  num_chains <- object$chain
-  phi_record <- as_draws_matrix(subset_draws(object$param, variable = "phi"))
-  pred_res <- forecast_bvharhs_deprecate(
-    num_chains,
-    object$month,
-    n_ahead,
-    object$y0,
-    object$HARtrans,
-    phi_record,
-    as.numeric(as_draws_matrix(subset_draws(object$param, variable = "sigma")))
-  )
-  dim_data <- object$m
-  var_names <- colnames(object$y0)
-  # Predictive distribution------------------------------------
-  num_step <- nrow(phi_record) / num_chains
-  y_distn <-
-    pred_res %>% 
-    # pred_res$predictive %>%
-    array(dim = c(n_ahead * num_chains, dim_data, num_step))
-  pred_mean <- apply(y_distn, c(1, 2), mean)
-  lower_quantile <- apply(y_distn, c(1, 2), quantile, probs = level / 2)
-  upper_quantile <- apply(y_distn, c(1, 2), quantile, probs = (1 - level / 2))
-  est_se <- apply(y_distn, c(1, 2), sd)
-  if (num_chains > 1) {
-    pred_mean <- split.data.frame(pred_mean, gl(num_chains, n_ahead))
-    pred_mean <- Reduce("+", pred_mean) / num_chains
-    lower_quantile <- split.data.frame(lower_quantile, gl(num_chains, n_ahead))
-    lower_quantile <- Reduce("+", lower_quantile) / num_chains
-    upper_quantile <- split.data.frame(upper_quantile, gl(num_chains, n_ahead))
-    upper_quantile <- Reduce("+", upper_quantile) / num_chains
-    est_se <- split.data.frame(est_se, gl(num_chains, n_ahead))
-    est_se <- Reduce("+", est_se) / num_chains
-  }
-  colnames(pred_mean) <- var_names
-  colnames(lower_quantile) <- var_names
-  colnames(upper_quantile) <- var_names
-  colnames(est_se) <- var_names
-  res <- list(
-    process = object$process,
-    forecast = pred_mean,
-    se = est_se,
-    lower = lower_quantile,
-    upper = upper_quantile,
-    lower_joint = lower_quantile,
-    upper_joint = upper_quantile,
-    y = object$y
-  )
-  class(res) <- c("predsp", "predbvhar")
-  res
-}
-
-#' @rdname predict
-#' @param object Model object
-#' @param n_ahead step to forecast
-#' @param level Specify alpha of confidence interval level 100(1 - alpha) percentage. By default, .05.
+#' @param newxreg New values for exogenous variables.
+#' Should have the same row numbers with `n_ahead`.
+#' @param stable `r lifecycle::badge("experimental")` Filter only stable coefficient draws in MCMC records.
 #' @param num_thread Number of threads
 #' @param sparse `r lifecycle::badge("experimental")` Apply restriction. By default, `FALSE`.
 #' Give CI level (e.g. `.05`) instead of `TRUE` to use credible interval across MCMC for restriction.
+#' @param med `r lifecycle::badge("experimental")` If `TRUE`, use median of forecast draws instead of mean (default).
 #' @param warn Give warning for stability of each coefficients record. By default, `FALSE`.
 #' @param ... not used
 #' @references Korobilis, D. (2013). *VAR FORECASTING USING BAYESIAN VARIABLE SELECTION*. Journal of Applied Econometrics, 28(2).
 #' @importFrom posterior subset_draws as_draws_matrix
+#' @importFrom stats median
 #' @order 1
 #' @export
-predict.bvarldlt <- function(object, n_ahead, level = .05, num_thread = 1, sparse = FALSE, warn = FALSE, ...) {
+predict.bvarldlt <- function(object, n_ahead, level = .05, newxreg, stable = FALSE, num_thread = 1, sparse = FALSE, med = FALSE, warn = FALSE, ...) {
   dim_data <- object$m
   num_chains <- object$chain
   alpha_record <- as_draws_matrix(subset_draws(object$param, variable = "alpha"))
@@ -663,13 +443,11 @@ predict.bvarldlt <- function(object, n_ahead, level = .05, num_thread = 1, spars
       alpha_record,
       1,
       function(x) {
-        all(
-          matrix(x, ncol = object$m) %>%
-            compute_stablemat() %>%
-            eigen() %>%
-            .$values %>%
-            Mod() < 1
-        )
+        eigen_vals <-
+          matrix(x, ncol = object$m) |>
+          compute_stablemat() |>
+          eigen()
+        all(Mod(eigen_vals$values) < 1)
       }
     )
     if (any(!is_stable)) {
@@ -685,53 +463,69 @@ predict.bvarldlt <- function(object, n_ahead, level = .05, num_thread = 1, spars
   if (num_thread > num_chains && num_chains != 1) {
     warning("'num_thread' > 'num_chains' will not use every thread. Specify as 'num_thread' <= 'num_chains'.")
   }
-  prior_nm <- object$spec$prior
+  # prior_nm <- object$spec$prior
   # ci_lev <- NULL
-  ci_lev <- .05
+  ci_lev <- 0
   if (is.numeric(sparse)) {
     ci_lev <- sparse
-    sparse <- TRUE
-    prior_nm <- "ci"
+    sparse <- FALSE
+    # prior_nm <- "ci"
   }
-  fit_ls <- lapply(
-    object$param_names,
-    function(x) {
-      subset_draws(object$param, variable = x) %>%
-        as_draws_matrix() %>%
-        split.data.frame(gl(num_chains, nrow(object$param) / num_chains))
-    }
-  ) %>%
-    setNames(paste(object$param_names, "record", sep = "_"))
-  prior_type <- switch(prior_nm,
-    "ci" = 0,
-    "Minnesota" = 1,
-    "SSVS" = 2,
-    "Horseshoe" = 3,
-    "MN_Hierarchical" = 4,
-    "NG" = 5,
-    "DL" = 6
-  )
-  pred_res <- forecast_bvarldlt(
-    num_chains,
-    object$p,
-    n_ahead,
-    object$y0,
-    sparse,
-    ci_lev,
-    fit_ls,
-    prior_type,
-    sample.int(.Machine$integer.max, size = num_chains),
-    object$type == "const",
-    num_thread
-  )
+  fit_ls <- get_records(object, TRUE)
+  # prior_type <- switch(prior_nm,
+  #   "ci" = 0,
+  #   "Minnesota" = 1,
+  #   "SSVS" = 2,
+  #   "Horseshoe" = 3,
+  #   "MN_Hierarchical" = 4,
+  #   "NG" = 5,
+  #   "DL" = 6,
+  #   "GDP" = 7
+  # )
+  if (!is.null(eval.parent(object$call$exogen))) {
+    newxreg <- validate_newxreg(newxreg = newxreg, n_ahead = n_ahead)
+    pred_res <- forecast_bvarxldlt(
+      num_chains = num_chains,
+      var_lag = object$p,
+      step = n_ahead,
+      response_mat = object$y,
+      sparse = sparse,
+      level = ci_lev,
+      fit_record = fit_ls,
+      seed_chain = sample.int(.Machine$integer.max, size = num_chains),
+      include_mean = object$type == "const",
+      exogen = rbind(tail(object$exogen_data, object$s), newxreg),
+      exogen_lag = object$s,
+      stable = stable,
+      nthreads = num_thread
+    )
+  } else {
+    pred_res <- forecast_bvarldlt(
+      num_chains = num_chains,
+      var_lag = object$p,
+      step = n_ahead,
+      response_mat = object$y,
+      sparse = sparse,
+      level = ci_lev,
+      fit_record = fit_ls,
+      seed_chain = sample.int(.Machine$integer.max, size = num_chains),
+      include_mean = object$type == "const",
+      stable = stable,
+      nthreads = num_thread
+    )
+  }
   var_names <- colnames(object$y0)
   # Predictive distribution------------------------------------
   num_draw <- nrow(alpha_record) # concatenate multiple chains
   y_distn <-
-    pred_res %>%
-    unlist() %>%
+    pred_res |>
+    unlist() |>
     array(dim = c(n_ahead, dim_data, num_draw))
-  pred_mean <- apply(y_distn, c(1, 2), mean)
+  if (med) {
+    pred_mean <- apply(y_distn, c(1, 2), median)
+  } else {
+    pred_mean <- apply(y_distn, c(1, 2), mean)
+  }
   lower_quantile <- apply(y_distn, c(1, 2), quantile, probs = level / 2)
   upper_quantile <- apply(y_distn, c(1, 2), quantile, probs = (1 - level / 2))
   est_se <- apply(y_distn, c(1, 2), sd)
@@ -758,15 +552,19 @@ predict.bvarldlt <- function(object, n_ahead, level = .05, num_thread = 1, spars
 #' @param object Model object
 #' @param n_ahead step to forecast
 #' @param level Specify alpha of confidence interval level 100(1 - alpha) percentage. By default, .05.
+#' @param newxreg New values for exogenous variables.
+#' Should have the same row numbers with `n_ahead`.
+#' @param stable `r lifecycle::badge("experimental")` Filter only stable coefficient draws in MCMC records.
 #' @param num_thread Number of threads
 #' @param sparse `r lifecycle::badge("experimental")` Apply restriction. By default, `FALSE`.
 #' Give CI level (e.g. `.05`) instead of `TRUE` to use credible interval across MCMC for restriction.
+#' @param med `r lifecycle::badge("experimental")` If `TRUE`, use median of forecast draws instead of mean (default).
 #' @param warn Give warning for stability of each coefficients record. By default, `FALSE`.
 #' @param ... not used
 #' @importFrom posterior subset_draws as_draws_matrix
 #' @order 1
 #' @export
-predict.bvharldlt <- function(object, n_ahead, level = .05, num_thread = 1, sparse = FALSE, warn = FALSE, ...) {
+predict.bvharldlt <- function(object, n_ahead, level = .05, newxreg, stable = FALSE, num_thread = 1, sparse = FALSE, med = FALSE, warn = FALSE, ...) {
   dim_data <- object$m
   num_chains <- object$chain
   phi_record <- as_draws_matrix(subset_draws(object$param, variable = "phi"))
@@ -776,13 +574,11 @@ predict.bvharldlt <- function(object, n_ahead, level = .05, num_thread = 1, spar
       1,
       function(x) {
         coef <- t(object$HARtrans[1:(object$p * dim_data), 1:(object$month * dim_data)]) %*% matrix(x, ncol = object$m)
-        all(
-          coef %>%
-            compute_stablemat() %>%
-            eigen() %>%
-            .$values %>%
-            Mod() < 1
-        )
+        eigen_vals <-
+          coef |>
+          compute_stablemat() |>
+          eigen()
+        all(Mod(eigen_vals$values) < 1)
       }
     )
     if (any(!is_stable)) {
@@ -798,53 +594,70 @@ predict.bvharldlt <- function(object, n_ahead, level = .05, num_thread = 1, spar
   if (num_thread > num_chains && num_chains != 1) {
     warning("'num_thread' > 'num_chains' will not use every thread. Specify as 'num_thread' <= 'num_chains'.")
   }
-  prior_nm <- object$spec$prior
-  ci_lev <- .05
+  # prior_nm <- object$spec$prior
+  ci_lev <- 0
   if (is.numeric(sparse)) {
     ci_lev <- sparse
-    sparse <- TRUE
-    prior_nm <- "ci"
+    sparse <- FALSE
+    # prior_nm <- "ci"
   }
-  fit_ls <- lapply(
-    object$param_names,
-    function(x) {
-      subset_draws(object$param, variable = x) %>%
-        as_draws_matrix() %>%
-        split.data.frame(gl(num_chains, nrow(object$param) / num_chains))
-    }
-  ) %>%
-    setNames(paste(object$param_names, "record", sep = "_"))
-  prior_type <- switch(prior_nm,
-    "ci" = 0,
-    "Minnesota" = 1,
-    "SSVS" = 2,
-    "Horseshoe" = 3,
-    "MN_Hierarchical" = 4,
-    "NG" = 5,
-    "DL" = 6
-  )
-  pred_res <- forecast_bvharldlt(
-    num_chains,
-    object$month,
-    n_ahead,
-    object$y0,
-    object$HARtrans,
-    sparse,
-    ci_lev,
-    fit_ls,
-    prior_type,
-    sample.int(.Machine$integer.max, size = num_chains),
-    object$type == "const",
-    num_thread
-  )
+  fit_ls <- get_records(object, TRUE)
+  # prior_type <- switch(prior_nm,
+  #   "ci" = 0,
+  #   "Minnesota" = 1,
+  #   "SSVS" = 2,
+  #   "Horseshoe" = 3,
+  #   "MN_Hierarchical" = 4,
+  #   "NG" = 5,
+  #   "DL" = 6,
+  #   "GDP" = 7
+  # )
+  if (!is.null(eval.parent(object$call$exogen))) {
+    newxreg <- validate_newxreg(newxreg = newxreg, n_ahead = n_ahead)
+    pred_res <- forecast_bvharxldlt(
+      num_chains = num_chains,
+      month = object$month,
+      step = n_ahead,
+      response_mat = object$y,
+      HARtrans = object$HARtrans,
+      sparse = sparse,
+      level = ci_lev,
+      fit_record = fit_ls,
+      seed_chain = sample.int(.Machine$integer.max, size = num_chains),
+      include_mean = object$type == "const",
+      exogen = rbind(tail(object$exogen_data, object$s), newxreg),
+      exogen_lag = object$s,
+      stable = stable,
+      nthreads = num_thread
+    )
+  } else {
+    pred_res <- forecast_bvharldlt(
+      num_chains = num_chains,
+      month = object$month,
+      step = n_ahead,
+      response_mat = object$y,
+      HARtrans = object$HARtrans,
+      sparse = sparse,
+      level = ci_lev,
+      fit_record = fit_ls,
+      seed_chain = sample.int(.Machine$integer.max, size = num_chains),
+      include_mean = object$type == "const",
+      stable = stable,
+      nthreads = num_thread
+    )
+  }
   var_names <- colnames(object$y0)
   # Predictive distribution------------------------------------
   num_draw <- nrow(phi_record) # concatenate multiple chains
   y_distn <-
-    pred_res %>% 
-    unlist() %>% 
+    pred_res |> 
+    unlist() |> 
     array(dim = c(n_ahead, dim_data, num_draw))
-  pred_mean <- apply(y_distn, c(1, 2), mean)
+  if (med) {
+    pred_mean <- apply(y_distn, c(1, 2), median)
+  } else {
+    pred_mean <- apply(y_distn, c(1, 2), mean)
+  }
   lower_quantile <- apply(y_distn, c(1, 2), quantile, probs = level / 2)
   upper_quantile <- apply(y_distn, c(1, 2), quantile, probs = (1 - level / 2))
   est_se <- apply(y_distn, c(1, 2), sd)
@@ -871,10 +684,14 @@ predict.bvharldlt <- function(object, n_ahead, level = .05, num_thread = 1, spar
 #' @param object Model object
 #' @param n_ahead step to forecast
 #' @param level Specify alpha of confidence interval level 100(1 - alpha) percentage. By default, .05.
+#' @param newxreg New values for exogenous variables.
+#' Should have the same row numbers with `n_ahead`.
+#' @param stable `r lifecycle::badge("experimental")` Filter only stable coefficient draws in MCMC records.
 #' @param num_thread Number of threads
 #' @param use_sv Use SV term
 #' @param sparse `r lifecycle::badge("experimental")` Apply restriction. By default, `FALSE`.
 #' Give CI level (e.g. `.05`) instead of `TRUE` to use credible interval across MCMC for restriction.
+#' @param med `r lifecycle::badge("experimental")` If `TRUE`, use median of forecast draws instead of mean (default).
 #' @param warn Give warning for stability of each coefficients record. By default, `FALSE`.
 #' @param ... not used
 #' @references
@@ -884,7 +701,7 @@ predict.bvharldlt <- function(object, n_ahead, level = .05, num_thread = 1, spar
 #' @importFrom posterior subset_draws as_draws_matrix
 #' @order 1
 #' @export
-predict.bvarsv <- function(object, n_ahead, level = .05, num_thread = 1, use_sv = TRUE, sparse = FALSE, warn = FALSE, ...) {
+predict.bvarsv <- function(object, n_ahead, level = .05, newxreg, stable = FALSE, num_thread = 1, use_sv = TRUE, sparse = FALSE, med = FALSE, warn = FALSE, ...) {
   dim_data <- object$m
   num_chains <- object$chain
   alpha_record <- as_draws_matrix(subset_draws(object$param, variable = "alpha"))
@@ -893,13 +710,11 @@ predict.bvarsv <- function(object, n_ahead, level = .05, num_thread = 1, use_sv 
       alpha_record,
       1,
       function(x) {
-        all(
-          matrix(x, ncol = object$m) %>%
-            compute_stablemat() %>%
-            eigen() %>%
-            .$values %>%
-            Mod() < 1
-        )
+        eigen_vals <-
+          matrix(x, ncol = object$m) |>
+          compute_stablemat() |>
+          eigen()
+        all(Mod(eigen_vals$values) < 1)
       }
     )
     if (any(!is_stable)) {
@@ -915,54 +730,71 @@ predict.bvarsv <- function(object, n_ahead, level = .05, num_thread = 1, use_sv 
   if (num_thread > num_chains && num_chains != 1) {
     warning("'num_thread' > 'num_chains' will not use every thread. Specify as 'num_thread' <= 'num_chains'.")
   }
-  prior_nm <- object$spec$prior
+  # prior_nm <- object$spec$prior
   # ci_lev <- NULL
-  ci_lev <- .05
+  ci_lev <- 0
   if (is.numeric(sparse)) {
     ci_lev <- sparse
-    sparse <- TRUE
-    prior_nm <- "ci"
+    sparse <- FALSE
+    # prior_nm <- "ci"
   }
-  fit_ls <- lapply(
-    object$param_names,
-    function(x) {
-      subset_draws(object$param, variable = x) %>%
-        as_draws_matrix() %>%
-        split.data.frame(gl(num_chains, nrow(object$param) / num_chains))
-    }
-  ) %>%
-    setNames(paste(object$param_names, "record", sep = "_"))
-  prior_type <- switch(prior_nm,
-    "ci" = 0,
-    "Minnesota" = 1,
-    "SSVS" = 2,
-    "Horseshoe" = 3,
-    "MN_Hierarchical" = 4,
-    "NG" = 5,
-    "DL" = 6
-  )
-  pred_res <- forecast_bvarsv(
-    num_chains,
-    object$p,
-    n_ahead,
-    object$y0,
-    use_sv,
-    sparse,
-    ci_lev,
-    fit_ls,
-    prior_type,
-    sample.int(.Machine$integer.max, size = num_chains),
-    object$type == "const",
-    num_thread
-  )
+  fit_ls <- get_records(object, TRUE)
+  # prior_type <- switch(prior_nm,
+  #   "ci" = 0,
+  #   "Minnesota" = 1,
+  #   "SSVS" = 2,
+  #   "Horseshoe" = 3,
+  #   "MN_Hierarchical" = 4,
+  #   "NG" = 5,
+  #   "DL" = 6,
+  #   "GDP" = 7
+  # )
+  if (!is.null(eval.parent(object$call$exogen))) {
+    newxreg <- validate_newxreg(newxreg = newxreg, n_ahead = n_ahead)
+    pred_res <- forecast_bvarxsv(
+      num_chains = num_chains,
+      var_lag = object$p,
+      step = n_ahead,
+      response_mat = object$y,
+      sv = use_sv,
+      sparse = sparse,
+      level = ci_lev,
+      fit_record = fit_ls,
+      seed_chain = sample.int(.Machine$integer.max, size = num_chains),
+      include_mean = object$type == "const",
+      exogen = rbind(tail(object$exogen_data, object$s), newxreg),
+      exogen_lag = object$s,
+      stable = stable,
+      nthreads = num_thread
+    )
+  } else {
+    pred_res <- forecast_bvarsv(
+      num_chains = num_chains,
+      var_lag = object$p,
+      step = n_ahead,
+      response_mat = object$y,
+      sv = use_sv,
+      sparse = sparse,
+      level = ci_lev,
+      fit_record = fit_ls,
+      seed_chain = sample.int(.Machine$integer.max, size = num_chains),
+      include_mean = object$type == "const",
+      stable = stable,
+      nthreads = num_thread
+    )
+  }
   var_names <- colnames(object$y0)
   # Predictive distribution------------------------------------
   num_draw <- nrow(alpha_record) # concatenate multiple chains
   y_distn <-
-    pred_res %>% 
-    unlist() %>% 
+    pred_res |> 
+    unlist() |> 
     array(dim = c(n_ahead, dim_data, num_draw))
-  pred_mean <- apply(y_distn, c(1, 2), mean)
+  if (med) {
+    pred_mean <- apply(y_distn, c(1, 2), median)
+  } else {
+    pred_mean <- apply(y_distn, c(1, 2), mean)
+  }
   lower_quantile <- apply(y_distn, c(1, 2), quantile, probs = level / 2)
   upper_quantile <- apply(y_distn, c(1, 2), quantile, probs = (1 - level / 2))
   est_se <- apply(y_distn, c(1, 2), sd)
@@ -989,16 +821,20 @@ predict.bvarsv <- function(object, n_ahead, level = .05, num_thread = 1, use_sv 
 #' @param object Model object
 #' @param n_ahead step to forecast
 #' @param level Specify alpha of confidence interval level 100(1 - alpha) percentage. By default, .05.
+#' @param newxreg New values for exogenous variables.
+#' Should have the same row numbers with `n_ahead`.
+#' @param stable `r lifecycle::badge("experimental")` Filter only stable coefficient draws in MCMC records.
 #' @param num_thread Number of threads
 #' @param use_sv Use SV term
 #' @param sparse `r lifecycle::badge("experimental")` Apply restriction. By default, `FALSE`.
 #' Give CI level (e.g. `.05`) instead of `TRUE` to use credible interval across MCMC for restriction.
+#' @param med `r lifecycle::badge("experimental")` If `TRUE`, use median of forecast draws instead of mean (default).
 #' @param warn Give warning for stability of each coefficients record. By default, `FALSE`.
 #' @param ... not used
 #' @importFrom posterior subset_draws as_draws_matrix
 #' @order 1
 #' @export
-predict.bvharsv <- function(object, n_ahead, level = .05, num_thread = 1, use_sv = TRUE, sparse = FALSE, warn = FALSE, ...) {
+predict.bvharsv <- function(object, n_ahead, level = .05, newxreg, stable = FALSE, num_thread = 1, use_sv = TRUE, sparse = FALSE, med = FALSE, warn = FALSE, ...) {
   dim_data <- object$m
   num_chains <- object$chain
   phi_record <- as_draws_matrix(subset_draws(object$param, variable = "phi"))
@@ -1008,13 +844,11 @@ predict.bvharsv <- function(object, n_ahead, level = .05, num_thread = 1, use_sv
       1,
       function(x) {
         coef <- t(object$HARtrans[1:(object$p * dim_data), 1:(object$month * dim_data)]) %*% matrix(x, ncol = object$m)
-        all(
-          coef %>%
-            compute_stablemat() %>%
-            eigen() %>%
-            .$values %>%
-            Mod() < 1
-        )
+        eigen_vals <-
+          coef |>
+          compute_stablemat() |>
+          eigen()
+        all(Mod(eigen_vals$values) < 1)
       }
     )
     if (any(!is_stable)) {
@@ -1030,55 +864,72 @@ predict.bvharsv <- function(object, n_ahead, level = .05, num_thread = 1, use_sv
   if (num_thread > num_chains && num_chains != 1) {
     warning("'num_thread' > 'num_chains' will not use every thread. Specify as 'num_thread' <= 'num_chains'.")
   }
-  prior_nm <- object$spec$prior
+  # prior_nm <- object$spec$prior
   # ci_lev <- NULL
-  ci_lev <- .05
+  ci_lev <- 0
   if (is.numeric(sparse)) {
     ci_lev <- sparse
-    sparse <- TRUE
-    prior_nm <- "ci"
+    sparse <- FALSE
+    # prior_nm <- "ci"
   }
-  fit_ls <- lapply(
-    object$param_names,
-    function(x) {
-      subset_draws(object$param, variable = x) %>%
-        as_draws_matrix() %>%
-        split.data.frame(gl(num_chains, nrow(object$param) / num_chains))
-    }
-  ) %>%
-    setNames(paste(object$param_names, "record", sep = "_"))
-  prior_type <- switch(prior_nm,
-    "ci" = 0,
-    "Minnesota" = 1,
-    "SSVS" = 2,
-    "Horseshoe" = 3,
-    "MN_Hierarchical" = 4,
-    "NG" = 5,
-    "DL" = 6
-  )
-  pred_res <- forecast_bvharsv(
-    num_chains,
-    object$month,
-    n_ahead,
-    object$y0,
-    object$HARtrans,
-    use_sv,
-    sparse,
-    ci_lev,
-    fit_ls,
-    prior_type,
-    sample.int(.Machine$integer.max, size = num_chains),
-    object$type == "const",
-    num_thread
-  )
+  fit_ls <- get_records(object, TRUE)
+  # prior_type <- switch(prior_nm,
+  #   "ci" = 0,
+  #   "Minnesota" = 1,
+  #   "SSVS" = 2,
+  #   "Horseshoe" = 3,
+  #   "MN_Hierarchical" = 4,
+  #   "NG" = 5,
+  #   "DL" = 6,
+  #   "GDP" = 7
+  # )
+  if (!is.null(eval.parent(object$call$exogen))) {
+    newxreg <- validate_newxreg(newxreg = newxreg, n_ahead = n_ahead)
+    pred_res <- forecast_bvharxsv(
+      num_chains = num_chains,
+      month = object$month,
+      step = n_ahead,
+      response_mat = object$y,
+      HARtrans = object$HARtrans,
+      sv = use_sv,
+      sparse = sparse,
+      level = ci_lev,
+      fit_record = fit_ls,
+      seed_chain = sample.int(.Machine$integer.max, size = num_chains),
+      include_mean = object$type == "const",
+      exogen = rbind(tail(object$exogen_data, object$s), newxreg),
+      exogen_lag = object$s,
+      stable = stable,
+      nthreads = num_thread
+    )
+  } else {
+    pred_res <- forecast_bvharsv(
+      num_chains = num_chains,
+      month = object$month,
+      step = n_ahead,
+      response_mat = object$y,
+      sv = use_sv,
+      sparse = sparse,
+      level = ci_lev,
+      fit_record = fit_ls,
+      seed_chain = sample.int(.Machine$integer.max, size = num_chains),
+      include_mean = object$type == "const",
+      stable = stable,
+      nthreads = num_thread
+    )
+  }
   var_names <- colnames(object$y0)
   # Predictive distribution------------------------------------
   num_draw <- nrow(phi_record) # concatenate multiple chains
   y_distn <-
-    pred_res %>% 
-    unlist() %>% 
+    pred_res |> 
+    unlist() |> 
     array(dim = c(n_ahead, dim_data, num_draw))
-  pred_mean <- apply(y_distn, c(1, 2), mean)
+  if (med) {
+    pred_mean <- apply(y_distn, c(1, 2), median)
+  } else {
+    pred_mean <- apply(y_distn, c(1, 2), mean)
+  }
   lower_quantile <- apply(y_distn, c(1, 2), quantile, probs = level / 2)
   upper_quantile <- apply(y_distn, c(1, 2), quantile, probs = (1 - level / 2))
   est_se <- apply(y_distn, c(1, 2), sd)

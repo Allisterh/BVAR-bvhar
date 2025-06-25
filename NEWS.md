@@ -1,3 +1,93 @@
+# bvhar 2.3.0
+
+* Requires `R >= 4.2` due to Rtools 4.0 error with optional parameters in C++.
+
+* Changed `bayes_spec` argument into `coef_spec` and `contem_spec` to enable different priors
+
+* Added `mcmc` option in `forecast_roll()` and `forecast_expand()` for `ldltmod` and `svmod` classes.
+
+## Exogenous variables
+
+* `var_lm()` and `vhar_lm()` can run VARX and VHARX via `exogen` and `s`.
+
+* `var_bayes()` and `vhar_bayes()` can run Bayesian VARX and VHARX via `exogen`, `s`, and `exogen_spec`.
+
+* `exogen_spec` determines the prior for the exogenous term.
+
+* When forecasting these VARX and VHARX models, `predict()` requires `newxreg`.
+
+## Internal changes (C++)
+
+* Added `shrinkage` headers for strategy design pattern.
+
+* Added `McmcParams`, `McmcAlgo`, and `McmcRun` (changed original `McmcRun` to `CtaRun`) for extensibility of MCMC algorithms.
+
+* Also added base forecaster classes.
+
+* Changed the way OLS spillover classes work.
+
+* Added `OlsSpilloverRun` and `OlsDynamicSpillover` for volatility spillover in OLS.
+
+* If defining `USE_BVHAR_DEBUG` macro variable when compiling, users can see debug messages.
+
+# bvhar 2.2.2
+
+* Fix `unlist()` error in print methods for `r-devel` (4.5.0).
+
+# bvhar 2.2.1
+
+# bvhar 2.2.0
+
+* Requires `R >= 4.1` following [tidyverse R version support schedule](https://www.tidyverse.org/blog/2019/04/r-version-support/)
+
+* `stable = TRUE` can filter MCMC draws where coefficient is stable when forecasting.
+
+* Changed Eigen and boost assertion behavior (`eigen_assert` and `BOOST_ASSERT`) to give error instead of abort.
+
+* Transpose the predictive distribution update loop.
+
+* `med = TRUE` gives median of forecast draws as point forecast.
+
+* `var_bayes()` and `vhar_bayes()` can choose to use only group shrinkage parameters without global parameter with `ggl = FALSE` option.
+
+* `set_gdp()` can use Generalized Double Pareto (GDP) shrinkage prior.
+
+* `alpl()` gives summary of LPL across every horizon.
+
+### Internal changes
+
+* Apply Devroye (2014) to draw GIG instead of Hörmann and Leydold.
+
+* Use `spdlog` (using `RcppSpdlog`) logger instead of custom progress bar (`bvharprogress`).
+
+* Use `RcppThread` to make the logger thread-safe ([eddelbuettel/rcppspdlog#22](https://github.com/eddelbuettel/rcppspdlog/issues/22))
+
+* Use inverse-gamma prior for group parameters in DL.
+
+* SAVS penalty is zero in own-lag.
+
+### Removal or deprecation
+
+* Removed `sim_gig()` R function.
+
+## C++ Header file changes
+
+* Use template to avoid code duplicates among LDLT and SV models.
+
+* Can easily conduct MCMC using `McmcRun` class in C++ source.
+
+* Can easily implement forecasting for LDLT and SV MCMC using `McmcVarforecastRun<>` and `McmcVharforecastRun<>`.
+
+* Can easily use rolling and expanding forecast for LDLT ans SV MCMC using `McmcVarforecastRun<>` and `McmcVharforecastRun<>`.
+
+## Removal of deprecated functions
+
+* Removed bvar_sv() and bvhar_sv().
+
+* Removed bvar_ssvs(), bvhar_ssvs(), init_ssvs(), choose_ssvs(), sim_ssvs_var(), and sim_ssvs_vhar().
+
+* Removed bvar_horseshoe(), bvhar_horseshoe(), sim_horseshoe_var(), and sim_horseshoe_vhar().
+
 # bvhar 2.1.2
 
 * Fix MCMC algorithm for `include_mean = TRUE` case.

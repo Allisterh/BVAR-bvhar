@@ -1,6 +1,7 @@
 # Introduction to bvhar
 
 ``` r
+
 library(bvhar)
 ```
 
@@ -17,6 +18,7 @@ arbitrarily extract a small number of variables: *Gold, crude oil, euro
 currency, and china ETF*.
 
 ``` r
+
 var_idx <- c("GVZCLS", "OVXCLS", "EVZCLS", "VXFXICLS")
 etf <- 
   etf_vix |> 
@@ -48,6 +50,7 @@ In the other vignette, we provide how to perform out-of-sample
 forecasting.
 
 ``` r
+
 h <- 19
 etf_eval <- divide_ts(etf, h) # Try ?divide_ts
 etf_train <- etf_eval$train # train
@@ -68,54 +71,66 @@ m <- ncol(etf)
 
 This package indentifies VAR(p) model by
 
-$$\mathbf{Y}_{t} = \mathbf{c} + {\mathbf{β}}_{1}\mathbf{Y}_{t - 1} + \ldots + {\mathbf{β}}_{p} + \mathbf{Y}_{t - p} + {\mathbf{ϵ}}_{t}$$
+``` math
+\mathbf{Y}_t = \mathbf{c}+ \boldsymbol\beta_1 \mathbf{Y}_{t - 1} + \ldots + \boldsymbol\beta_p +\mathbf{Y}_{t - p} + \boldsymbol\epsilon_t
+```
 
-where ${\mathbf{ϵ}}_{t} \sim N\left( \mathbf{0}_{k},\Sigma_{e} \right)$
+where $`\boldsymbol\epsilon_t \sim N(\mathbf{0}_k, \Sigma_e)`$
 
 ``` r
+
 var_lag <- 5
 ```
 
 The package perform VAR(p = 5) based on
 
-$$Y_{0} = X_{0}A + Z$$
+``` math
+Y_0 = X_0 A + Z
+```
 
 where
 
-$$Y_{0} = \begin{bmatrix}
-\mathbf{y}_{p + 1}^{T} \\
-\mathbf{y}_{p + 2}^{T} \\
-\vdots \\
-\mathbf{y}_{n}^{T}
-\end{bmatrix}_{s \times m} \equiv Y_{p + 1} \in {\mathbb{R}}^{s \times m}$$
+``` math
+Y_0 = \begin{bmatrix}
+  \mathbf{y}_{p + 1}^T \\
+  \mathbf{y}_{p + 2}^T \\
+  \vdots \\
+  \mathbf{y}_n^T
+\end{bmatrix}_{s \times m} \equiv Y_{p + 1} \in \mathbb{R}^{s \times m}
+```
 
 by `build_y0()`
 
 and
 
-$$X_{0} = \begin{bmatrix}
-\mathbf{y}_{p}^{T} & \cdots & \mathbf{y}_{1}^{T} & 1 \\
-\mathbf{y}_{p + 1}^{T} & \cdots & \mathbf{y}_{2}^{T} & 1 \\
-\vdots & \vdots & \cdots & \vdots \\
-\mathbf{y}_{T - 1}^{T} & \cdots & \mathbf{y}_{T - p}^{T} & 1
-\end{bmatrix}_{s \times k} = \begin{bmatrix}
-Y_{p} & Y_{p - 1} & \cdots & \mathbf{1}_{T - p}
-\end{bmatrix} \in {\mathbb{R}}^{s \times k}$$
+``` math
+X_0 = \left[\begin{array}{c|c|c|c}
+  \mathbf{y}_p^T & \cdots & \mathbf{y}_1^T & 1 \\
+  \mathbf{y}_{p + 1}^T & \cdots & \mathbf{y}_2^T & 1 \\
+  \vdots & \vdots & \cdots & \vdots \\
+  \mathbf{y}_{T - 1}^T & \cdots & \mathbf{y}_{T - p}^T & 1
+\end{array}\right]_{s \times k} = \begin{bmatrix}
+  Y_p & Y_{p - 1} & \cdots & \mathbf{1}_{T - p}
+\end{bmatrix} \in \mathbb{R}^{s \times k}
+```
 
 by `build_design()`. Coefficient matrix is the form of
 
-$$A = \begin{bmatrix}
-A_{1}^{T} \\
-\vdots \\
-A_{p}^{T} \\
-\mathbf{c}^{T}
-\end{bmatrix} \in {\mathbb{R}}^{k \times m}$$
+``` math
+A = \begin{bmatrix}
+  A_1^T \\
+  \vdots \\
+  A_p^T \\
+  \mathbf{c}^T
+\end{bmatrix} \in \mathbb{R}^{k \times m}
+```
 
 This form also corresponds to the other model. Use `var_lm(y, p)` to
 model VAR(p). You can specify `type = "none"` to get model without
 constant term.
 
 ``` r
+
 (fit_var <- var_lm(y = etf_train, p = var_lag))
 #> Call:
 #> var_lm(y = etf_train, p = var_lag)
@@ -175,6 +190,7 @@ constant term.
 The package provide `S3` object.
 
 ``` r
+
 # class---------------
 class(fit_var)
 #> [1] "varlse"   "olsmod"   "bvharmod"
@@ -193,60 +209,77 @@ names(fit_var)
 
 Consider Vector HAR (VHAR) model.
 
-$$\mathbf{Y}_{t} = \mathbf{c} + \Phi^{(d)} + \mathbf{Y}_{t - 1} + \Phi^{(w)}\mathbf{Y}_{t - 1}^{(w)} + \Phi^{(m)}\mathbf{Y}_{t - 1}^{(m)} + {\mathbf{ϵ}}_{t}$$
+``` math
+\mathbf{Y}_t = \mathbf{c}+ \Phi^{(d)} + \mathbf{Y}_{t - 1} + \Phi^{(w)} \mathbf{Y}_{t - 1}^{(w)} + \Phi^{(m)} \mathbf{Y}_{t - 1}^{(m)} + \boldsymbol\epsilon_t
+```
 
-where $\mathbf{Y}_{t}$ is daily RV and
+where $`\mathbf{Y}_t`$ is daily RV and
 
-$$\mathbf{Y}_{t}^{(w)} = \frac{1}{5}\left( \mathbf{Y}_{t} + \cdots + \mathbf{Y}_{t - 4} \right)$$
+``` math
+\mathbf{Y}_t^{(w)} = \frac{1}{5} \left( \mathbf{Y}_t + \cdots + \mathbf{Y}_{t - 4} \right)
+```
 
 is weekly RV
 
 and
 
-$$\mathbf{Y}_{t}^{(m)} = \frac{1}{22}\left( \mathbf{Y}_{t} + \cdots + \mathbf{Y}_{t - 21} \right)$$
+``` math
+\mathbf{Y}_t^{(m)} = \frac{1}{22} \left( \mathbf{Y}_t + \cdots + \mathbf{Y}_{t - 21} \right)
+```
 
 is monthly RV. This model can be expressed by
 
-$$Y_{0} = X_{1}\Phi + Z$$
+``` math
+Y_0 = X_1 \Phi + Z
+```
 
 where
 
-$$\Phi = \begin{bmatrix}
-\Phi^{{(d)}T} \\
-\Phi^{{(w)}T} \\
-\Phi^{{(m)}T} \\
-\mathbf{c}^{T}
-\end{bmatrix} \in {\mathbb{R}}^{{(3m + 1)} \times m}$$
+``` math
+\Phi = \begin{bmatrix}
+  \Phi^{(d)T} \\
+  \Phi^{(w)T} \\
+  \Phi^{(m)T} \\
+  \mathbf{c}^T
+\end{bmatrix} \in \mathbb{R}^{(3m + 1) \times m}
+```
 
-Let $T$ be
+Let $`T`$ be
 
-$${\mathbb{C}}_{0}: = \begin{bmatrix}
-1 & 0 & \cdots & 0 & 0 & \cdots & 0 \\
-{1/5} & {1/5} & \cdots & {1/5} & 0 & \cdots & 0 \\
-{1/22} & {1/22} & \cdots & {1/22} & {1/22} & \cdots & {1/22}
-\end{bmatrix} \otimes I_{m} \in {\mathbb{R}}^{3m \times 22m}$$
+``` math
+\mathbb{C}_0 \mathpunct{:}=\begin{bmatrix}
+  1 & 0 & \cdots & 0 & 0 & \cdots & 0 \\
+  1 / 5 & 1 / 5 & \cdots & 1 / 5 & 0 & \cdots & 0 \\
+  1 / 22 & 1 / 22 & \cdots & 1 / 22 & 1 / 22 & \cdots & 1 / 22
+\end{bmatrix} \otimes I_m \in \mathbb{R}^{3m \times 22m}
+```
 
-and let ${\mathbb{C}}_{HAR}$ be
+and let $`\mathbb{C}_{HAR}`$ be
 
-$${\mathbb{C}}_{HAR}: = \begin{bmatrix}
-T & \mathbf{0}_{3m} \\
-\mathbf{0}_{3m}^{T} & 1
-\end{bmatrix} \in {\mathbb{R}}^{{(3m + 1)} \times {(22m + 1)}}$$
+``` math
+\mathbb{C}_{HAR} \mathpunct{:}=\left[\begin{array}{c|c}
+  T & \mathbf{0}_{3m} \\ \hline
+  \mathbf{0}_{3m}^T & 1
+\end{array}\right] \in \mathbb{R}^{(3m + 1) \times (22m + 1)}
+```
 
-Then for $X_{0}$ in VAR(p),
+Then for $`X_0`$ in VAR(p),
 
-$$X_{1} = X_{0}{\mathbb{C}}_{HAR}^{T} = \begin{bmatrix}
-\mathbf{y}_{22}^{T} & \mathbf{y}_{22}^{{(w)}T} & \mathbf{y}_{22}^{{(m)}T} & 1 \\
-\mathbf{y}_{23}^{T} & \mathbf{y}_{23}^{{(w)}T} & \mathbf{y}_{23}^{{(m)}T} & 1 \\
-\vdots & \vdots & \vdots & \vdots \\
-\mathbf{y}_{T - 1}^{T} & \mathbf{y}_{T - 1}^{{(w)}T} & \mathbf{y}_{T - 1}^{{(m)}T} & 1
-\end{bmatrix} \in {\mathbb{R}}^{s \times {(3m + 1)}}$$
+``` math
+X_1 = X_0 \mathbb{C}_{HAR}^T = \begin{bmatrix}
+  \mathbf{y}_{22}^T & \mathbf{y}_{22}^{(w)T} & \mathbf{y}_{22}^{(m)T} & 1 \\
+  \mathbf{y}_{23}^T & \mathbf{y}_{23}^{(w)T} & \mathbf{y}_{23}^{(m)T} & 1 \\
+  \vdots & \vdots & \vdots & \vdots \\
+  \mathbf{y}_{T - 1}^T & \mathbf{y}_{T - 1}^{(w)T} & \mathbf{y}_{T - 1}^{(m)T} & 1
+\end{bmatrix} \in \mathbb{R}^{s \times (3m + 1)}
+```
 
-This package fits VHAR by scaling VAR(p) using ${\mathbb{C}}_{HAR}$
+This package fits VHAR by scaling VAR(p) using $`\mathbb{C}_{HAR}`$
 (`scale_har(m, week = 5, month = 22)`). Use `vhar_lm(y)` to fit VHAR.
 You can specify `type = "none"` to get model without constant term.
 
 ``` r
+
 (fit_har <- vhar_lm(y = etf_train))
 #> Call:
 #> vhar_lm(y = etf_train)
@@ -287,6 +320,7 @@ You can specify `type = "none"` to get model without constant term.
 ```
 
 ``` r
+
 # class----------------
 class(fit_har)
 #> [1] "vharlse"  "olsmod"   "bvharmod"
@@ -325,6 +359,7 @@ First specify the prior using
 `set_bvar(sigma, lambda, delta, eps = 1e-04)`.
 
 ``` r
+
 bvar_lag <- 5
 sig <- apply(etf_train, 2, sd) # sigma vector
 lam <- .2 # lambda
@@ -366,6 +401,7 @@ BVAR(p).
   the model.
 
 ``` r
+
 (fit_bvar <- bvar_minnesota(etf_train, bvar_lag, num_iter = 10, bayes_spec = bvar_spec))
 #> Call:
 #> bvar_minnesota(y = etf_train, p = bvar_lag, num_iter = 10, bayes_spec = bvar_spec)
@@ -377,47 +413,47 @@ BVAR(p).
 #> ====================================================
 #> Matrix Normal Mean for A1 part:
 #>           GVZCLS_1  OVXCLS_1  EVZCLS_1  VXFXICLS_1
-#> GVZCLS     4.88014  -0.01828  -0.02181     -0.0446
-#> OVXCLS     0.00939   0.09445   0.03762      0.0190
-#> EVZCLS    -0.01575  -0.05218   4.94569     -0.0343
-#> VXFXICLS   0.00877   0.00741   0.00964      0.2088
+#> GVZCLS     1.86992  -0.00618   -0.0116     -0.0180
+#> OVXCLS     0.01423   0.20436    0.0784      0.0279
+#> EVZCLS    -0.00712  -0.01943    1.9845     -0.0150
+#> VXFXICLS   0.01821   0.01210    0.0257      0.1076
 #> 
 #> 
 #> Matrix Normal Mean for A2 part:
 #>           GVZCLS_2  OVXCLS_2  EVZCLS_2  VXFXICLS_2
-#> GVZCLS    -0.02420  -0.00426  -0.00533    -0.01086
-#> OVXCLS     0.00237   0.02093   0.00934     0.00465
-#> EVZCLS    -0.00386  -0.01308  -0.01171    -0.00844
-#> VXFXICLS   0.00217   0.00181   0.00238     0.00467
+#> GVZCLS    -0.01071  -0.00145  -0.00283    -0.00437
+#> OVXCLS     0.00360   0.02886   0.01947     0.00683
+#> EVZCLS    -0.00174  -0.00488  -0.00705    -0.00370
+#> VXFXICLS   0.00449   0.00295   0.00637     0.00953
 #> 
 #> 
 #> Matrix Normal Mean for A3 part:
-#>            GVZCLS_3   OVXCLS_3  EVZCLS_3  VXFXICLS_3
-#> GVZCLS    -0.010281  -0.001727  -0.00231    -0.00474
-#> OVXCLS     0.001052   0.009221   0.00412     0.00204
-#> EVZCLS    -0.001687  -0.005817  -0.00512    -0.00366
-#> VXFXICLS   0.000933   0.000776   0.00105     0.00199
+#>           GVZCLS_3   OVXCLS_3  EVZCLS_3  VXFXICLS_3
+#> GVZCLS    -0.00452  -0.000581  -0.00123    -0.00191
+#> OVXCLS     0.00159   0.012709   0.00859     0.00300
+#> EVZCLS    -0.00076  -0.002172  -0.00307    -0.00160
+#> VXFXICLS   0.00194   0.001261   0.00279     0.00405
 #> 
 #> 
 #> Matrix Normal Mean for A4 part:
 #>            GVZCLS_4   OVXCLS_4   EVZCLS_4  VXFXICLS_4
-#> GVZCLS    -0.005568  -0.000884  -0.001264    -0.00261
-#> OVXCLS     0.000594   0.005151   0.002305     0.00115
-#> EVZCLS    -0.000933  -0.003275  -0.002839    -0.00203
-#> VXFXICLS   0.000507   0.000421   0.000582     0.00107
+#> GVZCLS    -0.002436  -0.000292  -0.000671   -0.001043
+#> OVXCLS     0.000901   0.007101   0.004803    0.001698
+#> EVZCLS    -0.000421  -0.001225  -0.001703   -0.000882
+#> VXFXICLS   0.001053   0.000681   0.001553    0.002182
 #> 
 #> 
 #> Matrix Normal Mean for A5 part:
 #>            GVZCLS_5   OVXCLS_5   EVZCLS_5  VXFXICLS_5
-#> GVZCLS    -0.003453  -0.000518  -0.000787   -0.001650
-#> OVXCLS     0.000384   0.003279   0.001466    0.000739
-#> EVZCLS    -0.000584  -0.002094  -0.001793   -0.001281
-#> VXFXICLS   0.000316   0.000264   0.000369    0.000665
+#> GVZCLS    -0.001505  -0.000170  -0.000419   -0.000662
+#> OVXCLS     0.000585   0.004522   0.003055    0.001095
+#> EVZCLS    -0.000264  -0.000784  -0.001075   -0.000558
+#> VXFXICLS   0.000655   0.000426   0.000985    0.001353
 #> 
 #> 
 #> Matrix Normal Mean for constant part:
 #>   GVZCLS    OVXCLS    EVZCLS  VXFXICLS  
-#>    -67.7      23.3     -31.7      18.7  
+#>   -14.56     18.74     -7.26     20.33  
 #> 
 #> 
 #> dim(Matrix Normal precision matrix):
@@ -428,10 +464,10 @@ BVAR(p).
 #> ====================================================
 #> IW scale matrix:
 #>           GVZCLS  OVXCLS  EVZCLS  VXFXICLS
-#> GVZCLS    194324  -17716   30107    -16417
-#> OVXCLS    -17716   84591  -51183      7596
-#> EVZCLS     30107  -51183   65294    -13082
-#> VXFXICLS  -16417    7596  -13082      8144
+#> GVZCLS     11524   -3085    1749     -3911
+#> OVXCLS     -3085   65777  -10605      6968
+#> EVZCLS      1749  -10605    4125     -3467
+#> VXFXICLS   -3911    6968   -3467     10071
 #> 
 #> IW degrees of freedom:
 #> [1] 887
@@ -445,6 +481,7 @@ It is `bvarmn` class. For Bayes computation, it also has other class
 such as `normaliw` and `bvharmod`.
 
 ``` r
+
 # class---------------
 class(fit_bvar)
 #> [1] "bvarmn"   "bvharmod" "normaliw"
@@ -468,6 +505,7 @@ Ghosh et al. (2018) provides flat prior for covariance matrix,
 i.e. non-informative. Use `set_bvar_flat(U)`.
 
 ``` r
+
 (flat_spec <- set_bvar_flat(U = 5000 * diag(m * bvar_lag + 1))) # c * I
 #> Model Specification for BVAR
 #> 
@@ -494,6 +532,7 @@ i.e. non-informative. Use `set_bvar_flat(U)`.
 Then `bvar_flat(y, p, bayes_spec, include_mean = TRUE)`:
 
 ``` r
+
 (fit_ghosh <- bvar_flat(etf_train, bvar_lag, num_iter = 10, bayes_spec = flat_spec))
 #> Call:
 #> bvar_flat(y = etf_train, p = bvar_lag, num_iter = 10, bayes_spec = flat_spec)
@@ -567,6 +606,7 @@ Then `bvar_flat(y, p, bayes_spec, include_mean = TRUE)`:
 ```
 
 ``` r
+
 # class---------------
 class(fit_ghosh)
 #> [1] "bvarflat" "normaliw" "bvharmod"
@@ -587,31 +627,35 @@ names(fit_ghosh)
 
 Consider the VAR(22) form of VHAR.
 
-$$\begin{aligned}
-{\mathbf{Y}_{t} = \mathbf{c}} & {+ \left( \Phi^{(d)} + \frac{1}{5}\Phi^{(w)} + \frac{1}{22}\Phi^{(m)} \right)\mathbf{Y}_{t - 1}} \\
- & {+ \left( \frac{1}{5}\Phi^{(w)} + \frac{1}{22}\Phi^{(m)} \right)\mathbf{Y}_{t - 2} + \cdots\left( \frac{1}{5}\Phi^{(w)} + \frac{1}{22}\Phi^{(m)} \right)\mathbf{Y}_{t - 5}} \\
- & {+ \frac{1}{22}\Phi^{(m)}\mathbf{Y}_{t - 6} + \cdots + \frac{1}{22}\Phi^{(m)}\mathbf{Y}_{t - 22}}
-\end{aligned}$$
+``` math
+\begin{aligned}
+  \mathbf{Y}_t = \mathbf{c}& + \left( \Phi^{(d)} + \frac{1}{5} \Phi^{(w)} + \frac{1}{22} \Phi^{(m)} \right) \mathbf{Y}_{t - 1} \\
+  & + \left( \frac{1}{5} \Phi^{(w)} + \frac{1}{22} \Phi^{(m)} \right) \mathbf{Y}_{t - 2} + \cdots \left( \frac{1}{5} \Phi^{(w)} + \frac{1}{22} \Phi^{(m)} \right) \mathbf{Y}_{t - 5} \\
+  & + \frac{1}{22} \Phi^{(m)} \mathbf{Y}_{t - 6} + \cdots + \frac{1}{22} \Phi^{(m)} \mathbf{Y}_{t - 22}
+\end{aligned}
+```
 
 What does Minnesota prior mean in VHAR model?
 
 - All the equations are centered around
-  $\mathbf{Y}_{t} + \mathbf{c} + \Phi^{(d)}\mathbf{Y}_{t - 1} + {\mathbf{ϵ}}_{t}$
-- RW form: shrink diagonal elements of $\Phi^{(d)}$ toward one
-  - $\Phi^{(w)}$ and $\Phi^{(m)}$ to zero
-- WN form: $\delta_{i} = 0$
+  $`\mathbf{Y}_t + \mathbf{c}+ \Phi^{(d)} \mathbf{Y}_{t - 1} + \boldsymbol\epsilon_t`$
+- RW form: shrink diagonal elements of $`\Phi^{(d)}`$ toward one
+  - $`\Phi^{(w)}`$ and $`\Phi^{(m)}`$ to zero
+- WN form: $`\delta_i = 0`$
 
 For more simplicity, write coefficient matrices by
-$\Phi^{(1)},\Phi^{(2)},\Phi^{(3)}$. If we apply the prior in the same
-way, Minnesota moment becomes
+$`\Phi^{(1)}, \Phi^{(2)}, \Phi^{(3)}`$. If we apply the prior in the
+same way, Minnesota moment becomes
 
-$$E\left\lbrack \left( \Phi^{(l)} \right)_{ij} \right\rbrack = \begin{cases}
-\delta_{i} & {j = i,\; l = 1} \\
-0 & {o/w}
-\end{cases}\quad{Var}\left\lbrack \left( \Phi^{(l)} \right)_{ij} \right\rbrack = \begin{cases}
-\frac{\lambda^{2}}{l^{2}} & {j = i} \\
-{\nu\frac{\lambda^{2}}{l^{2}}\frac{\sigma_{i}^{2}}{\sigma_{j}^{2}}} & {o/w}
-\end{cases}$$
+``` math
+E \left[ (\Phi^{(l)})_{ij} \right] = \begin{cases}
+  \delta_i & j = i, \; l = 1 \\
+  0 & o/w
+\end{cases} \quad \mathrm{Var}\left[ (\Phi^{(l)})_{ij} \right] = \begin{cases}
+  \frac{\lambda^2}{l^2} & j = i \\
+  \nu \frac{\lambda^2}{l^2} \frac{\sigma_i^2}{\sigma_j^2} & o/w
+\end{cases}
+```
 
 We call this VAR-type Minnesota prior or BVHAR-S.
 
@@ -621,6 +665,7 @@ We call this VAR-type Minnesota prior or BVHAR-S.
 Minnesota prior.
 
 ``` r
+
 (bvhar_spec_v1 <- set_bvhar(sig, lam, delta, eps))
 #> Model Specification for BVHAR
 #> 
@@ -652,6 +697,7 @@ Similar to above functions, this function will be also integrated into
 version.
 
 ``` r
+
 (fit_bvhar_v1 <- bvhar_minnesota(etf_train, num_iter = 10, bayes_spec = bvhar_spec_v1))
 #> Call:
 #> bvhar_minnesota(y = etf_train, num_iter = 10, bayes_spec = bvhar_spec_v1)
@@ -663,31 +709,31 @@ version.
 #> ====================================================
 #> Matrix Normal Mean for day:
 #>           GVZCLS_day  OVXCLS_day  EVZCLS_day  VXFXICLS_day
-#> GVZCLS       2.20343    -0.00797     -0.0428       -0.0227
-#> OVXCLS       0.01297     0.13796      0.2450        0.0261
-#> EVZCLS      -0.00704    -0.02327      2.1618       -0.0159
-#> VXFXICLS     0.01723     0.01205      0.0760        0.0491
+#> GVZCLS        0.7821     0.00591      0.0593        0.0177
+#> OVXCLS        0.0414     0.76234      0.1142       -0.0122
+#> EVZCLS        0.0109     0.00960      0.7269        0.0212
+#> VXFXICLS      0.0248     0.00453      0.0999        0.8055
 #> 
 #> 
 #> Matrix Normal Mean for week:
 #>           GVZCLS_week  OVXCLS_week  EVZCLS_week  VXFXICLS_week
-#> GVZCLS       -0.01277     -0.00163      -0.0101       -0.00543
-#> OVXCLS        0.00329      0.03143       0.0605        0.00637
-#> EVZCLS       -0.00169     -0.00583      -0.0235       -0.00381
-#> VXFXICLS      0.00410      0.00280       0.0186        0.00899
+#> GVZCLS         0.1150    -0.008383     -0.03183      -0.001635
+#> OVXCLS        -0.0208     0.149920      0.02390      -0.000124
+#> EVZCLS        -0.0102    -0.000713      0.13070      -0.001506
+#> VXFXICLS      -0.0176    -0.011343      0.00258       0.101744
 #> 
 #> 
 #> Matrix Normal Mean for month:
 #>           GVZCLS_month  OVXCLS_month  EVZCLS_month  VXFXICLS_month
-#> GVZCLS       -0.004627     -0.000246      -0.00372        -0.00210
-#> OVXCLS        0.001697      0.013250       0.02514         0.00271
-#> EVZCLS       -0.000657     -0.002653      -0.00958        -0.00149
-#> VXFXICLS      0.001576      0.001095       0.00772         0.00296
+#> GVZCLS         0.05252      -0.00372       -0.0107        -0.00296
+#> OVXCLS         0.00484       0.05009       -0.0239        -0.00967
+#> EVZCLS        -0.00439       0.00444        0.0497        -0.00138
+#> VXFXICLS       0.00743      -0.00340        0.0112         0.00565
 #> 
 #> 
 #> Matrix Normal Mean for constant part:
 #>   GVZCLS    OVXCLS    EVZCLS  VXFXICLS  
-#>   -20.15     19.08     -8.53     21.37  
+#>   0.6114    0.1271    0.0731    1.1532  
 #> 
 #> 
 #> dim(Matrix Normal precision matrix):
@@ -698,15 +744,16 @@ version.
 #> ====================================================
 #> IW scale matrix:
 #>           GVZCLS  OVXCLS  EVZCLS  VXFXICLS
-#> GVZCLS     20421   -4291    2536     -5647
-#> OVXCLS     -4291   75390  -13335      7250
-#> EVZCLS      2536  -13335    5556     -4124
-#> VXFXICLS   -5647    7250   -4124     11006
+#> GVZCLS      1263     367     114       286
+#> OVXCLS       367    3469     128       379
+#> EVZCLS       114     128     218       121
+#> VXFXICLS     286     379     121      1183
 ```
 
 This model is `bvharmn` class.
 
 ``` r
+
 # class---------------
 class(fit_bvhar_v1)
 #> [1] "bvharmn"  "bvharmod" "normaliw"
@@ -727,14 +774,16 @@ names(fit_bvhar_v1)
 
 #### BVHAR-L
 
-Set $\delta_{i}$ for weekly and monthly coefficient matrices in above
+Set $`\delta_i`$ for weekly and monthly coefficient matrices in above
 Minnesota moments:
 
-$$E\left\lbrack \left( \Phi^{(l)} \right)_{ij} \right\rbrack = \begin{cases}
-d_{i} & {j = i,\; l = 1} \\
-w_{i} & {j = i,\; l = 2} \\
-m_{i} & {j = i,\; l = 3}
-\end{cases}$$
+``` math
+E \left[ (\Phi^{(l)})_{ij} \right] = \begin{cases}
+  d_i & j = i, \; l = 1 \\
+  w_i & j = i, \; l = 2 \\
+  m_i & j = i, \; l = 3
+\end{cases}
+```
 
 i.e. instead of one `delta` vector, set three vector
 
@@ -748,6 +797,7 @@ This is called VHAR-type Minnesota prior or BVHAR-L.
 BVHAR-L.
 
 ``` r
+
 daily <- rep(.1, m)
 weekly <- rep(.1, m)
 monthly <- rep(.1, m)
@@ -786,6 +836,7 @@ monthly <- rep(.1, m)
 so you can use this prior intuitively.
 
 ``` r
+
 fit_bvhar_v2 <- bvhar_minnesota(
   etf_train,
   num_iter = 10,
@@ -802,31 +853,31 @@ fit_bvhar_v2
 #> ====================================================
 #> Matrix Normal Mean for day:
 #>           GVZCLS_day  OVXCLS_day  EVZCLS_day  VXFXICLS_day
-#> GVZCLS      7.465571    -0.12674      -1.073       -2.1925
-#> OVXCLS      0.000748     0.47840       0.488        0.0239
-#> EVZCLS      0.000330     0.03316       0.367        0.0534
-#> VXFXICLS    0.001690     0.00362       0.142        0.4626
+#> GVZCLS       1.26338    -0.00643     -0.0514       -0.0580
+#> OVXCLS       0.01246     0.17801      0.2545        0.0538
+#> EVZCLS       0.00459     0.01098      0.1750        0.0244
+#> VXFXICLS     0.01550     0.00658      0.0720        0.1798
 #> 
 #> 
 #> Matrix Normal Mean for week:
 #>           GVZCLS_week  OVXCLS_week  EVZCLS_week  VXFXICLS_week
-#> GVZCLS       3.78e+00    -0.009424       -0.268       -0.57474
-#> OVXCLS       1.69e-04     0.140649        0.120        0.00556
-#> EVZCLS       6.29e-05     0.008305        0.112        0.01246
-#> VXFXICLS     3.67e-04    -0.000593        0.032        0.15822
+#> GVZCLS        0.64835     -0.00149      -0.0132       -0.01473
+#> OVXCLS        0.00314      0.06912       0.0628        0.01315
+#> EVZCLS        0.00108      0.00273       0.0681        0.00585
+#> VXFXICLS      0.00365      0.00151       0.0175        0.06810
 #> 
 #> 
 #> Matrix Normal Mean for month:
 #>           GVZCLS_month  OVXCLS_month  EVZCLS_month  VXFXICLS_month
-#> GVZCLS        2.53e+00      0.038411       -0.0843        -0.27748
-#> OVXCLS        1.10e-04      0.069755        0.0485         0.00340
-#> EVZCLS        1.93e-05      0.004463        0.0582         0.00509
-#> VXFXICLS      1.33e-04     -0.000785        0.0125         0.08479
+#> GVZCLS        0.436737     -0.000332      -0.00535        -0.00628
+#> OVXCLS        0.001643      0.041365       0.02604         0.00566
+#> EVZCLS        0.000435      0.001252       0.04076         0.00230
+#> VXFXICLS      0.001393      0.000590       0.00723         0.03916
 #> 
 #> 
 #> Matrix Normal Mean for constant part:
 #>   GVZCLS    OVXCLS    EVZCLS  VXFXICLS  
-#>  -143.13      2.13      1.10      5.48  
+#>   -21.89     15.04      5.09     16.10  
 #> 
 #> 
 #> dim(Matrix Normal precision matrix):
@@ -836,9 +887,9 @@ fit_bvhar_v2
 #> Sigma ~ Inverse-Wishart
 #> ====================================================
 #> IW scale matrix:
-#>            GVZCLS  OVXCLS  EVZCLS  VXFXICLS
-#> GVZCLS    1595951   -7027   -2507    -14178
-#> OVXCLS      -7027   18322    1560       531
-#> EVZCLS      -2507    1560     877       514
-#> VXFXICLS   -14178     531     514      2677
+#>           GVZCLS  OVXCLS  EVZCLS  VXFXICLS
+#> GVZCLS     21782   -4111   -1289     -4351
+#> OVXCLS     -4111   53808    7424      4755
+#> EVZCLS     -1289    7424    2241      2133
+#> VXFXICLS   -4351    4755    2133      7320
 ```

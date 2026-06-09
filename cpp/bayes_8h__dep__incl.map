@@ -1,0 +1,34 @@
+<map id="bayes.h" name="bayes.h">
+<area shape="rect" id="Node000001" title="MCMC base class." alt="" coords="302,5,375,31"/>
+<area shape="rect" id="Node000002" href="$mniw_2config_8h.html" title=" " alt="" coords="202,79,275,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="313,41,257,81,253,76,310,36"/>
+<area shape="rect" id="Node000007" href="$triangular_2config_8h.html" title="Headers including MCMC configuration structs." alt="" coords="399,79,473,104"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="367,37,422,76,419,81,364,41"/>
+<area shape="rect" id="Node000016" href="$bayes_2forecaster_8h.html" title=" " alt="" coords="289,152,388,177"/>
+<area shape="poly" id="edge15_Node000001_Node000016" title=" " alt="" coords="341,45,341,152,336,152,336,45"/>
+<area shape="rect" id="Node000003" href="$minnesota_8h.html" title=" " alt="" coords="131,152,234,177"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="223,117,194,154,190,150,219,113"/>
+<area shape="rect" id="Node000004" href="$bayes_2mniw_2forecaster_8h.html" title=" " alt="" coords="5,225,104,251"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="151,186,77,227,74,223,149,182"/>
+<area shape="rect" id="Node000005" href="$bayes_2mniw_2irf_8h.html" title=" " alt="" coords="129,225,175,251"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="175,191,159,226,155,224,170,189"/>
+<area shape="rect" id="Node000006" href="$bayes_2mniw_2spillover_8h.html" title=" " alt="" coords="199,225,289,251"/>
+<area shape="poly" id="edge5_Node000003_Node000006" title=" " alt="" coords="204,186,236,223,232,227,200,190"/>
+<area shape="rect" id="Node000008" href="$triangular_8h.html" title="Header including MCMC algorithm." alt="" coords="412,152,508,177"/>
+<area shape="poly" id="edge7_Node000007_Node000008" title=" " alt="" coords="447,116,459,151,454,153,442,118"/>
+<area shape="rect" id="Node000009" href="$bayes_2triangular_2forecaster_8h.html" title=" " alt="" coords="313,225,412,251"/>
+<area shape="poly" id="edge8_Node000008_Node000009" title=" " alt="" coords="435,188,380,227,377,223,432,183"/>
+<area shape="rect" id="Node000012" href="$bayes_2triangular_2irf_8h.html" title=" " alt="" coords="437,225,483,251"/>
+<area shape="poly" id="edge11_Node000008_Node000012" title=" " alt="" coords="463,191,463,225,457,225,457,191"/>
+<area shape="rect" id="Node000013" href="$bayes_2triangular_2spillover_8h.html" title=" " alt="" coords="507,225,597,251"/>
+<area shape="poly" id="edge12_Node000008_Node000013" title=" " alt="" coords="487,183,539,223,535,227,484,188"/>
+<area shape="rect" id="Node000010" href="$regforecaster_8h.html" title=" " alt="" coords="175,299,295,324"/>
+<area shape="poly" id="edge9_Node000009_Node000010" title=" " alt="" coords="331,260,257,301,254,296,329,255"/>
+<area shape="rect" id="Node000011" href="$svforecaster_8h.html" title=" " alt="" coords="319,299,433,324"/>
+<area shape="poly" id="edge10_Node000009_Node000011" title=" " alt="" coords="370,264,376,298,371,299,365,265"/>
+<area shape="rect" id="Node000014" href="$regspillover_8h.html" title=" " alt="" coords="483,299,594,324"/>
+<area shape="poly" id="edge13_Node000013_Node000014" title=" " alt="" coords="550,265,543,299,538,298,545,264"/>
+<area shape="rect" id="Node000015" href="$svspillover_8h.html" title=" " alt="" coords="619,299,723,324"/>
+<area shape="poly" id="edge14_Node000013_Node000015" title=" " alt="" coords="584,255,653,296,650,301,582,260"/>
+<area shape="poly" id="edge16_Node000016_Node000009" title=" " alt="" coords="349,189,361,224,356,226,344,191"/>
+</map>
